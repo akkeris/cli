@@ -1,0 +1,24 @@
+{
+  "name": "akkeris",
+  "version": "2.0.1",
+  "description": "Akkeris CLI",
+  "main": "aka.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "akkeris": "./aka.js",
+    "aka": "./aka.js",
+    "ak": "./aka.js"
+  },
+  "author": "OC Tanner",
+  "repository": "https://github.com/akkeris/cli",
+  "license": "ISC",
+  "dependencies": {
+    "chart": "jstrace/chart",
+    "cli-table": "^0.3.1",
+    "cliui": "^3.2.0",
+    "netrc": "^0.1.4",
+    "yargs": "^8.0.1"
+  }
+}
