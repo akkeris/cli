@@ -144,8 +144,7 @@ module.exports.update = function update(appkit) {
     }
   }));
   console.log(appkit.terminal.markdown(`###===### updating appreciatekit`));
-  proc.spawnSync('git',['pull', '--quiet'], {cwd:__dirname, env:process.env, stdio:'inherit'});
-  proc.spawnSync('npm',['install'], {cwd:__dirname, env:process.env, stdio:'inherit'});
+  proc.spawnSync('npm',['update', '-g', 'akkeris'], {cwd:__dirname, env:process.env, stdio:'inherit'});
 }
 
 function is_redirect(type, res) { return type.toLowerCase() === 'get' && res.headers['location'] && (res.statusCode === 301 || res.statusCode === 302); }
