@@ -134,7 +134,7 @@ module.exports = {
     }
 
     appkit.args.command('routes', 'show route information for an app.', query_opts, list_routes.bind(null, appkit))
-    appkit.args.command('routes:create SOURCE_PATH [TARGET_PATH]', "create a route from a site to an app.\nFor example to add a route to vision-dev do something like this: aka routes:create -s vision-dev.appreciatehub.com -a yourapp-space-name /path/on/vision-dev /path/on/yourapp", create_opts, create_route.bind(null, appkit))
+    appkit.args.command('routes:create SOURCE_PATH [TARGET_PATH]', "route https traffic from a site to an app", create_opts, create_route.bind(null, appkit))
     appkit.args.command('routes:remove ID', 'delete a route', {}, delete_route.bind(null, appkit))
 
   },

@@ -58,6 +58,7 @@ function rebuild(appkit, args) {
         appkit.api.put(null, '/apps/' + args.app + '/builds/' + args.ID, (err, data) => {
           if(err) {
             task.end('error');
+            return appkit.terminal.error(err);
           }
           task.end('ok');
           appkit.terminal.print(err, data);
@@ -69,6 +70,7 @@ function rebuild(appkit, args) {
       appkit.api.put(null, '/apps/' + args.app + '/builds/' + args.ID, (err, data) => {
         if(err) {
           task.end('error');
+          return appkit.terminal.error(err);
         }
         task.end('ok');
         appkit.terminal.print(err, data);
