@@ -12,5 +12,7 @@ ak auth:login
 
 ## Other env 
 
+```
 API_AUTH = "Authorization: ${API_AUTH}"
 API_TOKEN = "Authorization: Bearer ${API_TOKEN}"
+```

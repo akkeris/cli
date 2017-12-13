@@ -11,7 +11,7 @@ const url = require('url');
 const zlib = require('zlib');
 
 function init_plugins(module, plugins_dir) {
-  fs.readdirSync(plugins_dir).forEach((plugin => {
+  fs.readdirSync(plugins_dir).sort((a, b) => { return a < b ? -1 : 1 }).forEach((plugin => {
     if(fs.statSync(path.join(plugins_dir, plugin, 'index.js')).isFile()) {
       try {
         module.exports.plugins[plugin] = require(path.join(plugins_dir, plugin, 'index.js'));

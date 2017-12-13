@@ -63,7 +63,7 @@ function create_route(appkit, args) {
   }
   args.site = clean_site(args.site);
   let payload = {app:args.app, site:args.site, source_path:args.SOURCE_PATH, target_path: args.TARGET_PATH}
-  app_or_error(appkit, route.app, (app_info) => {
+  app_or_error(appkit, args.app, (app_info) => {
     let task = appkit.terminal.task(`Creating route https://${clean_forward_slash(args.site)}${args.SOURCE_PATH} ➝ ${clean_forward_slash(app_info.web_url)}${args.TARGET_PATH}`);
     task.start();
     appkit.api.post(JSON.stringify(payload), `/apps/${args.app}/routes`, (err, data) => {
