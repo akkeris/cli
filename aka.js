@@ -80,10 +80,10 @@ module.exports.init = function init() {
 
   // Establish the base arguments for the CLI.
   module.exports.args = require('yargs')
-    .usage('Usage: appkit COMMAND [--app APP] [command-specific-options]')
-    .command('update', 'update the appkit client', {}, module.exports.update.bind(null, module.exports))
+    .usage('Usage: akkeris COMMAND [--app APP] [command-specific-options]')
+    .command('update', 'update the akkeris client', {}, module.exports.update.bind(null, module.exports))
     .command('version', 'display version', {}, module.exports.version.bind(null, module.exports))
-    .command('completion', 'show appkit auto-completion script (e.g, "ak completion >> ~/.bash_profile").', {}, () => {
+    .command('completion', 'show akkeris auto-completion script (e.g, "ak completion >> ~/.bash_profile").', {}, () => {
       module.exports.args.showCompletionScript();
     })
     .recommendCommands()
