@@ -77,6 +77,7 @@ module.exports.init = function init() {
     console.error()
     process.exit(1)
   }
+
   // Set common dir paths
   let akkeris_home = path.join(get_home(), '.akkeris')
   let akkeris_plugins = path.join(get_home(), '.akkeris', 'plugins')
@@ -162,7 +163,7 @@ module.exports.update = function update(appkit) {
       }
     }
   }));
-  console.log(appkit.terminal.markdown(`###===### updating appreciatekit`));
+  console.log(appkit.terminal.markdown(`###===### updating akkeris`));
   proc.spawnSync('npm',['update', '-g', 'akkeris'], {cwd:__dirname, env:process.env, stdio:'inherit'});
 }
 
