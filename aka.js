@@ -95,9 +95,11 @@ function load_profile() {
 }
 
 function welcome() {
+  console.log("")
   console.log("Hi! It looks like you might be new here. Lets take a second")
   console.log("to get started, you'll need your akkeris auth and apps host")
   console.log("in addition to your login and password.")
+  console.log("")
   proc.spawnSync('ak',['auth:profile'], {env:process.env, stdio:'inherit'});
   proc.spawnSync('ak',['auth:login'], {env:process.env, stdio:'inherit'});
 }
