@@ -4,15 +4,17 @@
 Add the following environment variables to your profile:
 
 ```bash
-export AKKERIS_API_HOST=apps.yourdomain.io
-export AKKERIS_AUTH_HOST=auth.yourdomain.io
 npm -g install akkeris
-ak auth:login
+ak
 ````
 
 ## Other env 
 
+These environment variables are only useful if for development.
+
 ```
-API_AUTH = "Authorization: ${API_AUTH}"
-API_TOKEN = "Authorization: Bearer ${API_TOKEN}"
+export AKKERIS_API_HOST=apps.yourdomain.io
+export AKKERIS_AUTH_HOST=auth.yourdomain.io
+export API_AUTH = ".." # used to send "Authorization: ${API_AUTH}"
+export API_TOKEN = ".." # used to send "Authorization: Bearer ${API_TOKEN}"
 ```

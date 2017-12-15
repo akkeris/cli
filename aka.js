@@ -66,17 +66,44 @@ function squirrel() {
   `)
 }
 
+function set_profile(appkit, args, cb) {
+  if(!args || !args.auth || !args.app) {
+    appkit.terminal.question('Akkeris Auth Host (auth.example.com): ', (auth) => {
+      appkit.terminal.question('Akkeris Apps Host (apps.example.com): ', (apps) => {
+        fs.writeFileSync(path.join(get_home(), '.akkeris', 'config.json'), JSON.stringify({auth,apps}, null, 2));
+        process.env.AKKERIS_API_HOST = apps
+        process.env.AKKERIS_AUTH_HOST = auth
+        console.log("Profile updated!")
+      });
+    });
+  }
+}
+
+function load_profile() {
+  if(!process.env.AKKERIS_API_HOST || !process.env.AKKERIS_AUTH_HOST) {
+    try {
+      let config = JSON.parse(fs.readFileSync(path.join(get_home(), '.akkeris', 'config.json')).toString('UTF8'))
+      process.env.AKKERIS_AUTH_HOST = config.auth;
+      process.env.AKKERIS_API_HOST = config.apps;
+    } catch (e) {
+      if(process.argv && (process.argv[1] === 'auth:profile' || process.argv[2] === 'auth:profile' || process.argv[3] === 'auth:profile')) {
+        return;
+      }
+      welcome()
+    }
+  }
+}
+
+function welcome() {
+  console.log("Hi! It looks like you might be new here. Lets take a second")
+  console.log("to get started, you'll need your akkeris auth and apps host")
+  console.log("in addition to your login and password.")
+  proc.spawnSync('ak',['auth:profile'], {env:process.env, stdio:'inherit'});
+  proc.spawnSync('ak',['auth:login'], {env:process.env, stdio:'inherit'});
+}
+
 // Initialize, setup any items at runtime
 module.exports.init = function init() {
-
-  if(!process.env.AKKERIS_API_HOST || !process.env.AKKERIS_AUTH_HOST) {
-    console.error()
-    console.error("!!! Akkeris cannot find environment variables AKKERIS_API_HOST and AKKERIS_AUTH_HOST")
-    console.error("    set these using export AKKERIS_API_HOST=... and export AKKERIS_AUTH_HOST=...")
-    console.error("    or add it to your .profile. If you do not know these values ask someone!")
-    console.error()
-    process.exit(1)
-  }
 
   // Set common dir paths
   let akkeris_home = path.join(get_home(), '.akkeris')
@@ -88,13 +115,16 @@ module.exports.init = function init() {
   create_dir(akkeris_plugins)
   create_dir(akkeris_base_plugins)
 
+  module.exports.terminal = require(path.join(__dirname, 'lib', 'terminal.js'))
+
+  load_profile()
+
   module.exports.config = {
     plugins_dir:null, 
     akkeris_api_host:(process.env.AKKERIS_API_HOST),
     akkeris_auth_host:(process.env.AKKERIS_AUTH_HOST),
     package:JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json').toString('utf8')))
   };
-  module.exports.terminal = require(path.join(__dirname, 'lib', 'terminal.js'))
   
 
   // Establish the base arguments for the CLI.
@@ -103,6 +133,11 @@ module.exports.init = function init() {
     .command('update', 'update the akkeris client', {}, module.exports.update.bind(null, module.exports))
     .command('version', 'display version', {}, module.exports.version.bind(null, module.exports))
     .command('squirrel', false, {}, squirrel)
+    .command('auth:profile', 'Set the authorization endpoint and apps end point', {
+        "apps":{ "description":"The URL for the apps API end point." },
+        "auth":{ "description":"The URL for the auth API end point." }
+      }, 
+      set_profile.bind(null, module.exports))
     .command('completion', 'show akkeris auto-completion script (e.g, "ak completion >> ~/.bash_profile").', {}, () => {
       module.exports.args.showCompletionScript();
     })
