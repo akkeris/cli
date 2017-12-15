@@ -223,7 +223,7 @@ function appkit_request(type, payload, rurl, callback) {
     headers['authorization'] = process.env.API_AUTH;
   }
 
-  headers['user-agent'] = 'appkit-cli';
+  headers['user-agent'] = 'akkeris-cli';
 
   let full_url = rurl.startsWith("http") ? rurl : 
                 ( (module.exports.config.akkeris_api_host.startsWith("http") ? 
@@ -254,8 +254,6 @@ if(require.main === module) {
   module.exports.args
     .strict()
     .demand(1)
-    .epilog(
-      module.exports.random_tips[Math.floor(module.exports.random_tips.length * Math.random())]
-    )
+    .epilog(module.exports.random_tips[Math.floor(module.exports.random_tips.length * Math.random())])
     .argv
 }
