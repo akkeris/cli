@@ -18,3 +18,4 @@ export AKKERIS_AUTH_HOST=auth.yourdomain.io
 export API_AUTH = ".." # used to send "Authorization: ${API_AUTH}"
 export API_TOKEN = ".." # used to send "Authorization: Bearer ${API_TOKEN}"
 ```
+

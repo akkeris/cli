@@ -3,23 +3,66 @@
 function format_formation(ps) {
   return `##===## ^^^${ps.type}^^^ (**${ps.size}**): ${ps.command ? ps.command : '(from docker)'} (~~~${ps.quantity}~~~)`;
 }
+
 function format_warning(ps, form_dynos) {
-  return `~~~⚠~~~  ${ps.type} dyno type has ${form_dynos.length} dynos, but ${ps.quantity} ${ps.quantity === 1 ? 'has' : 'have'} been requested. 
-~~~⚠~~~  It may be scaling, restarting or deploying.`;
+  return `\n~~~⚠~~~  ${ps.type} dyno type has ${form_dynos.length} dynos, but ${ps.quantity} ${ps.quantity === 1 ? 'has' : 'have'} been requested. 
+~~~⚠~~~  It may be scaling, crashing, restarting or deploying.`;
 }
-function state_map(state) {
-  if(state.toLowerCase().indexOf('running') > -1) {
-    return 'up';
-  } else if(state.toLowerCase().indexOf('waiting') > -1) {
-    return 'starting';
-  } else if(state.toLowerCase().indexOf('termin') > -1) {
-    return 'stopping';
-  } else {
-    return state.toLowerCase().split('/')[0];
+
+function state_map(ps) {
+  switch(ps.state.toLowerCase()) {
+    case 'start-failure':
+      return {
+        "state":"crashed", 
+        "warning":"Application failed to start. Check your startup or entrypoint command.", 
+        "additional_info":ps.additional_info
+      }
+    case 'app-crashed':
+      return {
+        "state":"crashed", 
+        "warning":"This application unexpectedly crashed. Check its logs for more information.", 
+        "additional_info":(ps.additional_info + " (restarts " + ps.restarts + ")")
+      }
+    case 'waiting':
+      return {
+        "state":"starting",
+        "additional_info":ps.additional_info
+      }
+    case 'probe-failure':
+      return {
+        "state":"unhealthy", 
+        "warning":"This application is taking unusually long to start, ensure it's listening to $PORT.", 
+        "additional_info":ps.additional_info
+      }
+    case 'terminated':
+    case 'terminating':
+      return {
+        "state":"terminated",
+        "additional_info":ps.additional_info
+      }
+    default:
+      return {
+        "state":ps.state.toLowerCase(),
+        "additional_info":ps.additional_info
+      }
+      break;
   }
 }
+
 function format_dyno(ps) {
-  return `${ps.type}.${ps.name}: ^^^${state_map(ps.state)}^^^ ###${ps.updated_at}###`
+  let info = state_map(ps)
+  if(info.warning) {
+    if(info.state === 'crashed') {
+      let data = ` ${ps.type}.${ps.name}:\t!!${info.state}!! ###${ps.updated_at}###\t##${info.warning}##`
+      return data
+    } else {
+      let data = ` ${ps.type}.${ps.name}:\t~~~${info.state}~~~ ###${ps.updated_at}###\t##${info.warning}##`
+      return data
+    }
+
+  }
+  let data = ` ${ps.type}.${ps.name}:\t^^^${info.state}^^^ ###${ps.updated_at}###`
+  return data
 }
 
 function format_sizes(ps) {
