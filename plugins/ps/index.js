@@ -9,6 +9,7 @@ function format_warning(ps, form_dynos) {
 ~~~⚠~~~  It may be scaling, crashing, restarting or deploying.`;
 }
 
+// start-failure, stopping, stopped, waiting, pending, starting, probe-failure, running, app-crashed
 function state_map(ps) {
   switch(ps.state.toLowerCase()) {
     case 'start-failure':
@@ -29,16 +30,20 @@ function state_map(ps) {
         "additional_info":ps.additional_info
       }
     case 'probe-failure':
-      return {
-        "state":"unhealthy", 
-        "warning":"This application is taking unusually long to start, ensure it's listening to $PORT.", 
-        "additional_info":ps.additional_info
-      }
-    case 'terminated':
-    case 'terminating':
-      return {
-        "state":"terminated",
-        "additional_info":ps.additional_info
+      let started = new Date(Date.parse(ps.created_at))
+      let now = new Date()
+      if((now.getTime() - started.getTime()) > 1000 * 90) {
+        return {
+          "state":"unhealthy", 
+          "warning":"This application is taking unusually long to start, ensure it's listening to $PORT.", 
+          "additional_info":ps.additional_info
+        }
+      } else {
+        return {
+          "state":"starting", 
+          "additional_info":ps.additional_info
+        }
+
       }
     default:
       return {
@@ -59,6 +64,10 @@ function format_dyno(ps) {
       let data = ` ${ps.type}.${ps.name}:\t~~~${info.state}~~~ ###${ps.updated_at}###\t##${info.warning}##`
       return data
     }
+  }
+  if(info.state === 'stopping' || info.state === 'stopped' || info.state === 'pending' || info.state === 'starting') {
+    let data = ` ${ps.type}.${ps.name}:\t~~${info.state}~~ ###${ps.updated_at}###`
+    return data
 
   }
   let data = ` ${ps.type}.${ps.name}:\t^^^${info.state}^^^ ###${ps.updated_at}###`
