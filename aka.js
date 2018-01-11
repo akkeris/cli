@@ -228,7 +228,6 @@ function request(type, payload, rurl, headers, callback) {
   let opts = url.parse(rurl);
   opts.method = type;
   opts.headers = headers || {};
-
   let req = connector.request(opts, response_body.bind(null, type, (e, d) => { 
     if(d) {
       d = JSON.parse(d)
@@ -259,14 +258,13 @@ function appkit_request(type, payload, rurl, callback) {
   if(process.env.API_AUTH) {
     headers['authorization'] = process.env.API_AUTH;
   }
-
+  headers['accept-encoding'] = 'gzip'
   headers['user-agent'] = 'akkeris-cli';
 
   let full_url = rurl.startsWith("http") ? rurl : 
                 ( (module.exports.config.akkeris_api_host.startsWith("http") ? 
                     module.exports.config.akkeris_api_host : 
                     'https://' + module.exports.config.akkeris_api_host) + rurl);
-
   request(type, payload, full_url, headers, callback);
 }
 
