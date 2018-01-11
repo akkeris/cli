@@ -210,15 +210,15 @@ function response_body(type, callback, res) {
   let body = new Buffer(0);
   res.on('data', (e) => body = Buffer.concat([body,e]) );
   res.on('end', (e) => {
+    if(res.headers['content-encoding'] === 'gzip' && body.length > 0) {
+      body = zlib.gunzipSync(body);
+    }
     if(is_redirect(type, res)) {
       get(res.headers['location'], headers, callback);
     } else if(is_response_ok(res)) {
-      if(res.headers['content-encoding'] === 'gzip') {
-        body = zlib.gunzipSync(body);
-      }
       callback(null, res.headers['content-type'] === 'application/zip' ? body : body.toString('utf8'), res.headers);
     } else {
-      callback({code:res.statusCode, body:body, headers:res.headers}, null);
+      callback({code:res.statusCode, body, headers:res.headers}, null);
     } 
   });
 }
