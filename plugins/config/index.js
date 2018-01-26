@@ -74,7 +74,7 @@ function print_vars(appkit, args, config_vars) {
     var keys = Object.keys(config_vars).sort();
 
     if(args.shell) {
-        keys.forEach(config_var => console.log(config_var + "=" + config_vars[config_var]))
+        keys.forEach(config_var => console.log(config_var + "=\"" + config_vars[config_var].replace(/\"/g, '\\"') + "\""))
     } else if (args.json) {
         var kv = keys.map(config_var => `  "${config_var.replace('"', '\\"')}":"${config_vars[config_var].replace('"', '\\"')}"`)
         console.log('{');
