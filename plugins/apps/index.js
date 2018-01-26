@@ -164,12 +164,14 @@ function info(appkit, args) {
         appkit.api.get('/apps/' + args.app + '/pipeline-couplings', function(err, pipeline) {
           appkit.api.get('/apps/' + args.app + '/formation', function(err, dynos) {
             console.log(appkit.terminal.markdown(`###===### **⬢ ${app.name}**
+  App ID:\t\t${app.id}
   Addons:\t${addons ? addons.map((x) => { return '\t' + x.name; }).join('\n\t') : ''}
   Attached Addons:\t${attachments ? attachments.map((x) => { return '\t' + x.name; }).join('\n\t') : ''}
   Dynos:\t${dynos ? dynos.map((x) => { return '\t' + x.type + ': ' + x.quantity}).join('\n\t') : ''}
   Pipeline:\t\t${pipeline ? pipeline.pipeline.name + ' - ' + pipeline.stage : ''}
   Git URL:\t\t${app.git_url}
   Last Released:\t${app.released_at ? new Date(app.released_at).toLocaleString() : 'Never'}
+  Current Image:\t${app.image}
   Owner:\t\t${app.organization.name}
   Region:\t\t${app.region.name}
   Stack:\t\t${app.stack.name}
