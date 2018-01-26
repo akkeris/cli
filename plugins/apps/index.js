@@ -1,6 +1,7 @@
 "use strict"
 
 const proc = require('child_process');
+const fs = require('fs');
 const rand = require('./random.js');
 
 function format_app(app) {
@@ -23,7 +24,6 @@ function app_or_error(appkit, name, cb) {
   });
 }
 
-//TODO: Add 'addons', a list of plans auto created with the app.
 let create_apps_options = {
   "space":{
     "alias":"s",
@@ -36,19 +36,6 @@ let create_apps_options = {
     "string":true,
     "demand":true,
     "description":"The organization to create the app under"
-  },
-  "region":{
-    "alias":"r",
-    "string":true,
-    "choices":[undefined, "us"],
-    "default":"us",
-    "description":"The region to place this app under"
-  },
-  "stack":{
-    "string":true,
-    "choices":[undefined, "alamo-1"],
-    "default":"alamo-1",
-    "description":"The version or stack of the platform to use"
   }
 }
 
@@ -144,6 +131,26 @@ function blueprint(appkit, args) {
     }
     console.log(JSON.stringify(definition, null, 2));
   });
+}
+
+function oneclick(appkit, args) {
+  console.assert(args.app || args.file, 'Either an app or a file is required.')
+  if(args.app) {
+    appkit.api.get('/apps/' + args.app + '/app-setups', (err, definition) => {
+      if(err) {
+        return appkit.terminal.error(err);
+      }
+      console.log('https://<akkeris ui host>/app-setups?blueprint=' + encodeURIComponent(JSON.stringify(definition)));
+    });
+  } else {
+    try {
+      let bp = JSON.parse(fs.readFileSync(args.file).toString('utf8'))
+      bp = encodeURIComponent(JSON.stringify(bp))
+      console.log('https://<akkeris ui host>/app-setups?blueprint=' + bp);
+    } catch (e) {
+      return appkit.terminal.error("The specified file didnt exist or wasnt a valid JSON file.")
+    }
+  }
 }
 
 function info(appkit, args) {
@@ -285,19 +292,27 @@ module.exports = {
         'string':true,
         'description':'Override the organization when forking the app.'
       }
-    };
+    }
     let blueprint_app_option = {
       'app':{
         'alias':'a',
         'demand':true,
         'string':true,
         'description':'The app to act on.'
+      }
+    }
+    let oneclick_app_option = {
+      'app':{
+        'alias':'a',
+        'demand':false,
+        'string':true,
+        'description':'The app to act on.'
       },
-      'url':{
-        'alias':'u',
-        'boolean':true,
-        'default':false,
-        'description':'Output a one-click url to re-create the app rather than the json blueprint.'
+      'file':{
+        'alias':'f',
+        'demand':false,
+        'string':true,
+        'description':'The file containing the blueprint (app.json) of the app.'
       }
     }
     appkit.args
@@ -314,7 +329,8 @@ module.exports = {
       .command('favorites:add', false, require_app_option, favorite.bind(null, appkit))
       .command('favorites:remove', false, require_app_option, unfavorite.bind(null, appkit))
       .command('apps:fork NAME', 'fork an existing app into a new one', fork_app_option, fork.bind(null, appkit))
-      .command('apps:blueprint', 'generates an app.json or one-click url button to re-create this app.', blueprint_app_option, blueprint.bind(null, appkit))
+      .command('apps:blueprint', 'generates a blueprint (app.json definition) to recreate this app.', blueprint_app_option, blueprint.bind(null, appkit))
+      .command('apps:one-click', 'generates a one-click url from an app or blueprint that when clicked will recreate the app.', oneclick_app_option, oneclick.bind(null, appkit))
       .command('apps:info', 'show detailed app information', require_app_option, info.bind(null, appkit))
       .command('info', false, require_app_option, info.bind(null, appkit))
       //.command('apps:join', 'add yourself to an organization app', require_app_option, join.bind(null, appkit))
