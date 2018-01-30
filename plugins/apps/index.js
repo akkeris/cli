@@ -124,12 +124,37 @@ function fork(appkit, args) {
   });
 }
 
+
+function update_blueprint(args, blueprint) {
+  let bp = JSON.parse(JSON.stringify(blueprint))
+  if(args.logo) {
+    bp.logo = args.logo
+  }
+  if(args.name) {
+    bp.name = args.name
+  }
+  if(args['success-url']) {
+    bp.success_url = args['success-url']
+  }
+  if(args.env && Array.isArray(args.env)) {
+    args.env.forEach((env) => {
+      if(bp.env[env]) {
+        delete bp.env[env].value
+        bp.env[env].required = true
+      } else {
+        bp.env[env] = {required:true, "description":""}
+      }
+    })
+  }
+  return bp
+}
+
 function blueprint(appkit, args) {
   appkit.api.get('/apps/' + args.app + '/app-setups', (err, definition) => {
     if(err) {
       return appkit.terminal.error(err);
     }
-    console.log(JSON.stringify(definition, null, 2));
+    console.log(JSON.stringify(update_blueprint(args, definition), null, 2));
   });
 }
 
@@ -140,7 +165,7 @@ function oneclick(appkit, args) {
       if(err) {
         return appkit.terminal.error(err);
       }
-      console.log('https://<akkeris ui host>/app-setups?blueprint=' + encodeURIComponent(JSON.stringify(definition)));
+      console.log('https://<akkeris ui host>/app-setups?blueprint=' + encodeURIComponent(JSON.stringify(update_blueprint(args, definition))));
     });
   } else {
     try {
@@ -295,28 +320,49 @@ module.exports = {
         'description':'Override the organization when forking the app.'
       }
     }
+
     let blueprint_app_option = {
       'app':{
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to act on.'
-      }
-    }
-    let oneclick_app_option = {
-      'app':{
-        'alias':'a',
+        'description':'The app to use as a base definition.'
+      },
+      'logo':{
+        'alias':'l',
         'demand':false,
         'string':true,
-        'description':'The app to act on.'
+        'description':'The url of this applications logo.'
       },
+      'name':{
+        'alias':'n',
+        'demand':false,
+        'string':true,
+        'description':'The human readable name of the application (not the app name).'
+      },
+      'success-url':{
+        'alias':'s',
+        'demand':false,
+        'string':true,
+        'description':'The relative url to send the user once the one-click has been released.'
+      },
+      'env':{
+        'alias':'e',
+        'demand':false,
+        'string':true,
+        'type':'array',
+        'description':'A list of environment variables that will be required.'
+      }
+    }
+
+    let oneclick_app_option = Object.assign(blueprint_app_option, {
       'file':{
         'alias':'f',
         'demand':false,
         'string':true,
         'description':'The file containing the blueprint (app.json) of the app.'
       }
-    }
+    })
     appkit.args
       .command('apps', 'list available apps', filter_app_option, list.bind(null, appkit))
       .command('apps:create [NAME]', 'create a new app; NAME must be lowercase alphanumeric only', create_apps_options, create.bind(null, appkit))
@@ -332,7 +378,13 @@ module.exports = {
       .command('favorites:remove', false, require_app_option, unfavorite.bind(null, appkit))
       .command('apps:fork NAME', 'fork an existing app into a new one', fork_app_option, fork.bind(null, appkit))
       .command('apps:blueprint', 'generates a blueprint (app.json definition) to recreate this app.', blueprint_app_option, blueprint.bind(null, appkit))
+      .command('blueprint', false, blueprint_app_option, blueprint.bind(null, appkit))
+      .command('apps:blue-print', false, blueprint_app_option, blueprint.bind(null, appkit))
+      .command('blue-print', false, blueprint_app_option, blueprint.bind(null, appkit))
       .command('apps:one-click', 'generates a one-click url from an app or blueprint that when clicked will recreate the app.', oneclick_app_option, oneclick.bind(null, appkit))
+      .command('apps:oneclick', false, oneclick_app_option, oneclick.bind(null, appkit))
+      .command('oneclick', false, oneclick_app_option, oneclick.bind(null, appkit))
+      .command('one-click', false, oneclick_app_option, oneclick.bind(null, appkit))
       .command('apps:info', 'show detailed app information', require_app_option, info.bind(null, appkit))
       .command('info', false, require_app_option, info.bind(null, appkit))
       //.command('apps:join', 'add yourself to an organization app', require_app_option, join.bind(null, appkit))
