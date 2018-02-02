@@ -126,7 +126,7 @@ module.exports = {
       //.command('auth:2fa:enable', 'enable 2fa on your account', {}, auth_2fa_enable.bind(null, appkit))
       //.command('auth:2fa:generate', 'generates and replaces recovery codes', {}, auth_2fa_generate.bind(null, appkit))
       .command('auth', 'authentication (login, logout)', {}, whoami.bind(null, appkit))
-      .command('auth:login', 'log in with your OC Tanner network credentials', login_options, login.bind(null, appkit))
+      .command('auth:login', 'log in with your credentials', login_options, login.bind(null, appkit))
       .command('auth:logout', 'clear local authentication credentials', {}, logout.bind(null, appkit))
       .command('auth:token', 'display your api token', {}, token.bind(null, appkit))
       .command('auth:whoami', 'display your user information', {}, whoami.bind(null, appkit))
