@@ -363,6 +363,9 @@ module.exports = {
         'description':'The file containing the blueprint (app.json) of the app.'
       }
     })
+
+    oneclick_app_option.app.demand = false;
+
     appkit.args
       .command('apps', 'list available apps', filter_app_option, list.bind(null, appkit))
       .command('apps:create [NAME]', 'create a new app; NAME must be lowercase alphanumeric only', create_apps_options, create.bind(null, appkit))
