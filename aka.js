@@ -10,21 +10,37 @@ const path = require('path');
 const url = require('url');
 const zlib = require('zlib');
 
+process.on('uncaughtException', (e) => {
+  if(process.env.DEBUG) {
+    console.error(e.message)
+    console.error(e.stack)
+  } else {
+    console.log("An unexpected error occured, if this persists try running `mv ~/.akkeris ~/.akkeris.backup`.")
+  }
+})
+
 function init_plugins(module, plugins_dir) {
   fs.readdirSync(plugins_dir).sort((a, b) => { return a < b ? -1 : 1 }).forEach((plugin => {
-    if(fs.statSync(path.join(plugins_dir, plugin, 'index.js')).isFile()) {
-      try {
-        module.exports.plugins[plugin] = require(path.join(plugins_dir, plugin, 'index.js'));
-      } catch (err) {
-        console.log(module.exports.terminal.markdown(`\n !!▸!! error loading plugin "${plugin}": ${err}\n`));
-      }
-      if(module.exports.plugins[plugin] && module.exports.plugins[plugin].init) {
+    if(path.basename(plugin).startsWith('.') || path.basename(plugin).startsWith("tmp")) {
+      return;
+    }
+    try {
+      if(fs.statSync(path.join(plugins_dir, plugin, 'index.js')).isFile()) {
         try {
-          module.exports.plugins[plugin].init(module.exports);
+          module.exports.plugins[plugin] = require(path.join(plugins_dir, plugin, 'index.js'));
         } catch (err) {
-          console.log(module.exports.terminal.markdown(`\n !!▸!! error initializing plugin "${plugin}": ${err}\n`));
+          console.log(module.exports.terminal.markdown(`\n !!▸!! error loading plugin "${plugin}": ${err}\n`));
+        }
+        if(module.exports.plugins[plugin] && module.exports.plugins[plugin].init) {
+          try {
+            module.exports.plugins[plugin].init(module.exports);
+          } catch (err) {
+            console.log(module.exports.terminal.markdown(`\n !!▸!! error initializing plugin "${plugin}": ${err}\n`));
+          }
         }
       }
+    } catch (err) {
+      console.log(module.exports.terminal.markdown(`\n !!▸!! error initializing plugin "${plugin}": ${err}\n`));
     }
   }));
 }
