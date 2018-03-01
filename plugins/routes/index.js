@@ -59,7 +59,7 @@ function create_route(appkit, args) {
   if(args.TARGET_PATH) {
     console.assert(/\/[a-zA-Z0-9_-]*/.test(args.TARGET_PATH), 'TARGET_PATH must start with a slash and afterward match /[a-zA-Z0-9_-]+/.')
   } else {
-    args.TARGET_PATH = '';
+    args.TARGET_PATH = '/';
   }
   args.site = clean_site(args.site);
   let payload = {app:args.app, site:args.site, source_path:args.SOURCE_PATH, target_path: args.TARGET_PATH}
