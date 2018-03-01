@@ -53,14 +53,14 @@ function list_routes(appkit, args) {
 }
 
 function create_route(appkit, args) {
+  if(!args.TARGET_PATH) {
+    return appkit.terminal.error("A target path is required.")
+  }
   console.assert(args.app && args.app !== '', 'Please specify an app.')
   console.assert(args.site && /^[a-z0-9.-]+$/.test(args.site), 'Expected: A site ID or domain name.')
   console.assert(args.SOURCE_PATH && /\/[a-zA-Z0-9_-]*/.test(args.SOURCE_PATH), 'SOURCE_PATH must start with a slash and afterward match /[a-zA-Z0-9_-]+/.')
-  if(args.TARGET_PATH) {
-    console.assert(/\/[a-zA-Z0-9_-]*/.test(args.TARGET_PATH), 'TARGET_PATH must start with a slash and afterward match /[a-zA-Z0-9_-]+/.')
-  } else {
-    args.TARGET_PATH = '';
-  }
+  console.assert(/\/[a-zA-Z0-9_-]*/.test(args.TARGET_PATH), 'TARGET_PATH must start with a slash and afterward match /[a-zA-Z0-9_-]+/.')
+
   args.site = clean_site(args.site);
   let payload = {app:args.app, site:args.site, source_path:args.SOURCE_PATH, target_path: args.TARGET_PATH}
   app_or_error(appkit, args.app, (app_info) => {
@@ -134,7 +134,7 @@ module.exports = {
     }
 
     appkit.args.command('routes', 'show route information for an app.', query_opts, list_routes.bind(null, appkit))
-    appkit.args.command('routes:create SOURCE_PATH [TARGET_PATH]', "route https traffic from a site to an app", create_opts, create_route.bind(null, appkit))
+    appkit.args.command('routes:create SOURCE_PATH TARGET_PATH', "route https traffic from a site to an app", create_opts, create_route.bind(null, appkit))
     appkit.args.command('routes:remove ID', 'delete a route', {}, delete_route.bind(null, appkit))
 
   },
