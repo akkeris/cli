@@ -135,7 +135,9 @@ module.exports = {
 
     appkit.args.command('routes', 'show route information for an app.', query_opts, list_routes.bind(null, appkit))
     appkit.args.command('routes:create SOURCE_PATH TARGET_PATH', "route https traffic from a site to an app", create_opts, create_route.bind(null, appkit))
-    appkit.args.command('routes:remove ID', 'delete a route', {}, delete_route.bind(null, appkit))
+    appkit.args.command('routes:destroy ID', 'delete a route', {}, delete_route.bind(null, appkit))
+    appkit.args.command('routes:remove ID', false, {}, delete_route.bind(null, appkit))
+    appkit.args.command('routes:delete ID', false, {}, delete_route.bind(null, appkit))
 
   },
   update() {

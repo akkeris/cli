@@ -11,10 +11,12 @@ function app_or_error(appkit, name, cb) {
 }
 
 function format_build(build) {
-  return `**• Build Id: ${build.id}**
-  ***Created:*** ${(new Date(build.created_at)).toLocaleString()}
-  ***Status:*** ${build.status === "succeeded" ? "^^succeeded^^" : "!!" + build.status + "!!"}
-  ***Version:*** ${(build.source_blob.commit && build.source_blob.commit.trim() !== '') ? (build.source_blob.commit.substring(0, 7) + ' -') : ''} ${build.source_blob.author ? build.source_blob.author : build.source_blob.version} ${build.source_blob.message ? build.source_blob.message.substring(0,90).replace(/\n/g,' ') : ''}\n`;
+  let message = build.source_blob.message ? ('- ' + build.source_blob.message).match(/.{1,95}/g).map((x) => x.startsWith(" ") ? (' ' + x) : x).join('\n           ') : ''
+  return `**# Build Id: ${build.id} at ${(new Date(build.created_at)).toLocaleString()}**
+  ***Author:***  ${build.source_blob.author || ''}
+  ***Status:***  ${build.status === "succeeded" ? "^^succeeded^^" : "!!" + build.status + "!!"}
+  ***Version:*** ${build.source_blob.commit ? build.source_blob.commit.substring(0, 7) : ''} ${message}
+`;
 }
 
 function format_auto_builds(auto_build) {
@@ -367,15 +369,15 @@ module.exports = {
       }
     };
     appkit.args
-      .command('builds', 'list available builds', require_app_option, list.bind(null, appkit))
-      .command('builds:create', 'create a new build', create_build_option, create.bind(null, appkit))
-      .command('builds:info [ID]', 'view build info, ID can be "latest" for latest build.',  require_app_option, info.bind(null, appkit))
-      .command('builds:output [ID]', 'view output for a build, ID can be "latest" for latest build.', require_logs_option, logs.bind(null, appkit))
-      .command('builds:auto', 'set the auto deploy hooks for your source control', require_auto_build_option, auto.bind(null, appkit))
-      .command('builds:auto:info', 'get the auto build/deploy information for this app.', require_app_option, info_auto.bind(null, appkit))
-      .command('builds:auto:remove', 'remove the auto build (if set)', require_app_option, remove_auto.bind(null, appkit))
-      .command('builds:rebuild ID', 'rebuild a previous build.', require_app_build_option, rebuild.bind(null, appkit))
-      .command('builds:stop ID', 'stop a running build', require_app_build_option, stop.bind(null, appkit))
+      .command('builds', false, require_app_option, list.bind(null, appkit))
+      .command('builds:create', false, create_build_option, create.bind(null, appkit))
+      .command('builds:info [ID]', false,  require_app_option, info.bind(null, appkit))
+      .command('builds:output [ID]', false, require_logs_option, logs.bind(null, appkit))
+      .command('builds:auto', false, require_auto_build_option, auto.bind(null, appkit))
+      .command('builds:auto:info', false, require_app_option, info_auto.bind(null, appkit))
+      .command('builds:auto:remove', false, require_app_option, remove_auto.bind(null, appkit))
+      .command('builds:rebuild ID', false, require_app_build_option, rebuild.bind(null, appkit))
+      .command('builds:stop ID', false, require_app_build_option, stop.bind(null, appkit))
       // aliases.
       .command('build', false, require_app_option, list.bind(null, appkit))
       .command('build:create', false, create_build_option, create.bind(null, appkit))
@@ -383,6 +385,11 @@ module.exports = {
       .command('build:output [ID]', false, require_logs_option, logs.bind(null, appkit))
       .command('build:out [ID]', false, require_logs_option, logs.bind(null, appkit))
       .command('builds:logs [ID]', false, require_logs_option, logs.bind(null, appkit))
+      .command('releases:logs [ID]', false, require_logs_option, logs.bind(null, appkit))
+      .command('release:logs [ID]', false, require_logs_option, logs.bind(null, appkit))
+      .command('releases:log [ID]', false, require_logs_option, logs.bind(null, appkit))
+      .command('releases:output [ID]', false, require_logs_option, logs.bind(null, appkit))
+      .command('release:output [ID]', false, require_logs_option, logs.bind(null, appkit))
       .command('builds:log [ID]', false, require_logs_option, logs.bind(null, appkit))
       .command('build:logs [ID]', false, require_logs_option, logs.bind(null, appkit))
       .command('build:log [ID]', false, require_logs_option, logs.bind(null, appkit))

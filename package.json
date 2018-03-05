@@ -15,6 +15,7 @@
   "repository": "https://github.com/akkeris/cli",
   "license": "ISC",
   "dependencies": {
+    "chalk": "^2.3.2",
     "chart": "jstrace/chart",
     "cli-table": "^0.3.1",
     "cliui": "^3.2.0",

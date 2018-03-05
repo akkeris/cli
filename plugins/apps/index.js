@@ -6,12 +6,7 @@ const rand = require('./random.js');
 
 function format_app(app) {
   let upname = app.simple_name.toUpperCase();
-  return `**⬢ ${app.name}**
-  ***Owner:*** ${app.organization ? app.organization.name : app.owner.email}
-  ***Id:*** ${app.id}
-  ***Url:*** ${app.web_url}
-  ***Available at:*** ${upname}_SERVICE_HOST, ${upname}_SERVICE_PORT 
-  ${app.git_url ? ("***😸  GitHub:*** " + app.git_url + ' \n') : ''}`;
+  return `**⬢ ${app.name}** - ***${app.web_url}***`
 }
 
 function app_or_error(appkit, name, cb) {
@@ -189,18 +184,18 @@ function info(appkit, args) {
         appkit.api.get('/apps/' + args.app + '/pipeline-couplings', function(err, pipeline) {
           appkit.api.get('/apps/' + args.app + '/formation', function(err, dynos) {
             console.log(appkit.terminal.markdown(`###===### **⬢ ${app.name}**
-  **ID:**\t\t\t${app.id}
+  **Id:**\t\t\t${app.id}
   **Addons:**\t${addons ? addons.map((x) => { return '\t' + x.name; }).join('\n\t\t') : ''}
   **Attached Addons:**\t${attachments ? attachments.map((x) => { return '\t' + x.name; }).join('\n\t\t') : ''}
-  **Dynos:**\t${dynos ? dynos.map((x) => { return '\t' + x.type + ': ' + x.quantity}).join('\n\t\t') : ''}
-  **Pipeline:**\t\t${pipeline ? pipeline.pipeline.name + ' - ' + pipeline.stage : ''}
+  **Dynos:**\t${dynos ? dynos.map((x) => { return '\t' + x.type + ': ' + x.quantity}).join('\n\t\t') : 'None'}
+  **Pipeline:**\t\t${pipeline ? pipeline.pipeline.name + ' - ' + pipeline.stage : 'None'}
   **Git:**\t\t\t${app.git_url}
   **Last Released:**\t${app.released_at ? new Date(app.released_at).toLocaleString() : 'Never'}
   **Slug:**\t\t\t${app.image}
   **Owner:**\t\t${app.organization.name}
   **Region:**\t\t${app.region.name}
   **Stack:**\t\t${app.stack.name}
-  **Service ENV:**\t\t${app.simple_name.toUpperCase() + '_SERVICE_HOST'}, ${app.simple_name.toUpperCase() + '_SERVICE_PORT'}
+  **Service Env:**\t\t${app.simple_name.toUpperCase() + '_SERVICE_HOST'}, ${app.simple_name.toUpperCase() + '_SERVICE_PORT'}
   **URL:**\t\t\t${app.web_url}`));
           });
         });

@@ -2,9 +2,14 @@
 
 const https = require('https');
 const url = require('url');
+const chalk = require('chalk')
 
 function highlight(data) {
-  process.stdout.write(data.replace(/^([A-z0-9\:\-\+\.]+Z) ([A-z\-0-9]+) ([A-z\.0-9\/\[\]\-]+)\: /gm, '\u001b[36m$1\u001b[0m $2 \u001b[38;5;104m$3:\u001b[0m ')); 
+  process.stdout.write(data
+    .replace(/^([A-z0-9\:\-\+\.]+Z) ([A-z\-0-9]+) ([A-z\.0-9\/\[\]\-]+)\: /gm, '\u001b[36m$1\u001b[0m $2 \u001b[38;5;104m$3:\u001b[0m ')
+    //.replace(/status=(2[0-9][0-9])/gm, 'status=' + chalk.rgb(111,245,27)('$1'))
+    .replace(/status=(5[0-9][0-9])/gm, 'status=' + chalk.rgb(250,0,30)('$1'))
+  ); 
 }
 
 function logs(appkit, args) {

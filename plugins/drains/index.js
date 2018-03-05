@@ -52,7 +52,9 @@ module.exports = {
     appkit.args
       .command('drains', 'list log drains on an app.', require_app_option, list_drains.bind(null, appkit))
       .command('drains:info ID', 'Get information on the specified log drain.', require_app_option, info_drains.bind(null, appkit))
-      .command('drains:remove ID', 'Remove a log drain from an app.', require_app_option, delete_drains.bind(null, appkit))
+      .command('drains:destroy ID', 'Remove a log drain from an app.', require_app_option, delete_drains.bind(null, appkit))
+      .command('drains:remove ID', false, require_app_option, delete_drains.bind(null, appkit))
+      .command('drains:delete ID', false, require_app_option, delete_drains.bind(null, appkit))
       .command('drains:create URL', 'create a new log drain, forward it to the specified syslog URL.', require_app_option, create_drains.bind(null, appkit))
       .command('drains:add URL', false, require_app_option, create_drains.bind(null, appkit))
   },
