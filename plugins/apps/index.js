@@ -6,11 +6,8 @@ const rand = require('./random.js');
 
 function format_app(app) {
   let upname = app.simple_name.toUpperCase();
-  return `**⬢ ${app.name}**
-  ***Owner:*** ${app.organization ? app.organization.name : app.owner.email}
-  ***Id:*** ${app.id}
+  return `**⬢ ${app.name}** ${app.preview ? '- ^^preview^^' : ''}
   ***Url:*** ${app.web_url}
-  ***Available at:*** ${upname}_SERVICE_HOST, ${upname}_SERVICE_PORT 
   ${app.git_url ? ("***😸  GitHub:*** " + app.git_url + ' \n') : ''}`;
 }
 
@@ -188,7 +185,7 @@ function info(appkit, args) {
       appkit.api.get('/apps/' + args.app + '/addon-attachments', function(err, attachments) {
         appkit.api.get('/apps/' + args.app + '/pipeline-couplings', function(err, pipeline) {
           appkit.api.get('/apps/' + args.app + '/formation', function(err, dynos) {
-            console.log(appkit.terminal.markdown(`###===### **⬢ ${app.name}**
+            console.log(appkit.terminal.markdown(`###===### **⬢ ${app.name}** ${app.preview ? '- ^^preview^^' : ''}
   **ID:**\t\t\t${app.id}
   **Addons:**\t${addons ? addons.map((x) => { return '\t' + x.name; }).join('\n\t\t') : ''}
   **Attached Addons:**\t${attachments ? attachments.map((x) => { return '\t' + x.name; }).join('\n\t\t') : ''}
