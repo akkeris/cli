@@ -32,9 +32,11 @@ function list_routes(appkit, args) {
       return appkit.terminal.error(err);
     } else {
       data.forEach((route) => {
-        app_or_error(appkit, route.app, (app) => {
+        let route_app = route.app.name || route.app; // stay compatible with older v2 controller
+        let domain = route.site.domain || route.site; // stay compatible with older v2 controller
+        app_or_error(appkit, route_app, (app) => {
           console.log(appkit.terminal.markdown(`**→ Route (${route.id})\tCreated: ${(new Date(route.created_at)).toLocaleString()}**
-  ***Forward*** https://${clean_forward_slash(route.site)}${route.source_path} ➝ ${clean_forward_slash(app.web_url)}${route.target_path}
+  ***Forward*** https://${clean_forward_slash(domain)}${route.source_path} ➝ ${clean_forward_slash(app.web_url)}${route.target_path}
 `));
 
         })
