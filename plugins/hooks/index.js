@@ -66,7 +66,7 @@ module.exports = {
       array:true,
       demand:true,
       alias:'e',
-      description:'A space separated of events (one of): "build release formation_change logdrain_change addon_change config_change destory"'
+      description:'A space separated of events (one of): "build release formation_change logdrain_change addon_change config_change destory preview released crashed"'
     };
     hooks_create_options.secret = {
       string:true,
