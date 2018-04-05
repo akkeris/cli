@@ -367,15 +367,15 @@ module.exports = {
       }
     };
     appkit.args
-      .command('builds', 'list available builds', require_app_option, list.bind(null, appkit))
-      .command('builds:create', 'create a new build', create_build_option, create.bind(null, appkit))
-      .command('builds:info [ID]', 'view build info, ID can be "latest" for latest build.',  require_app_option, info.bind(null, appkit))
-      .command('builds:output [ID]', 'view output for a build, ID can be "latest" for latest build.', require_logs_option, logs.bind(null, appkit))
-      .command('builds:auto', 'set the auto deploy hooks for your source control', require_auto_build_option, auto.bind(null, appkit))
-      .command('builds:auto:info', 'get the auto build/deploy information for this app.', require_app_option, info_auto.bind(null, appkit))
-      .command('builds:auto:remove', 'remove the auto build (if set)', require_app_option, remove_auto.bind(null, appkit))
-      .command('builds:rebuild ID', 'rebuild a previous build.', require_app_build_option, rebuild.bind(null, appkit))
-      .command('builds:stop ID', 'stop a running build', require_app_build_option, stop.bind(null, appkit))
+      .command('builds', false, /*'list available builds',*/ require_app_option, list.bind(null, appkit))
+      .command('builds:create', false, /*'create a new build',*/ create_build_option, create.bind(null, appkit))
+      .command('builds:info [ID]', false, /*'view build info, ID can be "latest" for latest build.',*/  require_app_option, info.bind(null, appkit))
+      .command('builds:output [ID]', false, /*'view output for a build, ID can be "latest" for latest build.',*/ require_logs_option, logs.bind(null, appkit))
+      .command('builds:auto', false, /*'set the auto deploy hooks for your source control',*/ require_auto_build_option, auto.bind(null, appkit))
+      .command('builds:auto:info', false, /*'get the auto build/deploy information for this app.',*/ require_app_option, info_auto.bind(null, appkit))
+      .command('builds:auto:remove', false, /*'remove the auto build (if set)',*/ require_app_option, remove_auto.bind(null, appkit))
+      .command('builds:rebuild ID', false, /*'rebuild a previous build.',*/ require_app_build_option, rebuild.bind(null, appkit))
+      .command('builds:stop ID', false, /*'stop a running build',*/ require_app_build_option, stop.bind(null, appkit))
       // aliases.
       .command('build', false, require_app_option, list.bind(null, appkit))
       .command('build:create', false, create_build_option, create.bind(null, appkit))
