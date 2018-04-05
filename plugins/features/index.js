@@ -33,7 +33,7 @@ function enable(appkit, args) {
 }
 
 function info(appkit, args) {
-  appkit.api.patch(JSON.stringify({"enabled":true}), `/apps/${args.app}/features/${args.FEATURE}`, (err, feature) => {
+  appkit.api.get(`/apps/${args.app}/features/${args.FEATURE}`, (err, feature) => {
     if(err) {
       appkit.terminal.error(err)
     } else {
