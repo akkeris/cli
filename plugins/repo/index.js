@@ -32,7 +32,6 @@ function unset(appkit, args) {
   });
 }
 
-
 function set(appkit, args) {
   console.assert(args.app && args.app !== '', 'An application name was not provided.');
   if(args.REPO.startsWith('git://')) {

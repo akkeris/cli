@@ -71,20 +71,19 @@ async function find_release(appkit, app, release_key) {
 }
 
 async function list(appkit, args) {
-  let get = util.promisify(appkit.api.get)
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
-  appkit.api.get(`/apps/${args.app}/releases`, async(err, results) => {
-    try {
-      if(results.length === 0) {
-        return console.log(appkit.terminal.markdown('###===### No releases were found.'))
-      }
-      let obj = args.all === true ? results : results.slice(results.length - 10)
-      obj = await Promise.all(obj.map(async (release) => Object.assign(release, {build:await get(`/slugs/${release.slug.id}`)}) ))
-      obj.map(format_release).map(appkit.terminal.markdown).map((x) => console.log(x))
-    } catch (e) {
-      console.error(e)
+  try {
+    let get = util.promisify(appkit.api.get)
+    console.assert(args.app && args.app !== '', 'An application name was not provided.');
+    let results = await get(`/apps/${args.app}/releases`)
+    if(results.length === 0) {
+      return console.log(appkit.terminal.markdown('###===### No releases were found.'))
     }
-  });
+    let obj = args.all === true ? results : results.slice(results.length - 10)
+    obj = await Promise.all(obj.map(async (release) => Object.assign(release, {build:await get(`/slugs/${release.slug.id}`)}) ))
+    obj.map(format_release).map(appkit.terminal.markdown).map((x) => console.log(x))
+  } catch (e) {
+    return appkit.terminal.error(e)
+  }
 }
 
 function wait_for_build(appkit, app, build_id, callback, iteration) {
@@ -167,8 +166,7 @@ async function info(appkit, args) {
     appkit.terminal.print(null, 
       await find_release(appkit, args.app, args.RELEASE))
   } catch (err) {
-    console.log(err)
-    appkit.terminal.error(err)
+    return appkit.terminal.error(err)
   }
 }
 
