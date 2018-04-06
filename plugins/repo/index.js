@@ -86,6 +86,7 @@ module.exports = {
       'branch':{
         'alias':'b',
         'default':'master',
+        'demand':false,
         'string':true,
         'description':'The branch on the repo to watch and deploy from'
       },
