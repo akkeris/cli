@@ -24,7 +24,6 @@ function getDateDiff(date /*: Date */) {
     if (interval === 1) {
       return `${interval} day ago`;
     }
-
     interval = Math.floor(seconds / 3600);
     if (interval > 1) {
       return `${interval} hours ago`;
@@ -48,40 +47,30 @@ function format_release(release) {
   return `**• v${release.version}**\t${getDateDiff(new Date(release.created_at))}\t${info.join(' - ')}`
 }
 
-/*
-
-function prep() {
-  //git archive --format tar HEAD | gzip --best -c
-}
-
-function parse_release(release) {
-  console.assert(release, `Invalid inputed value ${release}`)
-  let field = 'version'
-  let search = release
-  if(isNaN(parseInt(release, 10))) {
-    if(release.toLowerCase().trim()[0] === 'v' && !isNaN(parseInt(release.toLowerCase().trim()substring(1), 10))) {
-      // This is in the format vXXX
-      field = 'version'
-      release = release.toLowerCase().trim()
-    } else if (/^[\w]{8}-[\w]{4}-[\w]{4}-[\w]{4}-[\w]{12}$/.exec(release) !== null) {
-      // most likely a uuid
-      field = 'id'    
-      release = release.toLowerCase().trim()
-    } else {
-      console.assert(false, `Invalid input ${release}`)
+async function find_release(appkit, app, release_key) {
+  let get = util.promisify(appkit.api.get)
+  if(/^[\w]{8}-[\w]{4}-[\w]{4}-[\w]{4}-[\w]{12}$/.exec(release_key) !== null) {
+    return await get(`/apps/${app}/releases/${release_key}`)
+  } else if(release_key === 'latest' || release_key === 'current') {
+    let results = await get(`/apps/${app}/releases`)
+    return results[results.length - 1]
+  } else if (/^v[0-9]+$/.exec(release_key) !== null || !Number.isNaN(parseInt(release_key, 10))) {
+    let version = parseInt(release_key, 10)
+    if(Number.isNaN(version)) {
+      version = parseInt(release_key.substring(1), 10)
     }
+    console.assert(!Number.isNaN(version), 'The version, was not... a version.')
+    let results = await get(`/apps/${app}/releases`)
+    results = results.filter((x) => x.version === version)
+    console.assert(results.length === 1, `The version ${version} was not found.`)
+    return results[0]
   } else {
-    // this is probably a release number with out the version
-    release = 'v' + release.toLowerCase().trim()
-  }
-  return {
-    field,
-    search
+   let results = await get(`/apps/${app}/releases`)
+    return results[results.length - 2]
   }
 }
-*/
 
-function list(appkit, args) {
+async function list(appkit, args) {
   let get = util.promisify(appkit.api.get)
   console.assert(args.app && args.app !== '', 'An application name was not provided.');
   appkit.api.get(`/apps/${args.app}/releases`, async(err, results) => {
@@ -168,61 +157,33 @@ function create(appkit, args) {
   })
 }
 
-function info(appkit, args) {
-  //TODO: Support uuid's, vNNN
+async function info(appkit, args) {
+  let get = util.promisify(appkit.api.get)
   console.assert(args.app && args.app !== '', 'An application name was not provided.');
   if(args.RELEASE === '' || !args.RELEASE) {
     args.RELEASE = 'latest';
   }
-  let fetch_release_info = () => {
-    appkit.api.get(`/apps/${args.app}/releases/${args.RELEASE}`, appkit.terminal.print);
-  };
-  if(args.RELEASE.toLowerCase() === "latest" || args.RELEASE.toLowerCase() === "current") {
-    appkit.api.get(`/apps/${args.app}/releases`, (err, releases) => {
-      if(err) {
-        return appkit.terminal.error(err);
-      }
-      args.RELEASE = releases[releases.length - 1].id;
-      fetch_release_info();
-    });
-  } else {
-    fetch_release_info();
+  try {
+    appkit.terminal.print(null, 
+      await find_release(appkit, args.app, args.RELEASE))
+  } catch (err) {
+    console.log(err)
+    appkit.terminal.error(err)
   }
 }
 
-function rollback(appkit, args) {
+async function rollback(appkit, args) {
+  let post = util.promisify(appkit.api.post)
   console.assert(args.app && args.app !== '', 'An application name was not provided.');
-
   let task = appkit.terminal.task(`Rolling back **⬢ ${args.app}**`);
   task.start();
-  let done = (err) => {
-    if(err) {
-      task.end('error')
-      return appkit.terminal.error(err);
-    }
+  try {
+    let release = await find_release(appkit, args.app, args.RELEASE)
+    post(JSON.stringify({release:release.id, description:args.version}), `/apps/${args.app}/releases`);
     task.end('ok')
-  }
-  //TODO: Support uuid's, vNNN
-  if(Number.isNaN(parseInt(args.RELEASE))) {
-    appkit.api.post(JSON.stringify({release:args.RELEASE, description:args.version}), `/apps/${args.app}/releases`, done);
-  } else {
-    appkit.api.get(`/apps/${args.app}/releases`, async(err, results) => {
-      try {
-        if(results.length === 0) {
-          return console.log(appkit.terminal.markdown('###===### Cannot rollback, no releases were found.'))
-        }
-        if(results.length === 1) {
-          return console.log(appkit.terminal.markdown('###===### Cannot rollback, theres only one release.'))
-        }
-        if(!args.RELEASE) {
-          args.RELEASE = results[results.length - 2].id
-        }
-        appkit.api.post(JSON.stringify({release:args.RELEASE, description:args.version}), `/apps/${args.app}/releases`, done);
-      } catch (e) {
-        task.end('error')
-        return appkit.terminal.error(e)
-      }
-    });
+  } catch (err) {
+    task.end('error')
+    appkit.terminal.error(err)
   }
 }
 
