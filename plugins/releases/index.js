@@ -50,11 +50,10 @@ function format_release(release) {
 async function find_release(appkit, app, release_key) {
   let get = util.promisify(appkit.api.get)
   if(/^[\w]{8}-[\w]{4}-[\w]{4}-[\w]{4}-[\w]{12}$/.exec(release_key) !== null) {
+    // uuuid
     return await get(`/apps/${app}/releases/${release_key}`)
-  } else if(release_key === 'latest' || release_key === 'current') {
-    let results = await get(`/apps/${app}/releases`)
-    return results[results.length - 1]
   } else if (/^v[0-9]+$/.exec(release_key) !== null || !Number.isNaN(parseInt(release_key, 10))) {
+    // vNNN format
     let version = parseInt(release_key, 10)
     if(Number.isNaN(version)) {
       version = parseInt(release_key.substring(1), 10)
@@ -64,9 +63,16 @@ async function find_release(appkit, app, release_key) {
     results = results.filter((x) => x.version === version)
     console.assert(results.length === 1, `The version ${version} was not found.`)
     return results[0]
-  } else {
-   let results = await get(`/apps/${app}/releases`)
+  } else if (release_key === 'previous') {
+    // not current, but one before
+    let results = await get(`/apps/${app}/releases`)
+    console.assert(results.length > 1, 'A previous release was not found.')
     return results[results.length - 2]
+  } else {
+    // current release
+    let results = await get(`/apps/${app}/releases`)
+    console.assert(results.length > 0, 'No releases were found.')
+    return results[results.length - 1]
   }
 }
 
@@ -78,7 +84,7 @@ async function list(appkit, args) {
     if(results.length === 0) {
       return console.log(appkit.terminal.markdown('###===### No releases were found.'))
     }
-    let obj = args.all === true ? results : results.slice(results.length - 10)
+    let obj = args.all === true || results.length < 11 ? results : results.slice(results.length - 10)
     obj = await Promise.all(obj.map(async (release) => Object.assign(release, {build:await get(`/slugs/${release.slug.id}`)}) ))
     obj.map(format_release).map(appkit.terminal.markdown).map((x) => console.log(x))
   } catch (e) {
@@ -157,7 +163,6 @@ function create(appkit, args) {
 }
 
 async function info(appkit, args) {
-  let get = util.promisify(appkit.api.get)
   console.assert(args.app && args.app !== '', 'An application name was not provided.');
   if(args.RELEASE === '' || !args.RELEASE) {
     args.RELEASE = 'latest';
@@ -175,6 +180,9 @@ async function rollback(appkit, args) {
   console.assert(args.app && args.app !== '', 'An application name was not provided.');
   let task = appkit.terminal.task(`Rolling back **⬢ ${args.app}**`);
   task.start();
+  if(args.RELEASE === '' || !args.RELEASE) {
+    args.RELEASE = 'previous';
+  }
   try {
     let release = await find_release(appkit, args.app, args.RELEASE)
     post(JSON.stringify({release:release.id, description:args.version}), `/apps/${args.app}/releases`);
