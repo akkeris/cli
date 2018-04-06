@@ -1,5 +1,11 @@
 "use strict"
 
+function format_auto_builds(auto_build) {
+  return `**• ${auto_build.app.name} set to ${auto_build.repo} on branch ${auto_build.branch}**
+  ***Uername:*** ${auto_build.username}
+  ***Created:*** ${(new Date(auto_build.created_at)).toLocaleString()}`;
+}
+
 function app_or_error(appkit, name, cb) {
   appkit.api.get(`/apps/${name}`, (err, app) => {
     if(err) {
@@ -82,13 +88,6 @@ module.exports = {
         'demand':true,
         'string':true,
         'description':'The app to enable to auto deploy on.'
-      },
-      'branch':{
-        'alias':'b',
-        'default':'master',
-        'demand':false,
-        'string':true,
-        'description':'The branch on the repo to watch and deploy from'
       },
       'username':{
         'alias':'u',
