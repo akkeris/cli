@@ -128,7 +128,7 @@ function create(appkit, args) {
     } else {
       let auto_release_enabled = features.filter((x) => x.name === 'auto-release' && x.enabled === true).length === 1
       if(auto_release_enabled) {
-        let payload = { org:app.organization.name, checksum:'', url:args.URL, repo:'', sha:'', branch:'', version:args.version }
+        let payload = { checksum:'', url:args.URL, repo:'', sha:'', branch:'', version:args.version }
         appkit.api.post(JSON.stringify(payload), `/apps/${args.app}/builds`, (err, build) => {
           if(err) {
             task.end('error')
