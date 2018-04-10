@@ -42,13 +42,16 @@ function set_config_vars(appkit, args) {
       let val = value.substring(value.indexOf('=') + 1);
       if(key && val) {
         values[key] = val;
+        if(args.unescape) {
+          values[key] = values[key].replace(/\\n/g, '\n')
+        }
       }
     }
   });
   if(Object.keys(values).length === 0) {
     return appkit.terminal.error('No valid key value pairs were provided.');
   }
-  appkit.api.patch(JSON.stringify(values), '/apps/' + args.app + '/config-vars', (err, config_vars) => {
+  appkit.api.patch(JSON.stringify(values), `/apps/${args.app}/config-vars`, (err, config_vars) => {
     if(err) {
       return appkit.terminal.error(err);
     }
@@ -62,7 +65,7 @@ function unset_config_vars(appkit, args) {
     return appkit.terminal.error("No valid config vars were provided.")
   }
   args['KEY'].forEach((key) => { values[key] = null; });
-  appkit.api.patch(JSON.stringify(values), '/apps/' + args.app + '/config-vars', (err, config_vars) => {
+  appkit.api.patch(JSON.stringify(values), `/apps/${args.app}/config-vars`, (err, config_vars) => {
     if(err) {
       return appkit.terminal.error(err);
     }
@@ -108,6 +111,13 @@ module.exports = {
         'boolean':true,
         'default':false,
         'description':'output config vars in json format'
+      },
+      'unescape':{
+        'alias':'u',
+        'demand':false,
+        'boolean':true,
+        'default':true,
+        'description':'Unescape new lines and other command sequences'
       }
     };
     appkit.args
