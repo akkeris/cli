@@ -250,11 +250,6 @@ function restart(appkit, args) {
 
 function scale(appkit, args) {
   console.assert(args.app && args.app !== '', 'An application name was not provided.');
-
-  let scale = {};
-  args['TYPE=AMOUNT'].forEach((x) => { let n = x.split('='); scale[n[0]] = parseInt(n[1], 10); });
-  let dyno_types = Object.keys(scale);
-
   appkit.api.get('/apps/' + args.app + '/formation', (err, formations) => {
     if(err) {
       return appkit.terminal.error(err);
@@ -262,25 +257,52 @@ function scale(appkit, args) {
     if(formations.length === 0) {
       return console.log(appkit.terminal.markdown('###===### Unable to increase dynos, no formation (or dyno types, processes, web, worker, etc) were found.'));
     }
+
+
+    let scale = {};
+    args['TYPE=AMOUNT'].forEach((x) => {
+      if(x.indexOf('=') !== -1) {
+        let n = x.split('=');
+        scale[n[0]] = {"amount":parseInt(n[1], 10), "type":"equal"};
+      } else if (x.indexOf('+') !== -1) {
+        let n = x.split('+');
+        scale[n[0]] = {"amount":parseInt(n[1], 10), "type":"add"};
+      } else if (x.indexOf('-') !== -1) {
+        let n = x.split('-');
+        scale[n[0]] = {"amount":parseInt(n[1], 10), "type":"minus"};
+      }
+    });
+    let dyno_types = Object.keys(scale);
+
     for(let i=0; i < dyno_types.length; i++) {
-      if(formations.filter((y) => { return y.type === dyno_types[i]; }).length === 0) {
+      let current_dyno = formations.filter((y) => { return y.type === dyno_types[i]; })
+      if(current_dyno.length === 0) {
         return appkit.terminal.error({body:'{"message":"The specified dyno type ' + dyno_types[i] + ' does not exist.","code":422}',code:422})
+      } else if (scale[current_dyno[0].type].type === 'add') {
+        scale[current_dyno[0].type].amount = scale[current_dyno[0].type].amount + current_dyno[0].quantity
+        scale[current_dyno[0].type].type = 'equal'
+      } else if (scale[current_dyno[0].type].type === 'minus') {
+        scale[current_dyno[0].type].amount = current_dyno[0].quantity - scale[current_dyno[0].type].amount
+        scale[current_dyno[0].type].type = 'equal'
+        if(scale[current_dyno[0].type].amount < 0) {
+          scale[current_dyno[0].type].amount = 0
+        }
       }
     }
 
     let payload = [];
     for(let i=0; i < dyno_types.length; i++) {
       if (args.size) {
-        payload.push({type:dyno_types[i], quantity:scale[dyno_types[i]], size:args.size});
+        payload.push({type:dyno_types[i], quantity:scale[dyno_types[i]].amount, size:args.size});
+      } else {
+        payload.push({type:dyno_types[i], quantity:scale[dyno_types[i]].amount});
       }
-      else {
-        payload.push({type:dyno_types[i], quantity:scale[dyno_types[i]]});
-      }
-      if(!(!Number.isNaN(scale[dyno_types[i]]) && Number.isInteger(scale[dyno_types[i]]) && scale[dyno_types[i]] > -1 && scale[dyno_types[i]] < 30)) {
-        return appkit.terminal.error({body:'{"message":"Invalid quantity for dyno type ' + dyno_types[i] + '.","code":422}',code:422});
+      if(!(!Number.isNaN(scale[dyno_types[i]].amount) && Number.isInteger(scale[dyno_types[i]].amount) && scale[dyno_types[i]].amount > -1 && scale[dyno_types[i]].amount < 30)) {
+        return appkit.terminal.error({body:'{"message":"Invalid quantity (' + scale[dyno_types[i]].amount + ') for dyno type ' + dyno_types[i] + '.","code":422}',code:422});
       }
     }
-    let task = appkit.terminal.task(`Scaling **⬢ ${args.app}** ${args['TYPE=AMOUNT']} processes`);
+    let string_types = Object.keys(scale).map((x) => `${x}=${scale[x].amount}` ).join(', ')
+    let task = appkit.terminal.task(`Scaling **⬢ ${args.app}** ${string_types} processes`);
     task.start();
 
     appkit.api.patch(JSON.stringify(payload), '/apps/' + args.app + '/formation', (err, data) => {
@@ -382,6 +404,11 @@ module.exports = {
       .command('ps:scale [TYPE=AMOUNT ...]', 'scale dyno quantity up or down', require_app_option, scale.bind(null, appkit))
       .command('ps:stop DYNO', 'stop a dyno', require_app_option, stop.bind(null, appkit))
       .command('ps:sizes', 'list dyno sizes',{}, list_plans.bind(null,appkit))
+
+      // aliases
+      .command('restart [TYPE]', false, require_app_option, restart.bind(null, appkit))
+      .command('scale [TYPE=AMOUNT ...]', false, require_app_option, scale.bind(null, appkit))
+      .command('sizes', false, {}, list_plans.bind(null,appkit))
       //.command('ps:resize', '', require_app_option, resize.bind(null, appkit))
       //.command('ps:type [TYPE | DYNO=TYPE [DYNO=TYPE ...]]', 'manage dyno types', require_app_option, type.bind(null, appkit))
       //ps:copy FILE
