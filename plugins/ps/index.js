@@ -263,13 +263,16 @@ function scale(appkit, args) {
     args['TYPE=AMOUNT'].forEach((x) => {
       if(x.indexOf('=') !== -1) {
         let n = x.split('=');
-        scale[n[0]] = {"amount":parseInt(n[1], 10), "type":"equal"};
+        let size = n[1].indexOf(':') === -1 ? [n[1], null] : n[1].split(':')
+        scale[n[0]] = {"amount":parseInt(size[0], 10), "type":"equal", "size":size[1]};
       } else if (x.indexOf('+') !== -1) {
         let n = x.split('+');
-        scale[n[0]] = {"amount":parseInt(n[1], 10), "type":"add"};
+        let size = n[1].indexOf(':') === -1 ? [n[1], null] : n[1].split(':')
+        scale[n[0]] = {"amount":parseInt(size[0], 10), "type":"add", "size":size[1]};
       } else if (x.indexOf('-') !== -1) {
         let n = x.split('-');
-        scale[n[0]] = {"amount":parseInt(n[1], 10), "type":"minus"};
+        let size = n[1].indexOf(':') === -1 ? [n[1], null] : n[1].split(':')
+        scale[n[0]] = {"amount":parseInt(size[0], 10), "type":"minus", "size":size[1]};
       }
     });
     let dyno_types = Object.keys(scale);
@@ -292,8 +295,8 @@ function scale(appkit, args) {
 
     let payload = [];
     for(let i=0; i < dyno_types.length; i++) {
-      if (args.size) {
-        payload.push({type:dyno_types[i], quantity:scale[dyno_types[i]].amount, size:args.size});
+      if (scale[dyno_types[i]].size) {
+        payload.push({type:dyno_types[i], quantity:scale[dyno_types[i]].amount, size:scale[dyno_types[i]].size});
       } else {
         payload.push({type:dyno_types[i], quantity:scale[dyno_types[i]].amount});
       }
@@ -301,11 +304,11 @@ function scale(appkit, args) {
         return appkit.terminal.error({body:'{"message":"Invalid quantity (' + scale[dyno_types[i]].amount + ') for dyno type ' + dyno_types[i] + '.","code":422}',code:422});
       }
     }
-    let string_types = Object.keys(scale).map((x) => `${x}=${scale[x].amount}` ).join(', ')
+    let string_types = Object.keys(scale).map((x) => `${x}=${scale[x].amount}${scale[x].size ? ':' + scale[x].size : ''}` ).join(', ')
     let task = appkit.terminal.task(`Scaling **⬢ ${args.app}** ${string_types} processes`);
     task.start();
 
-    appkit.api.patch(JSON.stringify(payload), '/apps/' + args.app + '/formation', (err, data) => {
+    appkit.api.patch(JSON.stringify(payload), `/apps/${args.app}/formation`, (err, data) => {
       if(err) {
         task.end('error');
         appkit.terminal.error(err);
