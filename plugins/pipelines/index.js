@@ -1,4 +1,5 @@
 "use strict"
+const util = require('util')
 
 function format_pipeline(pipeline) {
   return `** ᱿ ${pipeline.name}**
@@ -37,7 +38,37 @@ function diff(appkit, args) {
   console.log('this feature is not yet implemented.');
 }
 
-function promote(appkit, args) {
+
+async function find_release(appkit, app, release_key) {
+  let get = util.promisify(appkit.api.get)
+  if(/^[\w]{8}-[\w]{4}-[\w]{4}-[\w]{4}-[\w]{12}$/.exec(release_key) !== null) {
+    // uuuid
+    return await get(`/apps/${app}/releases/${release_key}`)
+  } else if (/^v[0-9]+$/.exec(release_key) !== null || !Number.isNaN(parseInt(release_key, 10))) {
+    // vNNN format
+    let version = parseInt(release_key, 10)
+    if(Number.isNaN(version)) {
+      version = parseInt(release_key.substring(1), 10)
+    }
+    console.assert(!Number.isNaN(version), 'The version, was not... a version.')
+    let results = await get(`/apps/${app}/releases`)
+    results = results.filter((x) => x.version === version)
+    console.assert(results.length === 1, `The version ${version} was not found.`)
+    return results[0]
+  } else if (release_key === 'previous') {
+    // not current, but one before
+    let results = await get(`/apps/${app}/releases`)
+    console.assert(results.length > 1, 'A previous release was not found.')
+    return results[results.length - 2]
+  } else {
+    // current release
+    let results = await get(`/apps/${app}/releases`)
+    console.assert(results.length > 0, 'No releases were found.')
+    return results[results.length - 1]
+  }
+}
+
+async function promote(appkit, args) {
   console.assert(args.app && args.app !== '', 'An application name was not provided.');
   let apps = args.to ? args.to : [];
   apps = apps.map((x) => { return x.split(','); });
@@ -45,82 +76,92 @@ function promote(appkit, args) {
 
   let task = appkit.terminal.task(`Promoting app **⬢ ${args.app}**`);
   task.start();
-  appkit.api.get('/pipeline-stages', (err, stages) => {
-    if(err) {
-      task.end('error');
-      return appkit.terminal.error(err);
-    }
-    // promote to all apps that are a target
-    // 1. get the pipeline for this app.
-    appkit.api.get('/apps/' + args.app + '/pipeline-couplings', (err, pipeline_coupling) => {
+
+  let begin_pipeline_stages = function() {
+    appkit.api.get('/pipeline-stages', (err, stages) => {
       if(err) {
         task.end('error');
         return appkit.terminal.error(err);
       }
-      if(stages[pipeline_coupling.stage] === null) {
-        task.end('error');
-        return appkit.terminal.error("The specified application to promote does not have a promotion target and cannot be promoted.");
-      }
-      let source_app = pipeline_coupling.app;
-      let pipeline = pipeline_coupling.pipeline;
-
-      // 2. get the pipeline couplings for this pipeline.
-      appkit.api.get('/pipelines/' + pipeline_coupling.pipeline.id + '/pipeline-couplings', (err, pipeline_couplings) => {
+      // promote to all apps that are a target
+      // 1. get the pipeline for this app.
+      appkit.api.get('/apps/' + args.app + '/pipeline-couplings', (err, pipeline_coupling) => {
         if(err) {
-        task.end('error');
+          task.end('error');
           return appkit.terminal.error(err);
         }
-
-        // Ensure we can actually send to all the specified apps, or if none were specified, get a list
-        // of apps we can and include them all. 
-        let possible_apps_stages = pipeline_couplings.filter((x) => { return stages[pipeline_coupling.stage] === x.stage; });
-        let possible_apps = possible_apps_stages.map((pl) => { return pl.app; });
-        if(apps.length === 0) {
-          if(possible_apps.length === 0) {
-            task.end('error');
-            return appkit.terminal.error("The specified application has no downstream apps to promote to.");
-          }
-          apps = possible_apps;
-        } else {
-          let filtered_apps = possible_apps.filter((papp) => {
-            return apps.some((app) => { return app === papp.id || app === papp.name; });
-          });
-          if(apps.length !== filtered_apps.length) {
-            task.end('error');
-            return appkit.terminal.error("The specified app(s) to promote to was invalid, possible targets: " +  possible_apps.map((x) => { return x.name; }).join(','));
-          }
-          apps = filtered_apps;
+        if(stages[pipeline_coupling.stage] === null) {
+          task.end('error');
+          return appkit.terminal.error("The specified application to promote does not have a promotion target and cannot be promoted.");
         }
+        let source_app = pipeline_coupling.app;
+        let pipeline = pipeline_coupling.pipeline;
 
-
-
-        // Promote the applications
-        let payload = {pipeline:pipeline, source:{app:source_app}};
-        if(args.release) {
-          payload.source.app.release = {"id":args.release};
-        }
-        payload.targets = apps.map((x) => { return {app:x}; });
-        if (!args.unsafe){
-          payload.safe = "true";
-        }
-        appkit.api.post(JSON.stringify(payload), '/pipeline-promotions', (err, result) => {
+        // 2. get the pipeline couplings for this pipeline.
+        appkit.api.get('/pipelines/' + pipeline_coupling.pipeline.id + '/pipeline-couplings', (err, pipeline_couplings) => {
           if(err) {
-            task.end('error');
+          task.end('error');
             return appkit.terminal.error(err);
           }
-                let from = pipeline_couplings.filter((x) => { return x.app.id === result.source.app.id; }).map((x) => { return x.stage; });
-      let to =   pipeline_couplings.filter((x) => { return payload.targets.map((y) => { return y.app.id; }).indexOf(x.app.id) !== -1; }).map((x) => { return x.stage; }).filter((v,i,s) => { return s.indexOf(v) === i; });
-          task.end('ok');
-          console.log();
-          console.log(appkit.terminal.markdown(`** ᱿ ${pipeline.name} pipeline** (${from.join(',')} -> ${to.join(',')})
 
-Promoted: **⬢ ${result.source.app.name}-${result.source.space.name}** (Release: ${result.source.release.id})
+          // Ensure we can actually send to all the specified apps, or if none were specified, get a list
+          // of apps we can and include them all. 
+          let possible_apps_stages = pipeline_couplings.filter((x) => { return stages[pipeline_coupling.stage] === x.stage; });
+          let possible_apps = possible_apps_stages.map((pl) => { return pl.app; });
+          if(apps.length === 0) {
+            if(possible_apps.length === 0) {
+              task.end('error');
+              return appkit.terminal.error("The specified application has no downstream apps to promote to.");
+            }
+            apps = possible_apps;
+          } else {
+            let filtered_apps = possible_apps.filter((papp) => {
+              return apps.some((app) => { return app === papp.id || app === papp.name; });
+            });
+            if(apps.length !== filtered_apps.length) {
+              task.end('error');
+              return appkit.terminal.error("The specified app(s) to promote to was invalid, possible targets: " +  possible_apps.map((x) => { return x.name; }).join(','));
+            }
+            apps = filtered_apps;
+          }
+
+
+
+          // Promote the applications
+          let payload = {pipeline:pipeline, source:{app:source_app}};
+          if(args.release) {
+            payload.source.app.release = {"id":args.release};
+          }
+          payload.targets = apps.map((x) => { return {app:x}; });
+          if (!args.unsafe){
+            payload.safe = "true";
+          }
+          appkit.api.post(JSON.stringify(payload), '/pipeline-promotions', (err, result) => {
+            if(err) {
+              task.end('error');
+              return appkit.terminal.error(err);
+            }
+            let from = pipeline_couplings.filter((x) => { return x.app.id === result.source.app.id; }).map((x) => { return x.stage; });
+            let to = pipeline_couplings.filter((x) => { return payload.targets.map((y) => { return y.app.id; }).indexOf(x.app.id) !== -1; }).map((x) => { return x.stage; }).filter((v,i,s) => { return s.indexOf(v) === i; });
+            task.end('ok');
+            console.log();
+            console.log(appkit.terminal.markdown(`** ᱿ ${pipeline.name} pipeline** (${from.join(',')} -> ${to.join(',')})
+
+Promoted: **⬢ ${result.source.app.name}-${result.source.space.name}** (Release: ${result.source.release.id || args.release})
       To: ${payload.targets.map((x) => { return '**⬢ ' + x.app.name + '** ' }).join('\n\t  ')}
 `));
+          });
         });
       });
     });
-  });
+  }
+
+  if(args.release) {
+    let release = await find_release(appkit, args.app, args.release)
+    console.assert(release, `The release ${args.release} could not be found.`)
+    args.release = release.id
+  }
+  begin_pipeline_stages()
 }
 
 function remove(appkit, args) {
