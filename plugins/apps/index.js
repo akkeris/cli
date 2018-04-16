@@ -246,6 +246,9 @@ function filter_by(args, next_cmd, err, data) {
   if(data && args.name) {
     data = data.filter((datum) => { return (datum.name && datum.name.includes(args.name)); });
   }
+  if(data && args.org) {
+    data = data.filter((datum) => { return (datum.organization && datum.organization.name && datum.organization.name.includes(args.org)); });
+  }
   next_cmd(err, data);
 }
 
@@ -297,6 +300,11 @@ module.exports = {
         'alias':'r',
         'string':true,
         'description':'Filter the apps by a repo'
+      },
+      'org':{
+        'alias':'o',
+        'string':true,
+        'description':'Filter the apps by organization'
       },
       'name':{
         'alias':'n',
