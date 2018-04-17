@@ -369,13 +369,22 @@ module.exports = {
       }
     })
 
+    let destroy_app_option = Object.assign(require_app_option, {
+      'confirm':{
+        'alias':'c',
+        'demand':false,
+        'string':true,
+        'description':'Confirm (in advance) the name of the app to destroy.'
+      }
+    })
+
     oneclick_app_option.app.demand = false;
 
     appkit.args
       .command('apps', 'list available apps', filter_app_option, list.bind(null, appkit))
       .command('apps:create [NAME]', 'create a new app; NAME must be lowercase alphanumeric only', create_apps_options, create.bind(null, appkit))
       .command('create [NAME]', false, create_apps_options, create.bind(null, appkit))
-      .command('apps:destroy', 'permanently destroy an app', require_app_option, destroy.bind(null, appkit))
+      .command('apps:destroy', 'permanently destroy an app', destroy_app_option, destroy.bind(null, appkit))
       .command('apps:delete', false, require_app_option, destroy.bind(null, appkit))
       .command('apps:remove', false, require_app_option, destroy.bind(null, appkit))
       .command('apps:favorites', 'view app favorites', filter_app_option, favorites.bind(null, appkit))
