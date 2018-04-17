@@ -31,6 +31,9 @@ function list_routes(appkit, args) {
     if(err) {
       return appkit.terminal.error(err);
     } else {
+      if(!data || data.length === 0) {
+        return console.log(appkit.terminal.markdown("**===** There were no routes found."))
+      }
       data.forEach((route) => {
         let route_app = route.app.name || route.app; // stay compatible with older v2 controller
         let domain = route.site.domain || route.site; // stay compatible with older v2 controller
@@ -43,13 +46,19 @@ function list_routes(appkit, args) {
       });
     }
   }
-  console.assert((args.site && args.site !== '') || (args.app && args.app !== ''), 'Please specify either an app or a site.')
+  if(!args.site && !args.app) {
+    return appkit.terminal.error('Please specify either an app or a site (-a or -s).')
+  }
   if (args.site && args.site !== ''){
-    console.assert(!args.app, 'Please specify either an app or a site.');
+    if(args.app) {
+      return appkit.terminal.error('Please specify either an app or a site (-a or -s).')
+    }
     args.site = clean_site(args.site);
     appkit.api.get(`/sites/${args.site}/routes`, print_routes);
-  }
-  else {
+  } else {
+    if(args.site) {
+      return appkit.terminal.error('Please specify either an app or a site (-a or -s).')
+    }
     appkit.api.get(`/apps/${args.app}/routes`, print_routes);
   }
 }
