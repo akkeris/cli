@@ -1,5 +1,7 @@
 "use strict"
 
+const http = require('http');
+
 function format_hooks(hook) {
   return `**ɧ ${hook.url}**
   ***Events:*** ${hook.events.join(", ")}
@@ -49,6 +51,40 @@ function delete_hooks(appkit, args) {
     }
   });
 }
+function to_console(headers, prefix) {
+  if(!headers) {
+    return ''
+  }
+  return Object.keys(headers).map((x) => {
+return `${prefix}${x}: ${headers[x]}`
+  }).join('\n')
+}
+
+
+function format_results(appkit, result) {
+  return `**ɧ Hook Result:** ${result.id}, ${appkit.terminal.friendly_date(new Date(result.created_at))} - ${result.hook.events.join(', ')}
+  ###>### POST ${result.last_attempt.request.url}
+${to_console(result.last_attempt.request.headers, '  ###>### ')}
+  ###>###
+  ###>### ${JSON.stringify(result.last_attempt.request.body, null, 2).replace(/\n/g, '\n  ###>### ')}
+  ###>###
+  ###<### ${(result.last_attempt.response.code > 299 || result.last_attempt.response.code < 200) ? `!!${result.last_attempt.response.code}!!` : `^^${result.last_attempt.response.code}^^`} ${http.STATUS_CODES[result.last_attempt.response.code]}
+${to_console(result.last_attempt.response.headers, '  ###<### ')}
+  `
+}
+
+function result(appkit, args) {
+    appkit.api.get(`/apps/${args.app}/hooks/${args.ID}/results`, (err, results) => {
+      if(err) {
+        return appkit.terminal.error(err)
+      } else {
+        if(!args.all) {
+          results = results.slice(-10)
+        }
+        console.log(results.map(format_results.bind(null, appkit)).map(appkit.terminal.markdown).join('\n\n'))
+      }
+    })
+}
 
 module.exports = {
   
@@ -59,6 +95,20 @@ module.exports = {
         'demand':true,
         'string':true,
         'description':'The app to act on.'
+      }
+    };
+    let hook_results_options = {
+      'app':{
+        'alias':'a',
+        'demand':true,
+        'string':true,
+        'description':'The app to act on.'
+      },
+      'all':{
+        'demand':true,
+        'boolean':true,
+        'default':false,
+        'description':'Show all hook results.'
       }
     };
     let hooks_create_options = JSON.parse(JSON.stringify(hooks_options));
@@ -86,6 +136,7 @@ module.exports = {
       .command('hooks:info ID', 'Get information on the specified webhook.', hooks_options, info_hooks.bind(null, appkit))
       .command('hooks:destroy ID', 'Remove the specified webhook.', hooks_options, delete_hooks.bind(null, appkit))
       .command('hooks:create URL', 'create a new webhook.', hooks_create_options, create_hooks.bind(null, appkit))
+      .command('hooks:deliveries ID', 'Get information on a webhook delivery.', hook_results_options, result.bind(null, appkit))
 
   },
   update:function() {
