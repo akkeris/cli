@@ -20,7 +20,7 @@ function list(appkit, args) {
 **⬢ ${audit.action.toUpperCase()}**
   ***Id:***\t${id}
   ***User:***\t${audit.username}
-  ***Time:***\t${new Date(audit.timestamp).toLocaleString()}`));
+  ***Time:***\t${new Date(audit.received_at).toLocaleString()}`));
     })
   });
 }
@@ -91,13 +91,13 @@ module.exports = {
     };
 
     appkit.args
-      .command('activity', 'list activity on an app', require_app_option, list.bind(null, appkit))
-      .command('activity:info', 'info on a specific activity on an app', require_id_option, get.bind(null,appkit))
+      .command('audits', 'list audits on an app', require_app_option, list.bind(null, appkit))
+      .command('audits:info', 'info on a specific audits on an app', require_id_option, get.bind(null,appkit))
   },
   update:function() {
     // do nothing.
   },
-  group:'activity',
-  help:'manage activity',
+  group:'audits',
+  help:'manage audits',
   primary:true
 }
