@@ -36,15 +36,26 @@ function getDateDiff(date /*: Date */) {
 }
 
 function format_release(release) {
-  console.assert(release.build, 'No build information was found.')
-  let info = [
-    release.current ? "^^^current^^^" : "", 
-    release.description,
-    release.build.source_blob.author, 
-    release.build.source_blob.message ? `##${release.build.source_blob.message.replace(/#/g, '').replace(/\s+/g, ' ')}##` : '',
-    release.build.source_blob.commit ? `${release.build.source_blob.commit.substring(0, 7)}` : '', 
-  ].filter(x => x && x !== '').map((x) => x.toString().replace(/\n/g, ' '));
-  return `**• v${release.version}**\t${getDateDiff(new Date(release.created_at))}\t${info.join(' - ')}`
+  //console.assert(release.build, 'No build information was found.')
+  if(release.build) {
+    let info = [
+      release.current ? "^^^current^^^" : "", 
+      release.description,
+      release.build.source_blob.author, 
+      release.build.source_blob.message ? `##${release.build.source_blob.message.replace(/#/g, '').replace(/\s+/g, ' ')}##` : '',
+      release.build.source_blob.commit ? `${release.build.source_blob.commit.substring(0, 7)}` : '', 
+    ].filter(x => x && x !== '').map((x) => x.toString().replace(/\n/g, ' '));
+    return `**• v${release.version}**\t${getDateDiff(new Date(release.created_at))}\t${info.join(' - ')}`
+  } else if (release.source_blob) {
+    let info = [
+      release.status === 'pending' ? '~~~pending~~~' : `!!${release.status}!!`,
+      release.id,
+      release.source_blob.author, 
+      release.source_blob.message ? `##${release.source_blob.message.replace(/#/g, '').replace(/\s+/g, ' ')}##` : '',
+      release.source_blob.commit ? `${release.source_blob.commit.substring(0, 7)}` : '', 
+    ].filter(x => x && x !== '').map((x) => x.toString().replace(/\n/g, ' '));
+    return `**• N/A**\t${getDateDiff(new Date(release.created_at))}\t${info.join(' - ')}`
+  }
 }
 
 async function find_release(appkit, app, release_key) {
@@ -80,13 +91,15 @@ async function list(appkit, args) {
   try {
     let get = util.promisify(appkit.api.get)
     console.assert(args.app && args.app !== '', 'An application name was not provided.');
-    let results = await get(`/apps/${args.app}/releases`)
-    if(results.length === 0) {
+    let results = await Promise.all([get(`/apps/${args.app}/releases`), get(`/apps/${args.app}/builds`)])
+    if(results[0].length === 0 && results[1].length === 0) {
       return console.log(appkit.terminal.markdown('###===### No releases were found.'))
     }
-    let obj = args.all === true || results.length < 11 ? results : results.slice(results.length - 10)
-    obj = await Promise.all(obj.map(async (release) => Object.assign(release, {build:await get(`/slugs/${release.slug.id}`)}) ))
-    obj.map(format_release).map(appkit.terminal.markdown).map((x) => console.log(x))
+    let releases = results[0].map((x) => Object.assign(x,{"build":results[1].filter((y) => y.id === x.slug.id)[0]}))
+    releases = releases.concat(results[1].filter((x) => !releases.some((y) => y.slug.id === x.id)))
+    releases = releases.sort((a, b) => (new Date(a.created_at).getTime() < new Date(b.created_at).getTime() ? -1 : 1))
+    releases = args.all === true || releases.length < 11 ? releases : releases.slice(releases.length - 10)
+    releases.map(format_release).map(appkit.terminal.markdown).map((x) => console.log(x))
   } catch (e) {
     return appkit.terminal.error(e)
   }
