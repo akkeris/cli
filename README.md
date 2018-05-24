@@ -19,3 +19,4 @@ export API_AUTH = ".." # used to send "Authorization: ${API_AUTH}"
 export API_TOKEN = ".." # used to send "Authorization: Bearer ${API_TOKEN}"
 ```
 
+Make sure you've added the entries to .netrc as well.
