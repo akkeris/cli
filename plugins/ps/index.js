@@ -1,7 +1,11 @@
 "use strict"
 
 function format_formation(ps) {
-  return `##===## ^^^${ps.type}^^^ (**${ps.size}**): ${ps.command ? ps.command : '(from docker)'} (~~~${ps.quantity}~~~)`;
+  if (ps.type === 'web' && ps.healthcheck) {
+    return `##===## ^^^${ps.type}^^^ (**${ps.size}**): ${ps.command ? ps.command : '(from docker)'} (~~~${ps.quantity}~~~) (##${ps.healthcheck}##)`;
+  } else {
+    return `##===## ^^^${ps.type}^^^ (**${ps.size}**): ${ps.command ? ps.command : '(from docker)'} (~~~${ps.quantity}~~~)`;
+  }
 }
 
 function format_warning(ps, form_dynos) {
@@ -56,22 +60,20 @@ function state_map(ps) {
 
 function format_dyno(ps) {
   let info = state_map(ps)
+  let dyno_name = `${ps.type}.${ps.name}`
+  let spacing = " ".repeat(32 - (dyno_name.length + 2))
   if(info.warning) {
     if(info.state === 'crashed') {
-      let data = ` ${ps.type}.${ps.name}:\t!!${info.state}!! ###${ps.updated_at}###\t##${info.warning}##`
-      return data
+      return ` ${dyno_name}:${spacing}!!${info.state}!! ###${ps.updated_at}###\t##${info.warning}##`
     } else {
-      let data = ` ${ps.type}.${ps.name}:\t~~~${info.state}~~~ ###${ps.updated_at}###\t##${info.warning}##`
-      return data
+      return ` ${dyno_name}:${spacing}~~~${info.state}~~~ ###${ps.updated_at}###\t##${info.warning}##`
     }
   }
   if(info.state === 'stopping' || info.state === 'stopped' || info.state === 'pending' || info.state === 'starting') {
-    let data = ` ${ps.type}.${ps.name}:\t~~${info.state}~~ ###${ps.updated_at}###`
-    return data
+    return  ` ${dyno_name}:${spacing}~~${info.state}~~ ###${ps.updated_at}###`
 
   }
-  let data = ` ${ps.type}.${ps.name}:\t^^^${info.state}^^^ ###${ps.updated_at}###`
-  return data
+  return ` ${dyno_name}:${spacing}^^^${info.state}^^^ ###${ps.updated_at}###`
 }
 
 function format_sizes(ps) {
@@ -248,6 +250,22 @@ function restart(appkit, args) {
   });
 }
 
+function forward(appkit, args) {
+  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  console.assert(args.PORT && args.PORT !== '', 'A port was not provided.');
+
+  let task = appkit.terminal.task(`Updating port for web traffic on **⬢ ${args.app}** to ${args.PORT}`);
+  task.start();
+  appkit.api.patch(JSON.stringify({"port":args.PORT}), `/apps/${args.app}/formation/web`, (err, result) => {
+    if(err) {
+      task.end('error')
+      appkit.terminal.error(err);
+    } else {
+      task.end('ok');
+    }
+  });
+}
+
 function scale(appkit, args) {
   console.assert(args.app && args.app !== '', 'An application name was not provided.');
   appkit.api.get('/apps/' + args.app + '/formation', (err, formations) => {
@@ -401,24 +419,24 @@ module.exports = {
       .command('ps', 'list dynos for an app', require_app_option, list.bind(null, appkit))
       .command('ps:create TYPE', 'create a type of dyno', require_formation_create_option, create.bind(null, appkit))
       .command('ps:update TYPE', 'update a type of dyno', require_formation_create_option, update.bind(null, appkit))
+      .command('ps:forward PORT', 'forward web traffic to specific port', require_app_option, forward.bind(null, appkit))
       .command('ps:destroy TYPE', 'deletes a type of dyno', require_app_option, destroy.bind(null, appkit))
       .command('ps:kill DYNO', 'stop a dyno', require_app_option, stop.bind(null, appkit))
       .command('ps:restart [TYPE]', 'restart app dynos', require_app_option, restart.bind(null, appkit))
       .command('ps:scale [TYPE=AMOUNT ...]', 'scale dyno quantity up or down', require_app_option, scale.bind(null, appkit))
       .command('ps:stop DYNO', 'stop a dyno', require_app_option, stop.bind(null, appkit))
       .command('ps:sizes', 'list dyno sizes',{}, list_plans.bind(null,appkit))
+      //.command('ps:copy FILE')
+      //.command('ps:socks')
+      //.command('ps:exec COMMAND')
+      //.command('ps:resize', '', require_app_option, resize.bind(null, appkit))
+      //.command('ps:type [TYPE | DYNO=TYPE [DYNO=TYPE ...]]', 'manage dyno types', require_app_option, type.bind(null, appkit))
 
       // aliases
       .command('restart [TYPE]', false, require_app_option, restart.bind(null, appkit))
       .command('scale [TYPE=AMOUNT ...]', false, require_app_option, scale.bind(null, appkit))
       .command('sizes', false, {}, list_plans.bind(null,appkit))
-      //.command('ps:resize', '', require_app_option, resize.bind(null, appkit))
-      //.command('ps:type [TYPE | DYNO=TYPE [DYNO=TYPE ...]]', 'manage dyno types', require_app_option, type.bind(null, appkit))
-      //ps:copy FILE
-      //ps:exec
-      //ps:forward PORT
-      //ps:socks
-      //ps [TYPE [TYPE ...]]
+
   },
   update:function() {
     // do nothing.

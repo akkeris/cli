@@ -86,7 +86,13 @@ function set_profile(appkit, args, cb) {
   if(!args || !args.auth || !args.app) {
     appkit.terminal.question('Akkeris Auth Host (auth.example.com): ', (auth) => {
       appkit.terminal.question('Akkeris Apps Host (apps.example.com): ', (apps) => {
-        fs.writeFileSync(path.join(get_home(), '.akkeris', 'config.json'), JSON.stringify({auth,apps}, null, 2));
+        if (auth.startsWith('https://') || auth.startsWith('http://')) {
+          auth = (new url.URL(auth)).hostname
+        }
+        if (apps.startsWith('https://') || apps.startsWith('http://')) {
+          apps = (new url.URL(apps)).hostname
+        }
+        fs.writeFileSync(path.join(get_home(), '.akkeris', 'config.json'), JSON.stringify({auth, apps}, null, 2));
         process.env.AKKERIS_API_HOST = apps
         process.env.AKKERIS_AUTH_HOST = auth
         console.log("Profile updated!")
@@ -156,7 +162,7 @@ module.exports.init = function init() {
         "auth":{ "description":"The URL for the auth API end point." }
       }, 
       set_profile.bind(null, module.exports))
-    .command('completion', 'show akkeris auto-completion script (e.g, "ak completion >> ~/.bash_profile").', {}, () => {
+    .command('completion', 'show akkeris auto-completion script (e.g, "ak completion >> ~/.bashrc").', {}, () => {
       module.exports.args.showCompletionScript();
     })
     .recommendCommands()
