@@ -1,42 +1,7 @@
 "use strict"
 const util = require('util')
 
-function getDateDiff(date /*: Date */) {
-  var seconds = Math.floor((new Date() - date) / 1000);
-  var interval = Math.floor(seconds / 31536000);
-  if (interval > 1) {
-    return `${interval} years ago`;
-  }
-  if (interval === 1) {
-    return `${interval} year ago`;
-  }
-  interval = Math.floor(seconds / 2592000);
-  if (interval > 1) {
-    return `${interval} months ago`;
-  }
-  if (interval === 1) {
-    return `${interval} month ago`;
-  }
-  interval = Math.floor(seconds / 86400);
-  if (interval > 1) {
-    return `${interval} days ago`;
-  }
-  if (interval === 1) {
-    return `${interval} day ago`;
-  }
-  interval = Math.floor(seconds / 3600);
-  if (interval > 1) {
-    return `${interval} hours ago`;
-  }
-  if (interval === 1) {
-    return `${interval} hour ago`;
-  }
-  interval = Math.floor(seconds / 60);
-  return `${interval} minutes ago`;
-}
-
-function format_release(release) {
-  //console.assert(release.build, 'No build information was found.')
+function format_release(appkit, release) {
   if(release.build) {
     let info = [
       release.current ? "^^^current^^^" : "", 
@@ -45,7 +10,7 @@ function format_release(release) {
       release.build.source_blob.message ? `##${release.build.source_blob.message.replace(/#/g, '').replace(/\s+/g, ' ')}##` : '',
       release.build.source_blob.commit ? `${release.build.source_blob.commit.substring(0, 7)}` : '', 
     ].filter(x => x && x !== '').map((x) => x.toString().replace(/\n/g, ' '));
-    return `**• v${release.version}**\t${getDateDiff(new Date(release.created_at))}\t${info.join(' - ')}`
+    return `**• v${release.version}**\t${appkit.terminal.friendly_date(new Date(release.created_at))}\t${info.join(' - ')}`
   } else if (release.source_blob) {
     let info = [
       release.status === 'pending' ? '~~~pending~~~' : `!!${release.status}!!`,
@@ -54,7 +19,7 @@ function format_release(release) {
       release.source_blob.message ? `##${release.source_blob.message.replace(/#/g, '').replace(/\s+/g, ' ')}##` : '',
       release.source_blob.commit ? `${release.source_blob.commit.substring(0, 7)}` : '', 
     ].filter(x => x && x !== '').map((x) => x.toString().replace(/\n/g, ' '));
-    return `**• N/A**\t${getDateDiff(new Date(release.created_at))}\t${info.join(' - ')}`
+    return `**• N/A**\t${appkit.terminal.friendly_date(new Date(release.created_at))}\t${info.join(' - ')}`
   }
 }
 
@@ -99,7 +64,7 @@ async function list(appkit, args) {
     releases = releases.concat(results[1].filter((x) => !releases.some((y) => y.slug.id === x.id)))
     releases = releases.sort((a, b) => (new Date(a.created_at).getTime() < new Date(b.created_at).getTime() ? -1 : 1))
     releases = args.all === true || releases.length < 11 ? releases : releases.slice(releases.length - 10)
-    releases.map(format_release).map(appkit.terminal.markdown).map((x) => console.log(x))
+    releases.map(format_release.bind(null, appkit)).map(appkit.terminal.markdown).map((x) => console.log(x))
   } catch (e) {
     return appkit.terminal.error(e)
   }

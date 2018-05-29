@@ -36,10 +36,13 @@ function set_config_vars(appkit, args) {
   if(args['KEY=VALUE'].length === 0) {
     return appkit.terminal.error("No valid key value pairs were provided.")
   }
-  values_paired.forEach((value) => {
+  for(let value of values_paired) {
     if(value.indexOf('=') !== -1) {
       let key = value.substring(0, value.indexOf('='));
       let val = value.substring(value.indexOf('=') + 1);
+      if(key === 'PORT') {
+        return appkit.terminal.error("The PORT config var is assigned and should not be set, use ps:forward to change the listening port.")
+      }
       if(key && val) {
         values[key] = val;
         if(args.unescape) {
@@ -47,7 +50,7 @@ function set_config_vars(appkit, args) {
         }
       }
     }
-  });
+  }
   if(Object.keys(values).length === 0) {
     return appkit.terminal.error('No valid key value pairs were provided.');
   }

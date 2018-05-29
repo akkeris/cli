@@ -1,14 +1,17 @@
 "use strict"
 
-function app_or_error(appkit, name, cb) {
-  appkit.api.get('/apps/' + name, (err, app) => {
-    if (err) {
-      appkit.terminal.error(err);
-    }
-    else {
-      cb(app);
-    }
-  });
+const util = require('util')
+
+async function app_or_error(appkit, name) {
+  return new Promise((resolve, reject) => {
+    appkit.api.get('/apps/' + name, (err, app) => {
+      if (err) {
+        reject(err)
+      } else {
+        resolve(app);
+      }
+    })
+  })
 }
 
 function clean_site(site) {
@@ -26,44 +29,43 @@ function clean_forward_slash(url) {
   return url
 }
 
-function list_routes(appkit, args) {
-  let print_routes = function(err, data) {
-    if(err) {
-      return appkit.terminal.error(err);
-    } else {
-      if(!data || data.length === 0) {
-        return console.log(appkit.terminal.markdown("**===** There were no routes found."))
-      }
-      data.forEach((route) => {
-        let route_app = route.app.name || route.app; // stay compatible with older v2 controller
-        let domain = route.site.domain || route.site; // stay compatible with older v2 controller
-        app_or_error(appkit, route_app, (app) => {
-          console.log(appkit.terminal.markdown(`**→ Route (${route.id})\tCreated: ${(new Date(route.created_at)).toLocaleString()}**
-  ***Forward*** https://${clean_forward_slash(domain)}${route.source_path} ➝ ${clean_forward_slash(app.web_url)}${route.target_path}
-`));
-
-        })
-      });
-    }
-  }
+async function list_routes(appkit, args) {
+  let get = util.promisify(appkit.api.get)
+  let data = null;
   if(!args.site && !args.app) {
     return appkit.terminal.error('Please specify either an app or a site (-a or -s).')
   }
-  if (args.site && args.site !== ''){
-    if(args.app) {
-      return appkit.terminal.error('Please specify either an app or a site (-a or -s).')
+  try {
+    if (args.site && args.site !== ''){
+      if(args.app) {
+        return appkit.terminal.error('Please specify either an app or a site (-a or -s).')
+      }
+      args.site = clean_site(args.site);
+      data = await get(`/sites/${args.site}/routes`);
+    } else {
+      if(args.site) {
+        return appkit.terminal.error('Please specify either an app or a site (-a or -s).')
+      }
+      data = await get(`/apps/${args.app}/routes`);
     }
-    args.site = clean_site(args.site);
-    appkit.api.get(`/sites/${args.site}/routes`, print_routes);
-  } else {
-    if(args.site) {
-      return appkit.terminal.error('Please specify either an app or a site (-a or -s).')
+    if(!data || data.length === 0) {
+      return console.log(appkit.terminal.markdown("**===** There were no routes found."))
     }
-    appkit.api.get(`/apps/${args.app}/routes`, print_routes);
+    let routes = data.sort((x, y) => x.source_path.length < y.source_path.length ? -1 : 1)
+    for (let route of routes) {
+      let route_app = route.app.name
+      let domain = route.site.domain
+      let app = await app_or_error(appkit, route_app)
+      console.log(appkit.terminal.markdown(`**→ Route (${route.id})** ${appkit.terminal.friendly_date(new Date(route.created_at))}
+  ##https://${clean_forward_slash(domain)}${route.source_path} ➝ ${clean_forward_slash(app.web_url)}${route.target_path}##
+  `))
+    }
+  } catch(e) {
+    appkit.terminal.error(e)
   }
 }
 
-function create_route(appkit, args) {
+async function create_route(appkit, args) {
   if(!args.TARGET_PATH) {
     return appkit.terminal.error("A target path is required.")
   }
@@ -74,17 +76,16 @@ function create_route(appkit, args) {
 
   args.site = clean_site(args.site);
   let payload = {app:args.app, site:args.site, source_path:args.SOURCE_PATH, target_path: args.TARGET_PATH}
-  app_or_error(appkit, args.app, (app_info) => {
-    let task = appkit.terminal.task(`Creating route https://${clean_forward_slash(args.site)}${args.SOURCE_PATH} ➝ ${clean_forward_slash(app_info.web_url)}${args.TARGET_PATH}`);
-    task.start();
-    appkit.api.post(JSON.stringify(payload), `/apps/${args.app}/routes`, (err, data) => {
-      if(err) {
-        task.end('error');
-        return appkit.terminal.error(err);
-      } else {
-        task.end('ok');
-      }
-    })
+  let app_info = await app_or_error(appkit, args.app)
+  let task = appkit.terminal.task(`Creating route https://${clean_forward_slash(args.site)}${args.SOURCE_PATH} ➝ ${clean_forward_slash(app_info.web_url)}${args.TARGET_PATH}`);
+  task.start();
+  appkit.api.post(JSON.stringify(payload), `/apps/${args.app}/routes`, (err, data) => {
+    if(err) {
+      task.end('error');
+      return appkit.terminal.error(err);
+    } else {
+      task.end('ok');
+    }
   })
 }
 
