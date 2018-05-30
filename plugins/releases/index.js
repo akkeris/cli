@@ -64,6 +64,13 @@ async function list(appkit, args) {
     releases = releases.concat(results[1].filter((x) => !releases.some((y) => y.slug.id === x.id)))
     releases = releases.sort((a, b) => (new Date(a.created_at).getTime() < new Date(b.created_at).getTime() ? -1 : 1))
     releases = args.all === true || releases.length < 11 ? releases : releases.slice(releases.length - 10)
+    releases = await Promise.all(releases.map(async (x) => {
+      if(!x.build && x.slug && x.slug.id) {
+        return Object.assign(x, {"build":await get(`/slugs/${x.slug.id}`)})
+      } else {
+        return x
+      }
+    }))
     releases.map(format_release.bind(null, appkit)).map(appkit.terminal.markdown).map((x) => console.log(x))
   } catch (e) {
     return appkit.terminal.error(e)
