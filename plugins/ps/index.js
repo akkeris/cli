@@ -61,7 +61,7 @@ function state_map(ps) {
 function format_dyno(ps) {
   let info = state_map(ps)
   let dyno_name = `${ps.type}.${ps.name}`
-  let spacing = " ".repeat(32 - (dyno_name.length + 2))
+  let spacing = (dyno_name.length > 30) ? "  " : (" ".repeat(32 - (dyno_name.length + 2)));
   if(info.warning) {
     if(info.state === 'crashed') {
       return ` ${dyno_name}:${spacing}!!${info.state}!! ###${ps.updated_at}###\t##${info.warning}##`
