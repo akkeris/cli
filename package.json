@@ -1,6 +1,6 @@
 {
   "name": "akkeris",
-  "version": "2.4.19",
+  "version": "2.4.20",
   "description": "Akkeris CLI",
   "main": "aka.js",
   "scripts": {
@@ -21,6 +21,6 @@
     "colors": "^1.1.2",
     "crypto-js": "^3.1.9-1",
     "netrc": "^0.1.4",
-    "yargs": "^8.0.1"
+    "yargs": "^8.0.2"
   }
 }
