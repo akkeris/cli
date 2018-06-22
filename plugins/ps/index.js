@@ -195,10 +195,13 @@ function create(appkit, args) {
 }
 
 function update(appkit, args) {
+  if(args.TYPE && args.TYPE.indexOf('=') !== -1) {
+    return appkit.terminal.error(new Error('Dyno name was invalid, perhaps you mean aka ps:scale?'));
+  }
   console.assert(args.app && args.app !== '', 'An application name was not provided.');
   console.assert(args.TYPE, 'No type was specified, this should be "web" if you need a web service, or "worker".');
   if(!args.size && !args.quantity && args.quantity !== 0 && !args.healthcheck && !args.removeHealthcheck && typeof(args.command) === 'undefined' && !args.port ) {
-    throw new Error('No new changes found for updating dyno formation.');
+    return appkit.terminal.error(new Error('No new changes found for updating dyno formation.'));
   }
   let payload = {};
   if(args.size) {
