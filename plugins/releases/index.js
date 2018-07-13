@@ -10,7 +10,7 @@ function format_release(appkit, release) {
       release.build.source_blob.message ? `##${release.build.source_blob.message.replace(/#/g, '').replace(/\s+/g, ' ')}##` : '',
       release.build.source_blob.commit ? `${release.build.source_blob.commit.substring(0, 7)}` : '', 
     ].filter(x => x && x !== '').map((x) => x.toString().replace(/\n/g, ' '));
-    return `**• v${release.version}**\t${appkit.terminal.friendly_date(new Date(release.created_at))}\t${info.join(' - ')}`
+    return `**• ${release.version ? 'v' + release.version : 'N/A'}**\t${appkit.terminal.friendly_date(new Date(release.created_at))}\t${info.join(' - ')}`
   } else if (release.source_blob) {
     let info = [
       release.status === 'pending' ? '~~~pending~~~' : `!!${release.status}!!`,
