@@ -170,7 +170,8 @@ async function rollback(appkit, args) {
   }
   try {
     let release = await find_release(appkit, args.app, args.RELEASE)
-    post(JSON.stringify({release:release.id, description:args.version}), `/apps/${args.app}/releases`);
+    process.stdout.write(appkit.terminal.markdown(`\b ##v${release.version}## (${release.description})  `))
+    await post(JSON.stringify({release:release.id, description:release.description}), `/apps/${args.app}/releases`);
     task.end('ok')
   } catch (err) {
     task.end('error')
