@@ -84,7 +84,7 @@ function list_addon_plan_info(appkit, args){
 
 function format_plan_info(addon_service) {
   let apps = [];
-  addon_service.attached_to.map((app) => ( apps.push(`   • Name: ${app.name}\n     ID: ${app.id}`) ));
+  addon_service.provisioned_by.map((app) => ( apps.push(`   • Name: ${app.name}\n     ID: ${app.id}`) ));
   return `**+ ${addon_service.human_name} (${addon_service.name}) \$${addon_service.price.cents/100}/${addon_service.price.unit}**
   ***Id:*** ${addon_service.id}
   ***State:*** ${addon_service.state}
