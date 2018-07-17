@@ -109,7 +109,8 @@ function create(appkit, args) {
   
   appkit.api.get(`/apps/${args.app}/features`, (err, features) => {
     if(err) {
-      appkit.terminal.error(err)
+      task.end('error')
+      return appkit.terminal.error(err)
     } else {
       let auto_release_enabled = features.filter((x) => x.name === 'auto-release' && x.enabled === true).length === 1
       if(auto_release_enabled) {
