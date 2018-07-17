@@ -69,24 +69,27 @@ async function create_route(appkit, args) {
   if(!args.TARGET_PATH) {
     return appkit.terminal.error("A target path is required.")
   }
-  console.assert(args.app && args.app !== '', 'Please specify an app.')
-  console.assert(args.site && /^[a-z0-9.-]+$/.test(args.site), 'Expected: A site ID or domain name.')
-  console.assert(args.SOURCE_PATH && /\/[a-zA-Z0-9_-]*/.test(args.SOURCE_PATH), 'SOURCE_PATH must start with a slash and afterward match /[a-zA-Z0-9_-]+/.')
-  console.assert(/\/[a-zA-Z0-9_-]*/.test(args.TARGET_PATH), 'TARGET_PATH must start with a slash and afterward match /[a-zA-Z0-9_-]+/.')
-
-  args.site = clean_site(args.site);
-  let payload = {app:args.app, site:args.site, source_path:args.SOURCE_PATH, target_path: args.TARGET_PATH}
-  let app_info = await app_or_error(appkit, args.app)
-  let task = appkit.terminal.task(`Creating route https://${clean_forward_slash(args.site)}${args.SOURCE_PATH} ➝ ${clean_forward_slash(app_info.web_url)}${args.TARGET_PATH}`);
-  task.start();
-  appkit.api.post(JSON.stringify(payload), `/apps/${args.app}/routes`, (err, data) => {
-    if(err) {
-      task.end('error');
-      return appkit.terminal.error(err);
-    } else {
-      task.end('ok');
-    }
-  })
+  try {
+    console.assert(args.app && args.app !== '', 'Please specify an app.')
+    console.assert(args.site && /^[a-z0-9.-]+$/.test(args.site), 'Expected: A site ID or domain name.')
+    console.assert(args.SOURCE_PATH && /\/[a-zA-Z0-9_-]*/.test(args.SOURCE_PATH), 'SOURCE_PATH must start with a slash and afterward match /[a-zA-Z0-9_-]+/.')
+    console.assert(/\/[a-zA-Z0-9_-]*/.test(args.TARGET_PATH), 'TARGET_PATH must start with a slash and afterward match /[a-zA-Z0-9_-]+/.')
+    args.site = clean_site(args.site);
+    let payload = {app:args.app, site:args.site, source_path:args.SOURCE_PATH, target_path: args.TARGET_PATH}
+    let app_info = await app_or_error(appkit, args.app)
+    let task = appkit.terminal.task(`Creating route https://${clean_forward_slash(args.site)}${args.SOURCE_PATH} ➝ ${clean_forward_slash(app_info.web_url)}${args.TARGET_PATH}`);
+    task.start();
+    appkit.api.post(JSON.stringify(payload), `/apps/${args.app}/routes`, (err, data) => {
+      if(err) {
+        task.end('error');
+        return appkit.terminal.error(err);
+      } else {
+        task.end('ok');
+      }
+    })
+  } catch (e) {
+    return appkit.terminal.error(e)
+  }
 }
 
 function delete_route(appkit, args){
