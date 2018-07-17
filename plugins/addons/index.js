@@ -74,7 +74,7 @@ function list_addon_plan_info(appkit, args){
   appkit.api.get(`/addon-services/${args.SERVICE}/plans/${args.SERVICE_PLAN}`,
     (err, plan) => {
       if (err) {
-        console.log(appkit.terminal.markdown('###===### Inavlid ID.'));
+        console.log(appkit.terminal.markdown('###===### Inavlid service or plan ID.'));
       } else { 
       console.log(appkit.terminal.markdown(format_plan_info(plan)));
       }
@@ -89,7 +89,7 @@ function format_plan_info(addon_service) {
   ***Id:*** ${addon_service.id}
   ***State:*** ${addon_service.state}
   ***Description:*** ${addon_service.description}
-  ***Attached Apps (${apps.length}):*** \n${apps.join('\n\n')}\n`;
+  ***Attached Apps (${apps.length}):*** \n${ apps.length != 0 ? `${apps.join('\n\n')}\n` : '' }`;
 }
 
 function format_services(addon_service) {
