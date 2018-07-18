@@ -89,7 +89,7 @@ function format_plan_info(addon_service) {
   ***Id:*** ${addon_service.id}
   ***State:*** ${addon_service.state}
   ***Description:*** ${addon_service.description}
-  ***Attached Apps (${apps.length}):*** \n${ apps.length != 0 ? `${apps.join('\n\n')}\n` : '' }`;
+  ***Provisioned By: (${apps.length}):*** \n${ apps.length != 0 ? `${apps.join('\n\n')}\n` : '' }`;
 }
 
 function format_services(addon_service) {
