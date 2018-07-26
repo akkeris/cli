@@ -70,11 +70,11 @@ function list_addons_plans(appkit, args) {
 
 function list_addon_plan_info(appkit, args){
   console.assert(args.SERVICE, 'There was no service provided.');
-  console.assert(args.SERVICE_PLAN, 'There was no plan ID provided.');
+  console.assert(args.SERVICE_PLAN, 'There was no plan provided.');
   appkit.api.get(`/addon-services/${args.SERVICE}/plans/${args.SERVICE_PLAN}`,
     (err, plan) => {
       if (err) {
-        console.log(appkit.terminal.markdown('###===### Inavlid service or plan ID.'));
+        console.log(appkit.terminal.markdown('###===### Inavlid service or plan.'));
       } else { 
       console.log(appkit.terminal.markdown(format_plan_info(plan)));
       }
@@ -89,7 +89,7 @@ function format_plan_info(addon_service) {
   ***Id:*** ${addon_service.id}
   ***State:*** ${addon_service.state}
   ***Description:*** ${addon_service.description}
-  ***Provisioned By: (${apps.length}):*** \n${ apps.length != 0 ? `${apps.join('\n\n')}\n` : '' }`;
+  ***Provisioned By (${apps.length}):*** \n${ apps.length != 0 ? `${apps.join('\n\n')}\n` : '' }`;
 }
 
 function format_services(addon_service) {
