@@ -68,6 +68,30 @@ function list_addons_plans(appkit, args) {
       appkit.terminal.markdown('###===### No plans were found.')));
 }
 
+function list_addon_plan_info(appkit, args){
+  console.assert(args.SERVICE, 'There was no service provided.');
+  console.assert(args.SERVICE_PLAN, 'There was no plan provided.');
+  appkit.api.get(`/addon-services/${args.SERVICE}/plans/${args.SERVICE_PLAN}`,
+    (err, plan) => {
+      if (err) {
+        console.log(appkit.terminal.markdown('###===### Inavlid service or plan.'));
+      } else { 
+      console.log(appkit.terminal.markdown(format_plan_info(plan)));
+      }
+    },
+    appkit.terminal.markdown('###===### Invalid ID.'));
+}
+
+function format_plan_info(addon_service) {
+  let apps = [];
+  addon_service.provisioned_by.map((app) => ( apps.push(`   • Name: ${app.name}\n     ID: ${app.id}`) ));
+  return `**+ ${addon_service.human_name} (${addon_service.name}) \$${addon_service.price.cents/100}/${addon_service.price.unit}**
+  ***Id:*** ${addon_service.id}
+  ***State:*** ${addon_service.state}
+  ***Description:*** ${addon_service.description}
+  ***Provisioned By (${apps.length}):*** \n${ apps.length != 0 ? `${apps.join('\n\n')}\n` : '' }`;
+}
+
 function format_services(addon_service) {
   return `**+ ${addon_service.human_name} (${addon_service.name})**
   ***Description:*** ${addon_service.description}
@@ -199,6 +223,7 @@ module.exports = {
       .command('addons:info ADDON', 'Show info about an add-on and its attachments.', require_app_option, info_addons.bind(null, appkit))
       .command('addons:plans SERVICE', 'list all available plans for an add-on service', {}, list_addons_plans.bind(null, appkit))
       .command('addons:services', 'list all available add-on services', {}, list_addons.bind(null, appkit))
+      .command('addons:plans:info SERVICE SERVICE_PLAN', 'Show info about an add-on service plan', {}, list_addon_plan_info.bind(null, appkit))
       // aliases
       .command('addon', false, require_app_option, list_attached_addons.bind(null, appkit))
       .command('addon:attach ADDON_NAME', false, attach_create_option, attach.bind(null, appkit))
