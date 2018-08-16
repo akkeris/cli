@@ -1,5 +1,6 @@
 "use strict"
 
+const assert = require('assert');
 const proc = require('child_process');
 const fs = require('fs');
 const rand = require('./random.js');
@@ -82,7 +83,7 @@ function favorite(appkit, args) {
 }
 
 function unfavorite(appkit, args) {
-    console.assert(args.app && args.app !== '', 'An application name was not provided.');
+    assert.ok(args.app && args.app !== '', 'An application name was not provided.');
     let task = appkit.terminal.task(`Removing **⬢ ${args.app}** from favorites`);
     task.start();
     appkit.api.delete('/favorites/' + args.app, (err, del_info) => {
@@ -156,7 +157,7 @@ function blueprint(appkit, args) {
 }
 
 function oneclick(appkit, args) {
-  console.assert(args.app || args.file, 'Either an app or a file is required.')
+  assert.ok(args.app || args.file, 'Either an app or a file is required.')
   if(args.app) {
     appkit.api.get('/apps/' + args.app + '/app-setups', (err, definition) => {
       if(err) {
@@ -176,7 +177,7 @@ function oneclick(appkit, args) {
 }
 
 function info(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   appkit.api.get('/apps/' + args.app, function(err, app) {
     if (err){
       return appkit.terminal.print(err);
@@ -207,7 +208,7 @@ function info(appkit, args) {
 }
 
 function destroy(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   app_or_error(appkit, args.app, (app) => {
     let del = (input) => {
       if(input === app.name) {
@@ -261,7 +262,7 @@ function list(appkit, args) {
 function lock(appkit, args) { console.log('lock operation is not currently supported.'); }
 
 function open(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   appkit.api.get('/apps/' + args.app, (err, data) => { 
     if(err) {
       return appkit.terminal.error(err)

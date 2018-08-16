@@ -1,46 +1,48 @@
 "use strict"
 
-function destroy(appkit, args) {
-  console.assert(args.ADDON, 'An addon wasnt provided.');
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
-    let del = (input) => {
-      if(input === args.ADDON) {
-        appkit.api.get('/apps/' + args.app + '/addons', (err, existing_addons) => {
-          // If the user has provided a service:plan lets see if any of those happen to match
-          // an existing addon on the app, if there's only one match we have a strong reason
-          // to try and delete this addon rather than something else. We first check with ':'
-          // character becuase all addons+plans must have a :
-          if(args.ADDON.indexOf(':') > -1 && existing_addons && 
-            existing_addons.filter((a) => { return a.addon.plan.name === args.ADDON }).length === 1) 
-          {
-            let a = existing_addons.filter((a) => { return a.addon.plan.name === args.ADDON });
-            args.ADDON = a[0].name;
-          }
+const assert = require('assert')
 
-          let task = appkit.terminal.task(`Destroying addon **+ ${args.ADDON}** `);
-          task.start();
-          appkit.api.delete('/apps/' + args.app + '/addons/' + args.ADDON, (err, addon) => {
-            if(err) {
-              task.end('error');
-              return appkit.terminal.error(err);
-            }
-            task.end('ok');
-            console.log(appkit.terminal.markdown(`###===### Successfully removed ~~${addon.name}~~ from ~~${args.app}~~`));
-          });
+function destroy(appkit, args) {
+  assert.ok(args.ADDON, 'An addon wasnt provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  let del = (input) => {
+    if(input === args.ADDON) {
+      appkit.api.get('/apps/' + args.app + '/addons', (err, existing_addons) => {
+        // If the user has provided a service:plan lets see if any of those happen to match
+        // an existing addon on the app, if there's only one match we have a strong reason
+        // to try and delete this addon rather than something else. We first check with ':'
+        // character becuase all addons+plans must have a :
+        if(args.ADDON.indexOf(':') > -1 && existing_addons && 
+          existing_addons.filter((a) => { return a.addon.plan.name === args.ADDON }).length === 1) 
+        {
+          let a = existing_addons.filter((a) => { return a.addon.plan.name === args.ADDON });
+          args.ADDON = a[0].name;
+        }
+
+        let task = appkit.terminal.task(`Destroying addon **+ ${args.ADDON}** `);
+        task.start();
+        appkit.api.delete('/apps/' + args.app + '/addons/' + args.ADDON, (err, addon) => {
+          if(err) {
+            task.end('error');
+            return appkit.terminal.error(err);
+          }
+          task.end('ok');
+          console.log(appkit.terminal.markdown(`###===### Successfully removed ~~${addon.name}~~ from ~~${args.app}~~`));
         });
-      } else {
-        appkit.terminal.soft_error(`Confirmation did not match !!${args.ADDON}!!. Aborted.`);
-      }
-    };
-    if(args.confirm) {
-      del(args.confirm);
+      });
     } else {
-      appkit.terminal.confirm(` ~~▸~~    WARNING: This will remove **+ ${args.ADDON}** from ${args.app} including all/any backups or data.\n ~~▸~~    To proceed, type !!${args.ADDON}!! or re-run this command with !!--confirm ${args.ADDON}!!\n`, del);
+      appkit.terminal.soft_error(`Confirmation did not match !!${args.ADDON}!!. Aborted.`);
     }
+  };
+  if(args.confirm) {
+    del(args.confirm);
+  } else {
+    appkit.terminal.confirm(` ~~▸~~    WARNING: This will remove **+ ${args.ADDON}** from ${args.app} including all/any backups or data.\n ~~▸~~    To proceed, type !!${args.ADDON}!! or re-run this command with !!--confirm ${args.ADDON}!!\n`, del);
+  }
 }
 
 function create(appkit, args) {
-  console.assert(args.SERVICE_PLAN, 'No service plan was provided.');
+  assert.ok(args.SERVICE_PLAN, 'No service plan was provided.');
   let loader = appkit.terminal.loading('Provisioning addon ' + args.SERVICE_PLAN + ' and attaching it to ' + args.app);
   loader.start();
   let payload = {plan:args.SERVICE_PLAN};
@@ -62,15 +64,15 @@ function format_plans(addon_service) {
 }
 
 function list_addons_plans(appkit, args) {
-  console.assert(args.SERVICE, 'There was no service provided.');
+  assert.ok(args.SERVICE, 'There was no service provided.');
   appkit.api.get('/addon-services/' + args.SERVICE + '/plans', 
     appkit.terminal.format_objects.bind(null, format_plans, 
       appkit.terminal.markdown('###===### No plans were found.')));
 }
 
 function list_addon_plan_info(appkit, args){
-  console.assert(args.SERVICE, 'There was no service provided.');
-  console.assert(args.SERVICE_PLAN, 'There was no plan provided.');
+  assert.ok(args.SERVICE, 'There was no service provided.');
+  assert.ok(args.SERVICE_PLAN, 'There was no plan provided.');
   appkit.api.get(`/addon-services/${args.SERVICE}/plans/${args.SERVICE_PLAN}`,
     (err, plan) => {
       if (err) {
@@ -150,13 +152,13 @@ function list_all_addons(appkit, args) {
 }
 
 function info_addons(appkit, args) {
-  console.assert(args.ADDON && args.ADDON !== '', 'No addon id was specified.');
+  assert.ok(args.ADDON && args.ADDON !== '', 'No addon id was specified.');
   appkit.api.get('/apps/' + args.app + '/addons/' + args.ADDON, appkit.terminal.print);
 }
 
 function attach(appkit, args) {
-  console.assert(args.app && args.app !== '', 'No application was specified.');
-  console.assert(args.ADDON_NAME && args.ADDON_NAME !== '', 'No addon id was specified.');
+  assert.ok(args.app && args.app !== '', 'No application was specified.');
+  assert.ok(args.ADDON_NAME && args.ADDON_NAME !== '', 'No addon id was specified.');
   let loader = appkit.terminal.loading('Attaching addon ' + args.ADDON_NAME + ' to ' + args.app);
   loader.start();
   appkit.api.get('/apps/' + args.app, (err, data) => {
@@ -164,7 +166,7 @@ function attach(appkit, args) {
       loader.end();
       return appkit.terminal.error(err);
     }
-    console.assert(data.id, 'Ensure the app id is defined.');
+    assert.ok(data.id, 'Ensure the app id is defined.');
     let payload = {"app":data.id, "addon":args.ADDON_NAME, force:(args.confirm && args.confirm === args.ADDON_NAME ? true : false), name:(args.as ? args.as : null)};
     appkit.api.post(JSON.stringify(payload), '/apps/' + args.app + '/addon-attachments',  (err, data) => {
       loader.end();
@@ -174,8 +176,8 @@ function attach(appkit, args) {
 }
 
 function detach(appkit, args) {
-  console.assert(args.app && args.app !== '', 'No application was specified.');
-  console.assert(args.ATTACHMENT_NAME && args.ATTACHMENT_NAME !== '', 'No attachment name or id was specified.');
+  assert.ok(args.app && args.app !== '', 'No application was specified.');
+  assert.ok(args.ATTACHMENT_NAME && args.ATTACHMENT_NAME !== '', 'No attachment name or id was specified.');
   let loader = appkit.terminal.loading('Detaching addon ' + args.ATTACHMENT_NAME + ' from ' + args.app);
   loader.start();
   appkit.api.get('/apps/' + args.app, (err, app) => {
@@ -183,7 +185,7 @@ function detach(appkit, args) {
       loader.end();
       return appkit.terminal.error(err);
     }
-    console.assert(app.id, 'Ensure the app id is defined.');
+    assert.ok(app.id, 'Ensure the app id is defined.');
     appkit.api.delete('/apps/' + args.app + '/addon-attachments/' + args.ATTACHMENT_NAME,  (err, data) => {
       loader.end();
       if(err) {

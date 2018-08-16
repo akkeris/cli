@@ -1,5 +1,7 @@
 "use strict"
 
+const assert = require('assert')
+
 function app_or_error(appkit, name, cb) {
   appkit.api.get('/apps/' + name, (err, app) => {
     if (err) {
@@ -34,7 +36,7 @@ function list_sites(appkit, args) {
 }
 
 function create_site(appkit, args) {
-  console.assert(args.DOMAIN && /^[a-z0-9-.]+$/i.test(args.DOMAIN), 'A domain name must only contain alphanumerics, periods and hyphens.');
+  assert.ok(args.DOMAIN && /^[a-z0-9-.]+$/i.test(args.DOMAIN), 'A domain name must only contain alphanumerics, periods and hyphens.');
 
   if (!args.region) {
     args.region = 'us-seattle'

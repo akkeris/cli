@@ -2,6 +2,7 @@
 
 "use strict"
 
+const assert = require('assert')
 const proc = require('child_process');
 const http = require('http');
 const https = require('https');
@@ -178,7 +179,7 @@ module.exports.init = function init() {
   module.exports.config.third_party_plugins_dir = path.join(get_home(), '.akkeris', 'plugins')
   require('./lib/plugins.js').init(module.exports.args, module.exports);
 
-  console.assert(module.filename, 'No module.filename exists, no clue where we are. This is a very odd error.');
+  assert.ok(module.filename, 'No module.filename exists, no clue where we are. This is a very odd error.');
   
   // Scan and initialize the plugins as needed.
   init_plugins(module, module.exports.config.plugins_dir)
@@ -199,7 +200,7 @@ module.exports.version = function version(appkit, args) {
 
 // Update our dependencies and our plugins as needed.
 module.exports.update = function update(appkit) {
-  console.assert(appkit.config.third_party_plugins_dir, 'Update was ran without init being ran first, everything is empty.');
+  assert.ok(appkit.config.third_party_plugins_dir, 'Update was ran without init being ran first, everything is empty.');
   fs.readdirSync(appkit.config.third_party_plugins_dir).forEach((plugin => {
     try {
       if(fs.statSync(path.join(appkit.config.third_party_plugins_dir, plugin, '.git')).isDirectory()) {
@@ -229,7 +230,7 @@ module.exports.update = function update(appkit) {
 function is_redirect(type, res) { return type.toLowerCase() === 'get' && res.headers['location'] && (res.statusCode === 301 || res.statusCode === 302); }
 function is_response_ok(res) { return res.statusCode > 199 && res.statusCode < 300 ? true : false; }
 function response_body(type, callback, res) {
-  let body = new Buffer(0);
+  let body = Buffer.alloc(0);
   res.on('data', (e) => body = Buffer.concat([body,e]) );
   res.on('end', (e) => {
     if(res.headers['content-encoding'] === 'gzip' && body.length > 0) {

@@ -8,9 +8,18 @@ function highlight(data) {
 }
 
 function logs(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.')
+  if(args.app === "" && args.site === "") {
+    return appkit.terminal.error(new Error("No application or site was provided, use either --site (-s) or --app (-a) to view logs."))
+  }
+  if(args.app !== "" && args.site !== "") {
+    return appkit.terminal.error(new Error("Both --site (-s) and --app (-a) were provided, logs can be viewed for a site or an app, not both."))
+  }
   let payload = {lines:args.num, tail:args.tail}
-  appkit.api.post(JSON.stringify(payload), `/apps/${args.app}/log-sessions`, (err, log_session) => {
+  let url = `/apps/${args.app}/log-sessions`
+  if (args.site && args.app === "" && args.site !== "") {
+    url = `/sites/${args.site}/log-sessions`
+  }
+  appkit.api.post(JSON.stringify(payload), url, (err, log_session) => {
     if(err) {
       return appkit.terminal.error(err)
     }
@@ -36,9 +45,15 @@ module.exports = {
     let logs_option = {
       'app':{
         'alias':'a',
-        'demand':true,
+        'demand':false,
         'string':true,
-        'description':'The app to act on.'
+        'description':'The app to view the logs for, this cannot be used with -s option.'
+      },
+      'site':{
+        'alias':'s',
+        'demand':false,
+        'string':true,
+        'description':'The site to view the logs for, this cannot be used with -a option.'
       },
       'num':{
         'alias':'n',

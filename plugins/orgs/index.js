@@ -1,5 +1,7 @@
 "use strict"
 
+const assert = require('assert')
+
 function format_org(org) {
   return `** ⃫ ${org.name}**
   ***Id:*** ${org.id}\n`;
@@ -10,13 +12,13 @@ function list_orgs(appkit, args) {
 }
 
 function info_orgs(appkit, args) {
-  console.assert(args.NAME && args.NAME !== '', 'An organization name was not provided.');
+  assert.ok(args.NAME && args.NAME !== '', 'An organization name was not provided.');
   appkit.api.get('/organizations/' + args.NAME, appkit.terminal.print);
 }
 
 function create_orgs(appkit, args) {
-  console.assert(args.NAME && args.NAME !== '', 'An organization name was not provided.');
-  console.assert(args.NAME.indexOf(' ') === -1, 'An organization name cannot contain spaces.');
+  assert.ok(args.NAME && args.NAME !== '', 'An organization name was not provided.');
+  assert.ok(args.NAME.indexOf(' ') === -1, 'An organization name cannot contain spaces.');
   args.NAME = args.NAME.toLowerCase();
   let payload = {name:args.NAME, description:(args.contact || "")};
   appkit.api.post(JSON.stringify(payload), '/organizations', appkit.terminal.print);
