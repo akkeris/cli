@@ -8,41 +8,41 @@ function format_drain(drain) {
 }
 
 function list_drains(appkit, args) {
-  if(args.app === "" && args.site === "") {
+  if(!args.app && !args.site) {
     return appkit.terminal.error(new Error("No application or site was provided, use either --site (-s) or --app (-a) to view logs."))
   }
-  if(args.app !== "" && args.site !== "") {
+  if(args.app && args.site) {
     return appkit.terminal.error(new Error("Both --site (-s) and --app (-a) were provided, logs can be viewed for a site or an app, not both."))
   }
-  let url = `/apps/${args.app}/log-drains`
+  let uri = `/apps/${args.app}/log-drains`
   if (args.site && args.app === "" && args.site !== "") {
-    url = `/sites/${args.site}/log-drains`
+    uri = `/sites/${args.site}/log-drains`
   }
-  appkit.api.get(url, appkit.terminal.format_objects.bind(null, format_drain, appkit.terminal.markdown('###===### No drains were found.')));
+  appkit.api.get(uri, appkit.terminal.format_objects.bind(null, format_drain, appkit.terminal.markdown('###===### No drains were found.')));
 }
 
 function info_drains(appkit, args) {
-  if(args.app === "" && args.site === "") {
+  if(!args.app && !args.site) {
     return appkit.terminal.error(new Error("No application or site was provided, use either --site (-s) or --app (-a) to view logs."))
   }
-  if(args.app !== "" && args.site !== "") {
+  if(args.app && args.site) {
     return appkit.terminal.error(new Error("Both --site (-s) and --app (-a) were provided, logs can be viewed for a site or an app, not both."))
   }
   assert.ok(args.ID && args.ID !== '', 'The log drain id was not provided.');
 
-  let url = `/apps/${args.app}/log-drains/${args.ID}`
+  let uri = `/apps/${args.app}/log-drains/${args.ID}`
   if (args.site && args.app === "" && args.site !== "") {
-    url = `/sites/${args.site}/log-drains/${args.ID}`
+    uri = `/sites/${args.site}/log-drains/${args.ID}`
   }
 
-  appkit.api.get(url, appkit.terminal.print);
+  appkit.api.get(uri, appkit.terminal.print);
 }
 
 function create_drains(appkit, args) {
-  if(args.app === "" && args.site === "") {
+  if(!args.app && !args.site) {
     return appkit.terminal.error(new Error("No application or site was provided, use either --site (-s) or --app (-a) to view logs."))
   }
-  if(args.app !== "" && args.site !== "") {
+  if(args.app && args.site) {
     return appkit.terminal.error(new Error("Both --site (-s) and --app (-a) were provided, logs can be viewed for a site or an app, not both."))
   }
   assert.ok(args.URL && args.URL !== '', 'The url for the drain was not found.');
@@ -50,26 +50,26 @@ function create_drains(appkit, args) {
     'The specified log drain did not have a http, https, syslog, syslog+tls, or syslog+udp scheme. Invalid URL.');
   let payload = {url:args.URL};
 
-  let url = `/apps/${args.app}/log-drains`
+  let uri = `/apps/${args.app}/log-drains`
   if (args.site && args.app === "" && args.site !== "") {
-    url = `/sites/${args.site}/log-drains`
+    uri = `/sites/${args.site}/log-drains`
   }
-  appkit.api.post(JSON.stringify(payload), url, appkit.terminal.print);
+  appkit.api.post(JSON.stringify(payload), uri, appkit.terminal.print);
 }
 
 function delete_drains(appkit, args) {
-  if(args.app === "" && args.site === "") {
+  if(!args.app && !args.site) {
     return appkit.terminal.error(new Error("No application or site was provided, use either --site (-s) or --app (-a) to view logs."))
   }
-  if(args.app !== "" && args.site !== "") {
+  if(args.app && args.site) {
     return appkit.terminal.error(new Error("Both --site (-s) and --app (-a) were provided, logs can be viewed for a site or an app, not both."))
   }
   assert.ok(args.ID && args.ID !== '', 'The log drain id was not provided.');
-  let url = `/apps/${args.app}/log-drains/${args.ID}`
+  let uri = `/apps/${args.app}/log-drains/${args.ID}`
   if (args.site && args.app === "" && args.site !== "") {
-    url = `/sites/${args.site}/log-drains/${args.ID}`
+    uri = `/sites/${args.site}/log-drains/${args.ID}`
   }
-  appkit.api.delete(url, (err, drain) => {
+  appkit.api.delete(uri, (err, drain) => {
       if(err) {
           return appkit.terminal.error(err);
       }
