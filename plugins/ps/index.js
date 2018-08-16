@@ -1,5 +1,7 @@
 "use strict"
 
+const assert = require('assert')
+
 function format_formation(ps) {
   if (ps.type === 'web' && ps.healthcheck) {
     return `##===## ^^^${ps.type}^^^ (**${ps.size}**): ${ps.command ? ps.command : '(from docker)'} (~~~${ps.quantity}~~~) (##${ps.healthcheck}##)`;
@@ -84,8 +86,8 @@ function format_sizes(ps) {
 }
 
 function destroy(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
-  console.assert(args.TYPE && args.TYPE !== '', 'A dyno type (e.g., web, worker) was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.TYPE && args.TYPE !== '', 'A dyno type (e.g., web, worker) was not provided.');
 
   appkit.api.get('/apps/' + args.app + '/formation/' + args.TYPE, (err, formation) => {
     if(err) {
@@ -116,7 +118,7 @@ function destroy(appkit, args) {
 }
 
 function list(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   appkit.api.get('/apps/' + args.app + '/formation', (err, formations) => {
     if(err) {
       return appkit.terminal.error(err);
@@ -168,8 +170,8 @@ function list_plans(appkit,args) {
 }
 
 function create(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
-  console.assert(args.TYPE, 'No type was specified, this should be "web" if you need a web service, or "worker".');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.TYPE, 'No type was specified, this should be "web" if you need a web service, or "worker".');
   let payload = {
     size:args.size,
     quantity:args.quantity,
@@ -198,8 +200,8 @@ function update(appkit, args) {
   if(args.TYPE && args.TYPE.indexOf('=') !== -1) {
     return appkit.terminal.error(new Error('Dyno name was invalid, perhaps you mean aka ps:scale?'));
   }
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
-  console.assert(args.TYPE, 'No type was specified, this should be "web" if you need a web service, or "worker".');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.TYPE, 'No type was specified, this should be "web" if you need a web service, or "worker".');
   if(!args.size && !args.quantity && args.quantity !== 0 && !args.healthcheck && !args.removeHealthcheck && typeof(args.command) === 'undefined' && !args.port ) {
     return appkit.terminal.error(new Error('No new changes found for updating dyno formation.'));
   }
@@ -236,7 +238,7 @@ function update(appkit, args) {
 }
 
 function restart(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   let task = appkit.terminal.task(`Restarting **⬢ ${args.app}${args.TYPE ? ':' + args.TYPE : ''}**`);
   task.start();
   let urld = '/apps/' + args.app + '/dynos';
@@ -254,8 +256,8 @@ function restart(appkit, args) {
 }
 
 function forward(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
-  console.assert(args.PORT && args.PORT !== '', 'A port was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.PORT && args.PORT !== '', 'A port was not provided.');
 
   let task = appkit.terminal.task(`Updating port for web traffic on **⬢ ${args.app}** to ${args.PORT}`);
   task.start();
@@ -270,7 +272,7 @@ function forward(appkit, args) {
 }
 
 function scale(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   appkit.api.get('/apps/' + args.app + '/formation', (err, formations) => {
     if(err) {
       return appkit.terminal.error(err);
@@ -341,8 +343,8 @@ function scale(appkit, args) {
 }
 
 function stop(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
-  console.assert(args.DYNO && args.DYNO !== '', 'No dyno was specified, use ak ps -a [app] to get a list of running dynos.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.DYNO && args.DYNO !== '', 'No dyno was specified, use ak ps -a [app] to get a list of running dynos.');
 
   if(args.DYNO.indexOf('.') === -1) {
     console.log("No running dyno was specified, e.g., web.324ksd232-321e, see list below.");

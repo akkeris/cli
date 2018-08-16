@@ -1,7 +1,9 @@
 "use strict"
 
+const assert = require('assert')
+
 function list(appkit, args) {
-  console.assert(!(args.org && args.space), 'An organization and space cannot be used at the same time.');
+  assert.ok(!(args.org && args.space), 'An organization and space cannot be used at the same time.');
   let url = "/account/invoices";
   if(args.org) {
     url = "/organizations/" + args.org + "/invoices";
@@ -27,8 +29,8 @@ function list(appkit, args) {
 }
 
 function get(appkit, args) {
-  console.assert(!(args.org && args.space), 'An organization and space cannot be used at the same time.');
-  console.assert(args.ID, 'An invoice id was not provided.');
+  assert.ok(!(args.org && args.space), 'An organization and space cannot be used at the same time.');
+  assert.ok(args.ID, 'An invoice id was not provided.');
 
   let id = new Date(args.ID);
   let now = new Date();

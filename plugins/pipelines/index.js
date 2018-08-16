@@ -1,5 +1,7 @@
 "use strict"
+
 const util = require('util')
+const assert = require('assert')
 
 function format_pipeline(pipeline) {
   return `** ᱿ ${pipeline.name}**
@@ -18,18 +20,18 @@ function list(appkit, args) {
 }
 
 function info(appkit, args) {
-  console.assert(args.PIPELINE && args.PIPELINE !== '', 'A pipeline was not provided.');
+  assert.ok(args.PIPELINE && args.PIPELINE !== '', 'A pipeline was not provided.');
   appkit.api.get('/pipelines/' + args.PIPELINE, appkit.terminal.print);
 }
 
 function list_apps_info(appkit, args) {
-  console.assert(args.PIPELINE && args.PIPELINE !== '', 'A pipeline was not provided.');
+  assert.ok(args.PIPELINE && args.PIPELINE !== '', 'A pipeline was not provided.');
   appkit.api.get('/pipelines/' + args.PIPELINE + '/pipeline-couplings', appkit.terminal.format_objects.bind(null, format_pipeline_couplings, appkit.terminal.markdown('###===### No pipeline couplings were found.')))
 }
 
 function add(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
-  console.assert(args.PIPELINE && args.PIPELINE !== '', 'A pipeline was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.PIPELINE && args.PIPELINE !== '', 'A pipeline was not provided.');
   let payload = {app:args.app, pipeline:args.PIPELINE, stage:args.stage};
   appkit.api.post(JSON.stringify(payload),'/pipeline-couplings', appkit.terminal.print);
 }
@@ -50,26 +52,26 @@ async function find_release(appkit, app, release_key) {
     if(Number.isNaN(version)) {
       version = parseInt(release_key.substring(1), 10)
     }
-    console.assert(!Number.isNaN(version), 'The version, was not... a version.')
+    assert.ok(!Number.isNaN(version), 'The version, was not... a version.')
     let results = await get(`/apps/${app}/releases`)
     results = results.filter((x) => x.version === version)
-    console.assert(results.length === 1, `The version ${version} was not found.`)
+    assert.ok(results.length === 1, `The version ${version} was not found.`)
     return results[0]
   } else if (release_key === 'previous') {
     // not current, but one before
     let results = await get(`/apps/${app}/releases`)
-    console.assert(results.length > 1, 'A previous release was not found.')
+    assert.ok(results.length > 1, 'A previous release was not found.')
     return results[results.length - 2]
   } else {
     // current release
     let results = await get(`/apps/${app}/releases`)
-    console.assert(results.length > 0, 'No releases were found.')
+    assert.ok(results.length > 0, 'No releases were found.')
     return results[results.length - 1]
   }
 }
 
 async function promote(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   let apps = args.to ? args.to : [];
   apps = apps.map((x) => { return x.split(','); });
   apps = [].concat.apply([], apps).filter((x) => { if (x.trim() === '') return false; else return true; });
@@ -158,14 +160,14 @@ Promoted: **⬢ ${result.source.app.name}-${result.source.space.name}** (Release
 
   if(args.release) {
     let release = await find_release(appkit, args.app, args.release)
-    console.assert(release, `The release ${args.release} could not be found.`)
+    assert.ok(release, `The release ${args.release} could not be found.`)
     args.release = release.id
   }
   begin_pipeline_stages()
 }
 
 function remove(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   appkit.api.get('/apps/' + args.app + '/pipeline-couplings', (err, pipeline_coupling) => {
     if(err) {
       return appkit.terminal.error(err);
@@ -179,8 +181,8 @@ function rename(appkit, args) {
 }
 
 function update(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
-  console.assert(args.stage && args.stage !== '', 'A stage was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.stage && args.stage !== '', 'A stage was not provided.');
   // remove the app from pipeline coulings, recreate the pipeline coupling with the specified stage.
   appkit.api.get('/apps/' + args.app + '/pipeline-couplings', (err, pipeline_coupling) => {
     if(err) {
@@ -197,12 +199,12 @@ function update(appkit, args) {
 }
 
 function create(appkit, args) {
-  console.assert(args.NAME && args.NAME !== '', 'A name for the pipeline was not provided.');
+  assert.ok(args.NAME && args.NAME !== '', 'A name for the pipeline was not provided.');
   appkit.api.post(JSON.stringify({name:args.NAME}), '/pipelines', appkit.terminal.print);
 }
 
 function destroy(appkit, args) {
-  console.assert(args.PIPELINE && args.PIPELINE !== '', 'A pipeline was not provided.');
+  assert.ok(args.PIPELINE && args.PIPELINE !== '', 'A pipeline was not provided.');
   appkit.api.delete('/pipelines/' + args.PIPELINE, appkit.terminal.print);
 }
 

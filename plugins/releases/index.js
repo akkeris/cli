@@ -1,5 +1,7 @@
 "use strict"
+
 const util = require('util')
+const assert = require('assert')
 
 function format_release(appkit, release) {
   if(release.build) {
@@ -34,20 +36,20 @@ async function find_release(appkit, app, release_key) {
     if(Number.isNaN(version)) {
       version = parseInt(release_key.substring(1), 10)
     }
-    console.assert(!Number.isNaN(version), 'The version, was not... a version.')
+    assert.ok(!Number.isNaN(version), 'The version, was not... a version.')
     let results = await get(`/apps/${app}/releases`)
     results = results.filter((x) => x.version === version)
-    console.assert(results.length === 1, `The version ${version} was not found.`)
+    assert.ok(results.length === 1, `The version ${version} was not found.`)
     return results[0]
   } else if (release_key === 'previous') {
     // not current, but one before
     let results = await get(`/apps/${app}/releases`)
-    console.assert(results.length > 1, 'A previous release was not found.')
+    assert.ok(results.length > 1, 'A previous release was not found.')
     return results[results.length - 2]
   } else {
     // current release
     let results = await get(`/apps/${app}/releases`)
-    console.assert(results.length > 0, 'No releases were found.')
+    assert.ok(results.length > 0, 'No releases were found.')
     return results[results.length - 1]
   }
 }
@@ -55,7 +57,7 @@ async function find_release(appkit, app, release_key) {
 async function list(appkit, args) {
   try {
     let get = util.promisify(appkit.api.get)
-    console.assert(args.app && args.app !== '', 'An application name was not provided.');
+    assert.ok(args.app && args.app !== '', 'An application name was not provided.');
     let results = await Promise.all([get(`/apps/${args.app}/releases`), get(`/apps/${args.app}/builds`)])
     if(results[0].length === 0 && results[1].length === 0) {
       return console.log(appkit.terminal.markdown('###===### No releases were found.'))
@@ -102,7 +104,7 @@ function wait_for_build(appkit, app, build_id, callback, iteration) {
 }
 
 function create(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   
   let task = appkit.terminal.task(`Deploying **⬢ ${args.URL} to ${args.app} **`);
   task.start();
@@ -149,7 +151,7 @@ function create(appkit, args) {
 }
 
 async function info(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   if(args.RELEASE === '' || !args.RELEASE) {
     args.RELEASE = 'latest';
   }
@@ -163,7 +165,7 @@ async function info(appkit, args) {
 
 async function rollback(appkit, args) {
   let post = util.promisify(appkit.api.post)
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   let task = appkit.terminal.task(`Rolling back **⬢ ${args.app}**`);
   task.start();
   if(args.RELEASE === '' || !args.RELEASE) {

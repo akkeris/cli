@@ -1,5 +1,7 @@
 "use strict"
 
+const assert = require('assert')
+
 function format_space(space) {
   return `**҈ ${space.name} (region: ${space.region.name}, stack: ${space.stack.name})**
   ***Compliance:*** ${space.compliance.join(", ")}
@@ -8,7 +10,7 @@ function format_space(space) {
 }
 
 function info_spaces(appkit, args) {
-  console.assert(args.NAME && args.NAME !== '', 'The specified space is not valid');
+  assert.ok(args.NAME && args.NAME !== '', 'The specified space is not valid');
   appkit.api.get('/spaces/' + args.NAME, (err, space) => {
     if (err) {
       return appkit.terminal.print(err);
@@ -32,7 +34,7 @@ function list_spaces(appkit, args) {
 }
 
 function create_space(appkit, args) {
-  console.assert(args.NAME.indexOf(' ') === -1, 'A space name cannot contain spaces.');
+  assert.ok(args.NAME.indexOf(' ') === -1, 'A space name cannot contain spaces.');
   args.NAME = args.NAME.toLowerCase();
   let payload = {name:args.NAME, description:args.description};
   if (args.internal) {
@@ -41,7 +43,6 @@ function create_space(appkit, args) {
     
     args.compliance.push('internal')
   }
-
   if(args.compliance) {
     payload.compliance = args.compliance.map((x) => { return x.replace(',','')});
   }
@@ -68,7 +69,7 @@ module.exports = {
         description:'A space separated list of tags to add for compliance, e.g. -c prod socs'
       },
       internal:{
-        array:false,
+        boolean:true,
         demand:false,
         alias:'i',
         description:'Whether the space will host internal-only applications (true|false).'

@@ -1,5 +1,7 @@
 "use strict"
 
+const assert = require('assert')
+
 function app_or_error(appkit, name, cb) {
   appkit.api.get('/apps/' + name, (err, app) => {
     if(err) {
@@ -26,13 +28,13 @@ function format_auto_builds(auto_build) {
 }
 
 function list(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   appkit.api.get('/apps/' + args.app + '/builds', 
     appkit.terminal.format_objects.bind(null, format_build, appkit.terminal.markdown('###===### No builds were found.'))); 
 }
 
 function create(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   app_or_error(appkit, args.app, (app) => {
     let payload = { org:app.organization.name, checksum:args.checksum, url:args['source-url'], repo:args.repo, sha:args.sha, branch:args.branch, version:args.version }
     appkit.api.post(JSON.stringify(payload), '/apps/' + args.app + '/builds', appkit.terminal.print);
@@ -40,8 +42,8 @@ function create(appkit, args) {
 }
 
 function rebuild(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
-  console.assert(args.ID && args.ID !== '', 'The build id was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.ID && args.ID !== '', 'The build id was not provided.');
   app_or_error(appkit, args.app, (app) => {
     if(args.ID === 'latest') {
       appkit.api.get('/apps/' + args.app + '/builds', (err, builds) => {
@@ -80,7 +82,7 @@ function rebuild(appkit, args) {
 }
 
 function info(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   if(!args.ID || args.ID === '') {
     args.ID = "latest";
   }
@@ -108,8 +110,8 @@ function info(appkit, args) {
 }
 
 function pull_build_logs(appkit, args, callback) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
-  console.assert(args.ID && args.ID !== '', 'A build id was not provided and is required.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.ID && args.ID !== '', 'A build id was not provided and is required.');
   appkit.api.get('/apps/' + args.app + '/builds/' + args.ID, (err, data) => {
     if(err) {
       return callback(err);
@@ -124,7 +126,7 @@ function pull_build_logs(appkit, args, callback) {
 }
 
 function logs(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   if(!args.ID || args.ID === '') {
     args.ID = "latest";
   }
@@ -185,7 +187,7 @@ function logs(appkit, args) {
 }
 
 function remove_auto(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');  
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');  
   app_or_error(appkit, args.app, (app) => {
     let task = appkit.terminal.task(`Removing auto build hook for **• ${args.app}**`);
     task.start();
@@ -202,7 +204,7 @@ function remove_auto(appkit, args) {
 
 
 function auto(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   if(args.repo.startsWith('git://')) {
     return appkit.terminal.error('The specified repo must be an https uri.');
   }
@@ -230,7 +232,7 @@ function auto(appkit, args) {
 }
 
 function info_auto(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   appkit.api.get('/apps/' + args.app + '/builds/auto/github', (err, data) => {
     if(err) {
       return appkit.terminal.error(err);
@@ -240,8 +242,8 @@ function info_auto(appkit, args) {
 }
 
 function stop(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
-  console.assert(args.ID && args.ID !== '', 'A build id was not provided and is required.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.ID && args.ID !== '', 'A build id was not provided and is required.');
 
   let stop_build = function() {
     appkit.api.delete('/apps/' + args.app + '/builds/' + args.ID, appkit.terminal.print);

@@ -1,6 +1,7 @@
 "use strict"
 
 const http = require('http');
+const assert = require('assert');
 
 function format_hooks(hook) {
   return `**ɧ ${hook.url}**
@@ -20,7 +21,7 @@ function list_hooks(appkit, args) {
 }
 
 function create_hooks(appkit, args) {
-  console.assert(args.URL.startsWith('http:') || args.URL.startsWith('https:'), 
+  assert.ok(args.URL.startsWith('http:') || args.URL.startsWith('https:'), 
     'The specified URL was invalid, only http and https are supported.');
   args.URL = args.URL.toLowerCase();
   let payload = {url:args.URL, events:args.events, active:args.active, secret:args.secret};
@@ -39,7 +40,7 @@ function create_hooks(appkit, args) {
 }
 
 function delete_hooks(appkit, args) {
-  console.assert(args.ID, 'A hook id was not provided!');
+  assert.ok(args.ID, 'A hook id was not provided!');
   let task = appkit.terminal.task(`Removing hook **ɧ ${args.ID}**`);
   task.start();
   appkit.api.delete('/apps/' + args.app + '/hooks/' + args.ID, (err) => {

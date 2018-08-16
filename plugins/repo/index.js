@@ -1,5 +1,7 @@
 "use strict"
 
+const assert = require('assert')
+
 function format_auto_builds(auto_build) {
   return `**• ${auto_build.app.name} set to ${auto_build.repo} on branch ${auto_build.branch}**
   ***Uername:*** ${auto_build.username}
@@ -17,7 +19,7 @@ function app_or_error(appkit, name, cb) {
 }
 
 function unset(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');  
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');  
   app_or_error(appkit, args.app, (app) => {
     let task = appkit.terminal.task(`Removing auto build hook for **• ${args.app}**`);
     task.start();
@@ -33,7 +35,7 @@ function unset(appkit, args) {
 }
 
 function set(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   if(args.REPO.startsWith('git://')) {
     return appkit.terminal.error('The specified repo must be an https uri.');
   }
@@ -61,7 +63,7 @@ function set(appkit, args) {
 }
 
 function info(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   appkit.api.get(`/apps/${args.app}/builds/auto/github`, (err, data) => {
     if(err) {
       return appkit.terminal.error(err);

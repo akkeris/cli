@@ -1,6 +1,7 @@
 "use strict"
 
 const util = require('util')
+const assert = require('assert')
 
 async function app_or_error(appkit, name) {
   return new Promise((resolve, reject) => {
@@ -70,10 +71,10 @@ async function create_route(appkit, args) {
     return appkit.terminal.error("A target path is required.")
   }
   try {
-    console.assert(args.app && args.app !== '', 'Please specify an app.')
-    console.assert(args.site && /^[a-z0-9.-]+$/.test(args.site), 'Expected: A site ID or domain name.')
-    console.assert(args.SOURCE_PATH && /\/[a-zA-Z0-9_-]*/.test(args.SOURCE_PATH), 'SOURCE_PATH must start with a slash and afterward match /[a-zA-Z0-9_-]+/.')
-    console.assert(/\/[a-zA-Z0-9_-]*/.test(args.TARGET_PATH), 'TARGET_PATH must start with a slash and afterward match /[a-zA-Z0-9_-]+/.')
+    assert.ok(args.app && args.app !== '', 'Please specify an app.')
+    assert.ok(args.site && /^[a-z0-9.-]+$/.test(args.site), 'Expected: A site ID or domain name.')
+    assert.ok(args.SOURCE_PATH && /\/[a-zA-Z0-9_-]*/.test(args.SOURCE_PATH), 'SOURCE_PATH must start with a slash and afterward match /[a-zA-Z0-9_-]+/.')
+    assert.ok(/\/[a-zA-Z0-9_-]*/.test(args.TARGET_PATH), 'TARGET_PATH must start with a slash and afterward match /[a-zA-Z0-9_-]+/.')
     args.site = clean_site(args.site);
     let payload = {app:args.app, site:args.site, source_path:args.SOURCE_PATH, target_path: args.TARGET_PATH}
     let app_info = await app_or_error(appkit, args.app)
@@ -93,7 +94,7 @@ async function create_route(appkit, args) {
 }
 
 function delete_route(appkit, args){
-  console.assert(args.ID && args.ID !== '', 'Please specify a route ID.')
+  assert.ok(args.ID && args.ID !== '', 'Please specify a route ID.')
 
   let payload = {id: args.ID}
   
