@@ -16,7 +16,7 @@ function logs(appkit, args) {
   }
   let payload = {lines:args.num, tail:args.tail}
   let uri = `/apps/${args.app}/log-sessions`
-  if (args.site && args.app === "" && args.site !== "") {
+  if (args.site && !args.app) {
     uri = `/sites/${args.site}/log-sessions`
   }
   appkit.api.post(JSON.stringify(payload), uri, (err, log_session) => {
