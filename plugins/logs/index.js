@@ -4,7 +4,7 @@ const https = require('https');
 const url = require('url');
 
 function highlight(data) {
-  process.stdout.write(data.replace(/^([A-z0-9\:\-\+\.]+Z) ([A-z\-0-9]+) ([A-z\.0-9\/\[\]\-]+)\: /gm, '\u001b[36m$1\u001b[0m $2 \u001b[38;5;104m$3:\u001b[0m ')); 
+  process.stdout.write(data.replace(/^([A-z0-9\:\-\+\.]+Z) ([A-z\-0-9\.]+) ([A-z\.0-9\/\[\]\-]+)\: /gm, '\u001b[36m$1\u001b[0m $2 \u001b[38;5;104m$3:\u001b[0m ')); 
 }
 
 function logs(appkit, args) {
