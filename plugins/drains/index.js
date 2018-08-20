@@ -15,7 +15,7 @@ function list_drains(appkit, args) {
     return appkit.terminal.error(new Error("Both --site (-s) and --app (-a) were provided, logs can be viewed for a site or an app, not both."))
   }
   let uri = `/apps/${args.app}/log-drains`
-  if (args.site && args.app === "" && args.site !== "") {
+  if (args.site && args.site !== "") {
     uri = `/sites/${args.site}/log-drains`
   }
   appkit.api.get(uri, appkit.terminal.format_objects.bind(null, format_drain, appkit.terminal.markdown('###===### No drains were found.')));
@@ -31,7 +31,7 @@ function info_drains(appkit, args) {
   assert.ok(args.ID && args.ID !== '', 'The log drain id was not provided.');
 
   let uri = `/apps/${args.app}/log-drains/${args.ID}`
-  if (args.site && args.app === "" && args.site !== "") {
+  if (args.site && args.site !== "") {
     uri = `/sites/${args.site}/log-drains/${args.ID}`
   }
 
@@ -51,7 +51,7 @@ function create_drains(appkit, args) {
   let payload = {url:args.URL};
 
   let uri = `/apps/${args.app}/log-drains`
-  if (args.site && args.app === "" && args.site !== "") {
+  if (args.site && args.site !== "") {
     uri = `/sites/${args.site}/log-drains`
   }
   appkit.api.post(JSON.stringify(payload), uri, appkit.terminal.print);
@@ -66,7 +66,7 @@ function delete_drains(appkit, args) {
   }
   assert.ok(args.ID && args.ID !== '', 'The log drain id was not provided.');
   let uri = `/apps/${args.app}/log-drains/${args.ID}`
-  if (args.site && args.app === "" && args.site !== "") {
+  if (args.site && args.site !== "") {
     uri = `/sites/${args.site}/log-drains/${args.ID}`
   }
   appkit.api.delete(uri, (err, drain) => {
