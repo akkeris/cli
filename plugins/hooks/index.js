@@ -136,7 +136,10 @@ module.exports = {
       .command('hooks', 'list webhooks for an app.', hooks_options, list_hooks.bind(null, appkit))
       .command('hooks:info ID', 'Get information on the specified webhook.', hooks_options, info_hooks.bind(null, appkit))
       .command('hooks:destroy ID', 'Remove the specified webhook.', hooks_options, delete_hooks.bind(null, appkit))
+      .command('hooks:remove ID', false, hooks_options, delete_hooks.bind(null, appkit))
+      .command('hooks:delete ID', false, hooks_options, delete_hooks.bind(null, appkit))
       .command('hooks:create URL', 'create a new webhook.', hooks_create_options, create_hooks.bind(null, appkit))
+      .command('hooks:add URL', false, hooks_create_options, create_hooks.bind(null, appkit))
       .command('hooks:deliveries ID', 'Get information on a webhook delivery.', hook_results_options, result.bind(null, appkit))
 
   },
