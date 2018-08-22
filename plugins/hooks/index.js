@@ -141,6 +141,9 @@ module.exports = {
       .command('hooks:create URL', 'create a new webhook.', hooks_create_options, create_hooks.bind(null, appkit))
       .command('hooks:add URL', false, hooks_create_options, create_hooks.bind(null, appkit))
       .command('hooks:deliveries ID', 'Get information on a webhook delivery.', hook_results_options, result.bind(null, appkit))
+      .command('hooks:result ID', false, hook_results_options, result.bind(null, appkit))
+      .command('hooks:results ID', false, hook_results_options, result.bind(null, appkit))
+      .command('hooks:sent ID', false, hook_results_options, result.bind(null, appkit))
 
   },
   update:function() {
