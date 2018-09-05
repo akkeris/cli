@@ -41,6 +41,36 @@ function destroy(appkit, args) {
   }
 }
 
+
+
+function promote(appkit, args) {
+  assert.ok(args.ADDON_NAME, 'No addon name was provided.');
+  let loader = appkit.terminal.loading(`Promoting addon ${args.ADDON_NAME} to the primary addon service on ${args.app}`);
+  loader.start();
+
+  let payload = {primary:true};
+  appkit.api.patch(JSON.stringify(payload), `/apps/${args.app}/addons/${args.ADDON_NAME}`, function(err, addon) {
+    if(err && err.code !== 404) {
+      loader.end();
+      return appkit.terminal.error(err);
+    } else if (err && err.code === 404) {
+      appkit.api.patch(JSON.stringify(payload), `/apps/${args.app}/addon-attachments/${args.ADDON_NAME}`, function(err, addon) {
+        loader.end()
+        if(err) {
+          return appkit.terminal.error(err);
+        }
+        console.log(appkit.terminal.markdown(`\n###===### Addon attachment ~~${addon.name}~~ Promoted\n`));
+        appkit.terminal.print(err, addon);
+      });
+    } else {
+      loader.end();
+      console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ Promoted\n`));
+      appkit.terminal.print(err, addon);
+    }
+  });
+}
+
+
 function create(appkit, args) {
   assert.ok(args.SERVICE_PLAN, 'No service plan was provided.');
   let loader = appkit.terminal.loading('Provisioning addon ' + args.SERVICE_PLAN + ' and attaching it to ' + args.app);
@@ -101,16 +131,16 @@ function format_services(addon_service) {
   ***State:*** ${addon_service.state}\n`;
 }
 
-function format_addons(addon_service) {
-  return `**+ ${addon_service.name}**
-  ***Plan:*** ${addon_service.plan.name}
-  ***Id:*** ${addon_service.id}\n`;
+function format_addons(addon) {
+  return `**+ ${addon.id} (${addon.name})**
+  ***Plan:*** ${addon.plan.name}
+  ***Primary:*** ${addon.plan.name}\n`;
 }
 
-function format_attached_addons(addon_service) {
-  return `**+ ${addon_service.name}**
-  ***Plan:*** ${addon_service.addon.plan.name}
-  ***Id:*** ${addon_service.app.name === addon_service.addon.app.name ? addon_service.addon.id : (addon_service.id + ' ^^attached^^' )}\n`;
+function format_attached_addons(addon) {
+  return `**+ ${addon.app.name === addon.addon.app.name ? addon.addon.id : (addon.id + ' ^^attached^^' )} ${addon.name}**
+  ***Plan:*** ${addon.addon.plan.name}
+  ***Primary:*** ${addon.plan.name}\n`;
 }
 
 
@@ -226,6 +256,7 @@ module.exports = {
       .command('addons:plans SERVICE', 'list all available plans for an add-on service', {}, list_addons_plans.bind(null, appkit))
       .command('addons:services', 'list all available add-on services', {}, list_addons.bind(null, appkit))
       .command('addons:plans:info SERVICE SERVICE_PLAN', 'Show info about an add-on service plan', {}, list_addon_plan_info.bind(null, appkit))
+      .command('addons:promote ADDON_NAME', 'Promote an addon and make it the primary for the addon service', require_app_option, promote.bind(null, appkit))
       // aliases
       .command('addon', false, require_app_option, list_attached_addons.bind(null, appkit))
       .command('addon:attach ADDON_NAME', false, attach_create_option, attach.bind(null, appkit))
@@ -244,6 +275,8 @@ module.exports = {
       .command('service:plans SERVICE', false, {}, list_addons_plans.bind(null, appkit))
       .command('service:plan SERVICE', false, {}, list_addons_plans.bind(null, appkit))
       .command('plans SERVICE', false, {}, list_addons_plans.bind(null, appkit))
+      .command('addons:primary ADDON_NAME', false, require_app_option, promote.bind(null, appkit))
+
 
       // not implemented:
       //.command('addons:upgrade ADDON_NAME ADDON_SERVICE:PLAN', 'upgrade an existing add-on resource to PLAN', require_app_option, info.bind(null, appkit))

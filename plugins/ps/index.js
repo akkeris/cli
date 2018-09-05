@@ -73,7 +73,6 @@ function format_dyno(ps) {
   }
   if(info.state === 'stopping' || info.state === 'stopped' || info.state === 'pending' || info.state === 'starting') {
     return  ` ${dyno_name}:${spacing}~~${info.state}~~ ###${ps.updated_at}###`
-
   }
   return ` ${dyno_name}:${spacing}^^^${info.state}^^^ ###${ps.updated_at}###`
 }
