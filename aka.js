@@ -94,16 +94,24 @@ function set_profile(appkit, args, cb) {
   if(!args || !args.auth || !args.app) {
     appkit.terminal.question('Akkeris Auth Host (auth.example.com): ', (auth) => {
       appkit.terminal.question('Akkeris Apps Host (apps.example.com): ', (apps) => {
-        if (auth.startsWith('https://') || auth.startsWith('http://')) {
-          auth = (new url.URL(auth)).hostname
-        }
-        if (apps.startsWith('https://') || apps.startsWith('http://')) {
-          apps = (new url.URL(apps)).hostname
-        }
-        fs.writeFileSync(path.join(get_home(), '.akkeris', 'config.json'), JSON.stringify({auth, apps}, null, 2));
-        process.env.AKKERIS_API_HOST = apps
-        process.env.AKKERIS_AUTH_HOST = auth
-        console.log("Profile updated!")
+        appkit.terminal.question('Periodically check for updates? (y/n): ', (updates) => {
+          if (auth.startsWith('https://') || auth.startsWith('http://')) {
+            auth = (new url.URL(auth)).hostname
+          }
+          if (apps.startsWith('https://') || apps.startsWith('http://')) {
+            apps = (new url.URL(apps)).hostname
+          }
+          if (updates.toLowerCase() === 'yes' || updates.toLowerCase() === 'y') {
+            updates = "1"; 
+          } else {
+            updates = "0";
+          }
+          fs.writeFileSync(path.join(get_home(), '.akkeris', 'config.json'), JSON.stringify({auth, apps, updates}, null, 2));
+          process.env.AKKERIS_API_HOST = apps
+          process.env.AKKERIS_AUTH_HOST = auth
+          process.env.AKKERIS_UPDATES = updates
+          console.log("Profile updated!")
+        });
       });
     });
   }
@@ -115,6 +123,7 @@ function load_profile() {
       let config = JSON.parse(fs.readFileSync(path.join(get_home(), '.akkeris', 'config.json')).toString('UTF8'))
       process.env.AKKERIS_AUTH_HOST = config.auth;
       process.env.AKKERIS_API_HOST = config.apps;
+      process.env.AKKERIS_UPDATES = config.updates ? config.updates : 0;
     } catch (e) {
       if(process.argv && (process.argv[1] === 'auth:profile' || process.argv[2] === 'auth:profile' || process.argv[3] === 'auth:profile')) {
         return;
@@ -205,7 +214,11 @@ module.exports.init = function init() {
     package:JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json').toString('utf8')))
   };
 
-  module.exports.update_available = check_for_updates();
+  if (process.env.AKKERIS_UPDATES && process.env.AKKERIS_UPDATES === "1") {
+    module.exports.update_available = check_for_updates()
+  } else {
+    module.exports.update_available = {};
+  }
 
   // Establish the base arguments for the CLI.
   module.exports.args = require('yargs')
