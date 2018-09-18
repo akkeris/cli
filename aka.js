@@ -10,6 +10,14 @@ const path = require('path');
 const url = require('url');
 const zlib = require('zlib');
 
+// Only check to updates when our last update check was this long ago (ms)
+// Default - 86400000 (24 hours)
+const AKA_UPDATE_INTERVAL = process.env.AKA_UPDATE_INTERVAL ? process.env.AKA_UPDATE_INTERVAL : 86400000;
+
+// Filename of saved update information
+// Default - .aka_version
+const AKA_UPDATE_FILENAME = '.aka_version'
+
 process.on('uncaughtException', (e) => {
   if(process.env.DEBUG) {
     console.error(e.message)
@@ -126,6 +134,53 @@ function welcome() {
   proc.spawnSync('ak',['auth:login'], {env:process.env, stdio:'inherit'});
 }
 
+function check_for_updates(){
+  const update_file_path = path.join(get_home(), '.akkeris', AKA_UPDATE_FILENAME).toString('utf8');
+  // First time checking, need to create file
+  if (!fs.existsSync(update_file_path)) {
+    spawn_update_check(update_file_path);
+    return {};
+  } 
+  else {
+    const file_stats = fs.statSync(update_file_path);
+
+    // If the CLI is up to date, the file will be empty
+    if (file_stats.size < 1) {
+      return {};
+    }
+
+    // Only check for updates when it's been at least AKA_UPDATE_INTERVAL ms since last check
+    const last_update = file_stats.mtimeMs;
+    if ((Date.now() - last_update) > AKA_UPDATE_INTERVAL) {
+      spawn_update_check(update_file_path);
+    }
+
+    try {
+      // Read current version and latest version from file
+      let update_file = JSON.parse(fs.readFileSync(update_file_path))
+      if (update_file.akkeris && update_file.akkeris.latest > update_file.akkeris.current) {
+        return { current: update_file.akkeris.current, latest: update_file.akkeris.latest };
+      }
+    } catch (err) {
+      // JSON parse error - invalid file. Delete and rebuild on next run
+      if (process.env.DEBUG) { console.log(err); }
+      fs.unlinkSync(update_file_path);
+      return {};
+    }
+  }
+}
+
+// Run 'npm outdated akkeris --global --json' in the background
+// Writes output to @param update_file_path
+function spawn_update_check(update_file_path) {
+  var output = fs.openSync(update_file_path, 'w');
+  proc.spawn('npm outdated akkeris --global --json', {
+    shell: true, 
+    detached: true, 
+    stdio: [ 'ignore', output, 'ignore' ] 
+  }).unref();
+}
+
 // Initialize, setup any items at runtime
 module.exports.init = function init() {
 
@@ -149,7 +204,8 @@ module.exports.init = function init() {
     akkeris_auth_host:(process.env.AKKERIS_AUTH_HOST),
     package:JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json').toString('utf8')))
   };
-  
+
+  module.exports.update_available = check_for_updates();
 
   // Establish the base arguments for the CLI.
   module.exports.args = require('yargs')
@@ -224,6 +280,9 @@ module.exports.update = function update(appkit) {
   }));
   console.log(appkit.terminal.markdown(`###===### updating akkeris`));
   proc.spawnSync('npm',['update', '-g', 'akkeris'], {cwd:__dirname, env:process.env, stdio:'inherit'});
+  
+  // Clear 'update available' file
+  fs.unlinkSync(path.join(get_home(), '.akkeris', AKA_UPDATE_FILENAME).toString('utf8'));
 }
 
 function is_redirect(type, res) { return type.toLowerCase() === 'get' && res.headers['location'] && (res.statusCode === 301 || res.statusCode === 302); }
@@ -308,9 +367,18 @@ module.exports.api = {
 
 if(require.main === module) {
   module.exports.init();
+
+  const update_available = module.exports.update_available ? (Object.keys(module.exports.update_available).length !== 0) : false;
+  let epilogue = '';
+  if (update_available) {
+    epilogue = module.exports.terminal.update_statement(module.exports.update_available.current, module.exports.update_available.latest);
+  } else {
+    epilogue = module.exports.random_tips[Math.floor(module.exports.random_tips.length * Math.random())]
+  }
+  
   module.exports.args
     .strict()
     .demand(1)
-    .epilog(module.exports.random_tips[Math.floor(module.exports.random_tips.length * Math.random())])
+    .epilog(epilogue)
     .argv
 }
