@@ -23,7 +23,6 @@ function list_hooks(appkit, args) {
 function create_hooks(appkit, args) {
   assert.ok(args.URL.startsWith('http:') || args.URL.startsWith('https:'), 
     'The specified URL was invalid, only http and https are supported.');
-  args.URL = args.URL.toLowerCase();
   let payload = {url:args.URL, events:args.events, active:args.active, secret:args.secret};
 
   let task = appkit.terminal.task(`Creating webhook **ɧ ${args.URL}**`);
