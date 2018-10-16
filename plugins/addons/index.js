@@ -87,17 +87,21 @@ function create(appkit, args) {
 }
 
 function format_plans(addon_service) {
-  return `**+ ${addon_service.human_name} (${addon_service.name}) \$${addon_service.price.cents/100}/${addon_service.price.unit}**
-  ***Id:*** ${addon_service.id}
-  ***State:*** ${addon_service.state}
-  ***Description:*** ${addon_service.description}\n`;
+  return `**+ ${addon_service.human_name} ${addon_service.name} \$${addon_service.price.cents/100}/${addon_service.price.unit}**
+  ***Id:*** ${addon_service.id} 
+  ***Description:*** ${addon_service.description}
+${addon_service.attributes ? Object.keys(addon_service.attributes).map((key) => "  ***" + key.replace(/_/g, ' ').replace(/^(\w)|\s(\w)/g, c => c.toUpperCase()) + ":*** " + addon_service.attributes[key]).join('\n') : ''}\n`;
 }
 
 function list_addons_plans(appkit, args) {
   assert.ok(args.SERVICE, 'There was no service provided.');
   appkit.api.get('/addon-services/' + args.SERVICE + '/plans', 
-    appkit.terminal.format_objects.bind(null, format_plans, 
-      appkit.terminal.markdown('###===### No plans were found.')));
+    (err, plans) => { 
+      if (plans) {
+        plans = plans.filter((plan) => plan.state === 'ga' || plan.state === 'public')
+      }
+      return appkit.terminal.format_objects(format_plans, appkit.terminal.markdown('###===### No plans were found.'), err, plans)
+    });
 }
 
 function list_addon_plan_info(appkit, args){
