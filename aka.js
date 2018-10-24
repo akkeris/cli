@@ -246,22 +246,40 @@ function response_body(type, callback, res) {
   });
 }
 
-function request(type, payload, rurl, headers, callback) {
-  let connector = rurl.startsWith('http://') ? http : https;
-  let opts = url.parse(rurl);
-  opts.method = type;
-  opts.headers = headers || {};
-  let req = connector.request(opts, response_body.bind(null, type, (e, d) => { 
-    if(d) {
-      d = JSON.parse(d)
+function req_help(type, payload, rurl, headers, callback, resolve, reject) {
+    let connector = rurl.startsWith('http://') ? http : https;
+    let opts = url.parse(rurl);
+    opts.method = type;
+    opts.headers = headers || {};
+    let req = connector.request(opts, response_body.bind(null, type, (e, d) => { 
+      if(d) {
+        d = JSON.parse(d)
+      }
+      if(callback) callback(e,d);
+      if(e) {
+        reject(e)
+      } else {
+        resolve(d)
+      }
+    }));
+    if(payload) {
+      req.write(payload);
     }
-    callback(e,d);
-  }));
-  if(payload) {
-    req.write(payload);
+    req.on('error', (err) => { 
+      if(callback) callback(err); 
+      reject(e)
+    });
+    req.end();
+}
+
+function request(type, payload, rurl, headers, callback) {
+  if(callback) {
+    req_help(type, payload, rurl, headers, callback, () => {}, () => {})
+  } else {
+    return new Promise((resolve, reject) => {
+      req_help(type, payload, rurl, headers, null, resolve, reject)
+    })
   }
-  req.on('error', (err) => { callback(err); });
-  req.end();
 }
 
 function appkit_request(type, payload, rurl, callback) {
@@ -281,14 +299,15 @@ function appkit_request(type, payload, rurl, callback) {
   if(process.env.API_AUTH) {
     headers['authorization'] = process.env.API_AUTH;
   }
-  headers['accept-encoding'] = 'gzip'
+  headers['accept'] = '*/*';
+  headers['accept-encoding'] = 'gzip';
   headers['user-agent'] = 'akkeris-cli';
 
   let full_url = rurl.startsWith("http") ? rurl : 
                 ( (module.exports.config.akkeris_api_host.startsWith("http") ? 
                     module.exports.config.akkeris_api_host : 
                     'https://' + module.exports.config.akkeris_api_host) + rurl);
-  request(type, payload, full_url, headers, callback);
+  return request(type, payload, full_url, headers, callback);
 }
 
 module.exports.http = {
