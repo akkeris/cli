@@ -306,7 +306,7 @@ async function downgrade(appkit, args) {
     assert.ok(args.PLAN, 'No plan was specified')
     assert.ok(args.ADDON, 'No addon was specified')
     let addon = await appkit.api.get(`/apps/${args.app}/addons/${args.ADDON}`)
-    let addon_service = addon.addon_service
+    let addon_service = await appkit.api.get(`/addon-services/${addon.addon_service.id}`)
     let addon_plan = await appkit.api.get(`/addon-services/${addon_service.id}/plans/${args.PLAN}`)
     if(addon_service.supports_upgrading) {
       let result = await appkit.api.patch(JSON.stringify({"plan":addon_plan.id}),`/apps/${args.app}/addons/${args.ADDON}`)
@@ -342,7 +342,7 @@ module.exports = {
       'wait':{
         'alias':'w',
         'demand':false,
-        'default':false,
+        'default':true,
         'boolean':true,
         'description':'Whether to wait for the addon to be provisioned.'
       }
