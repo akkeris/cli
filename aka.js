@@ -267,7 +267,7 @@ function req_help(type, payload, rurl, headers, callback, resolve, reject) {
     }
     req.on('error', (err) => { 
       if(callback) callback(err); 
-      reject(e)
+      reject(err)
     });
     req.end();
 }
