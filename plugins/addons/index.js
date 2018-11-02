@@ -199,7 +199,7 @@ function format_attached_addons(addon) {
   return `**+ ${addon.app.name === addon.addon.app.name ? addon.addon.id : (addon.id + ' ^^attached^^' )} ${addon.name}**
   ***Plan:*** ${addon.addon.plan.name}
   ***Primary:*** ${addon.primary}
-  ***State:*** ${addon.state}\n`;
+  ***State:*** ${addon.state || 'provisioned'}\n`;
 }
 
 
@@ -286,12 +286,21 @@ function detach(appkit, args) {
 }
 
 async function rename(appkit, args) {
-  let loader = appkit.terminal.loading(`Renaming addon ${args.ATTACHMENT_NAME} to ${args.NEW_NAME}`);
+  let name = args.attachment || args.addon
+  let type = args.attachment ? "attachment" : "addon"
+  if(!args.attachment && !args.addon) {
+    return appkit.terminal.error(new Error("You must either specify an attachment or addon to rename."))
+  }
+  let loader = appkit.terminal.loading(`Renaming ${type} ${name} to ${args.NEW_NAME}`);
   loader.start();
   try {
-    assert.ok(args.ATTACHMENT_NAME, 'No attachment name was specified')
+    assert.ok(name, 'No name was specified')
     assert.ok(args.NEW_NAME, 'No new name was specified')
-    await appkit.api.patch(JSON.stringify({"attachment":{"name":args.NEW_NAME}}), `/apps/${args.app}/addons/${args.ATTACHMENT_NAME}`)
+    if(type === 'addon') {
+      await appkit.api.patch(JSON.stringify({"attachment":{"name":args.NEW_NAME}}), `/apps/${args.app}/addons/${name}`)
+    } else {
+      await appkit.api.patch(JSON.stringify({"name":argrs.NEW_NAME}, `/apps/${args.app}/addon-attachments/${name}`))
+    }
     loader.end();
   } catch (e) {
     loader.end()
@@ -405,6 +414,18 @@ module.exports = {
       'description':'name for the initial add-on attachment (and prefix for config vars)'
     };
 
+    let require_rename = JSON.parse(JSON.stringify(require_app_option));
+    require_rename.attachment = {
+      'demand':false,
+      'string':true,
+      'description':'The attachment to rename'
+    };
+    require_rename.addon = {
+      'demand':false,
+      'string':true,
+      'description':'The addon to rename'
+    };
+
     appkit.args
       .command('addons', 'manage (list) add-on resources', require_app_option, list_all_addons.bind(null, appkit))
       .command('addons:attach ADDON_NAME', 'attach add-on resource to an app', attach_create_option, attach.bind(null, appkit))
@@ -412,7 +433,7 @@ module.exports = {
       .command('addons:destroy ADDON', 'destroy add-on resources', require_app_option, destroy.bind(null, appkit))
       .command('addons:delete ADDON', false, require_app_option, destroy.bind(null, appkit))
       .command('addons:remove ADDON', false, require_app_option, destroy.bind(null, appkit))
-      .command('addons:rename ATTACHMENT_NAME NEW_NAME', 'Rename an add-on attachment name.', require_app_option, rename.bind(null, appkit))
+      .command('addons:rename NEW_NAME', 'Rename an add-on attachment name.', require_rename, rename.bind(null, appkit))
       .command('addons:upgrade ADDON PLAN', 'upgrade an addons plan', require_app_wait_option, upgrade.bind(null, appkit))
       .command('addons:downgrade ADDON PLAN', 'downgrade an addon plan', require_app_wait_option, downgrade.bind(null, appkit))
       .command('addons:detach ATTACHMENT_NAME', 'detach add-on resource from an app', require_app_option, detach.bind(null, appkit))
