@@ -19,7 +19,7 @@ function maintenance(state, appkit, args) {
   assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   let task = appkit.terminal.task(`${(state === true ? 'Enabling' : 'Disabling')} maintenance mode for **⬢ ${args.app}**`);
   task.start();
-  appkit.api.patch(JSON.stringify({"maintenance":state}), '/apps/' + args.app, function(err, info){
+  appkit.api.patch(JSON.stringify({"maintenance":state}), '/apps/' + args.app, function(err, info) {
     if (err || !info) {
       task.end('error');
       return appkit.terminal.print(err);

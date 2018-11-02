@@ -57,12 +57,12 @@ function promote(appkit, args) {
         if(err) {
           return appkit.terminal.error(err);
         }
-        console.log(appkit.terminal.markdown(`\n###===### Addon attachment ~~${addon.name}~~ Promoted\n`));
+        console.log(appkit.terminal.markdown(`\n###===### Addon attachment ~~${addon.name}~~ promoted\n`));
         appkit.terminal.print(err, addon);
       });
     } else {
       loader.end();
-      console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ Promoted\n`));
+      console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ promoted\n`));
       appkit.terminal.print(err, addon);
     }
   });
@@ -76,7 +76,7 @@ async function waitForAddon(appkit, args, addon, loader, statement) {
   if(!statement) {
     statement = 'Provisioned'
   }
-  await wait(5000)
+  await wait(6000)
   appkit.api.get('/apps/' + args.app + '/addons/' + addon.id, async function(err, addon) {
     if (err) {
       loader.end();
@@ -109,27 +109,38 @@ async function wait_for_addon(appkit, args) {
   }
 }
 
-function create(appkit, args) {
-  assert.ok(args.SERVICE_PLAN, 'No service plan was provided.');
-  let loader = appkit.terminal.loading('Provisioning addon ' + args.SERVICE_PLAN + ' and attaching it to ' + args.app);
-  loader.start();
-  let payload = {plan:args.SERVICE_PLAN};
-  appkit.api.post(JSON.stringify(payload), '/apps/' + args.app + '/addons', function(err, addon) {
+async function create(appkit, args) {
+  let addon = null
+  try {
+    assert.ok(args.SERVICE_PLAN, 'No service plan was provided.');
+  } catch (e) {
+    return appkit.terminal.error(e);
+  }
+  let loader = appkit.terminal.loading(`Provisioning addon ${args.SERVICE_PLAN} and attaching it to ${args.app}`);
+  try {
+    loader.start();
+    addon = await appkit.api.post(JSON.stringify({"plan":args.SERVICE_PLAN, "attachment":{"name":args.as}, "name":args.name}), `/apps/${args.app}/addons`)
     loader.end();
-    if(err) {
-      return appkit.terminal.error(err);
-    }
+  } catch (e) {
+    loader.end();
+    return appkit.terminal.error(e);
+  }
+
+  try {
+    assert.ok(addon, 'The addon to create was null, unsure how this happened')
     if (addon.state === 'provisioning' && args.wait) {
-      let l2 = appkit.terminal.loading(appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be provisioned`));
+      let l2 = appkit.terminal.loading(appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be provisioned (this may take 10 minutes)`));
       l2.start();
-      waitForAddon(appkit, args, addon, l2).catch((e) => appkit.terminal.error(e))
+      await waitForAddon(appkit, args, addon, l2)
     } else if (addon.state === 'provisioning') {
       console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ is being created in the background. This app will restart when its finished.\n`));
     } else {
-      console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ Provisioned\n`));
-      appkit.terminal.print(err, addon);
+      console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ provisioned\n`));
+      appkit.terminal.print(null, addon);
     }
-  });
+  } catch (e) {
+    return appkit.terminal.error(e);
+  }
 }
 
 function format_plans(addon_service) {
@@ -192,7 +203,7 @@ function format_attached_addons(addon) {
   return `**+ ${addon.app.name === addon.addon.app.name ? addon.addon.id : (addon.id + ' ^^attached^^' )} ${addon.name}**
   ***Plan:*** ${addon.addon.plan.name}
   ***Primary:*** ${addon.primary}
-  ***State:*** ${addon.state}\n`;
+  ***State:*** ${addon.state || 'provisioned'}\n`;
 }
 
 
@@ -278,18 +289,43 @@ function detach(appkit, args) {
   });
 }
 
-async function upgrade(appkit, args) {
+async function rename(appkit, args) {
+  let name = args.attachment || args.addon
+  let type = args.attachment ? "attachment" : "addon"
+  if(!args.attachment && !args.addon) {
+    return appkit.terminal.error(new Error("You must either specify an attachment or addon to rename."))
+  }
+  let loader = appkit.terminal.loading(`Renaming ${type} ${name} to ${args.NEW_NAME}`);
+  loader.start();
   try {
-    // TODO: add mainteance mode set/unset
+    assert.ok(name, 'No name was specified')
+    assert.ok(args.NEW_NAME, 'No new name was specified')
+    if(type === 'addon') {
+      await appkit.api.patch(JSON.stringify({"attachment":{"name":args.NEW_NAME}}), `/apps/${args.app}/addons/${name}`)
+    } else {
+      await appkit.api.patch(JSON.stringify({"name":argrs.NEW_NAME}, `/apps/${args.app}/addon-attachments/${name}`))
+    }
+    loader.end();
+  } catch (e) {
+    loader.end()
+    appkit.terminal.error(e)
+  }
+}
+
+async function upgrade(appkit, args) {
+  let maintenance_ran = false;
+  try {
     assert.ok(args.PLAN, 'No plan was specified')
     assert.ok(args.ADDON, 'No addon was specified')
     let addon = await appkit.api.get(`/apps/${args.app}/addons/${args.ADDON}`)
     let addon_service = await appkit.api.get(`/addon-services/${addon.addon_service.id}`)
     let addon_plan = await appkit.api.get(`/addon-services/${addon_service.id}/plans/${args.PLAN}`)
     if(addon_service.supports_upgrading) {
-      let result = await appkit.api.patch(JSON.stringify({"plan":addon_plan.id}),`/apps/${args.app}/addons/${args.ADDON}`)
       let loader = appkit.terminal.loading(appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be upgraded`));
       loader.start();
+      await appkit.api.patch(JSON.stringify({"maintenance":true}), `/apps/${args.app}`)
+      maintenance_ran = true
+      let result = await appkit.api.patch(JSON.stringify({"plan":addon_plan.id}),`/apps/${args.app}/addons/${args.ADDON}`)
       addon.state = "provisioning"
       await waitForAddon(appkit, args, addon, loader, 'upgraded')
     } else {
@@ -297,18 +333,24 @@ async function upgrade(appkit, args) {
     }
   } catch (e) {
     appkit.terminal.error(e)
+  } finally {
+    if(maintenance_ran) {
+      await appkit.api.patch(JSON.stringify({"maintenance":false}), `/apps/${args.app}`)
+    }
   }
 }
 
 async function downgrade(appkit, args) {
+  let maintenance_ran = false;
   try {
-    // TODO: add mainteance mode set/unset
     assert.ok(args.PLAN, 'No plan was specified')
     assert.ok(args.ADDON, 'No addon was specified')
     let addon = await appkit.api.get(`/apps/${args.app}/addons/${args.ADDON}`)
     let addon_service = await appkit.api.get(`/addon-services/${addon.addon_service.id}`)
     let addon_plan = await appkit.api.get(`/addon-services/${addon_service.id}/plans/${args.PLAN}`)
     if(addon_service.supports_upgrading) {
+      await appkit.api.patch(JSON.stringify({"maintenance":true}), `/apps/${args.app}`)
+      maintenance_ran = true
       let result = await appkit.api.patch(JSON.stringify({"plan":addon_plan.id}),`/apps/${args.app}/addons/${args.ADDON}`)
       let loader = appkit.terminal.loading(appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be downgraded`));
       loader.start();
@@ -319,6 +361,10 @@ async function downgrade(appkit, args) {
     }
   } catch (e) {
     appkit.terminal.error(e)
+  } finally {
+    if(maintenance_ran) {
+      await appkit.api.patch(JSON.stringify({"maintenance":false}), `/apps/${args.app}`)
+    }
   }
 }
 
@@ -354,14 +400,44 @@ module.exports = {
       'string':true,
       'description':'override existing add-on attachment with the same name (pass the name as the value).'
     };
+    attach_create_option.as = {
+      'demand':false,
+      'string':true,
+      'description':'name for the initial add-on attachment (and prefix for config vars)'
+    }
+
+    let require_addon_create = JSON.parse(JSON.stringify(require_app_wait_option));
+    require_addon_create.name = {
+      'demand':false,
+      'string':true,
+      'description':'name for the add-on resource'
+    };
+    require_addon_create.as = {
+      'demand':false,
+      'string':true,
+      'description':'name for the initial add-on attachment (and prefix for config vars)'
+    };
+
+    let require_rename = JSON.parse(JSON.stringify(require_app_option));
+    require_rename.attachment = {
+      'demand':false,
+      'string':true,
+      'description':'The attachment to rename'
+    };
+    require_rename.addon = {
+      'demand':false,
+      'string':true,
+      'description':'The addon to rename'
+    };
 
     appkit.args
       .command('addons', 'manage (list) add-on resources', require_app_option, list_all_addons.bind(null, appkit))
       .command('addons:attach ADDON_NAME', 'attach add-on resource to an app', attach_create_option, attach.bind(null, appkit))
-      .command('addons:create SERVICE_PLAN', 'create an add-on resource', require_app_wait_option, create.bind(null, appkit))
+      .command('addons:create SERVICE_PLAN', 'create an add-on resource', require_addon_create, create.bind(null, appkit))
       .command('addons:destroy ADDON', 'destroy add-on resources', require_app_option, destroy.bind(null, appkit))
       .command('addons:delete ADDON', false, require_app_option, destroy.bind(null, appkit))
       .command('addons:remove ADDON', false, require_app_option, destroy.bind(null, appkit))
+      .command('addons:rename NEW_NAME', 'Rename an add-on attachment name.', require_rename, rename.bind(null, appkit))
       .command('addons:upgrade ADDON PLAN', 'upgrade an addons plan', require_app_wait_option, upgrade.bind(null, appkit))
       .command('addons:downgrade ADDON PLAN', 'downgrade an addon plan', require_app_wait_option, downgrade.bind(null, appkit))
       .command('addons:detach ATTACHMENT_NAME', 'detach add-on resource from an app', require_app_option, detach.bind(null, appkit))
@@ -390,15 +466,8 @@ module.exports = {
       .command('service:plan SERVICE', false, {}, list_addons_plans.bind(null, appkit))
       .command('plans SERVICE', false, {}, list_addons_plans.bind(null, appkit))
       .command('addons:primary ADDON_NAME', false, require_app_option, promote.bind(null, appkit))
-
-
-      // not implemented:
-      //.command('addons:upgrade ADDON_NAME ADDON_SERVICE:PLAN', 'upgrade an existing add-on resource to PLAN', require_app_option, info.bind(null, appkit))
-      //.command('addons:rename ADDON NEW_NAME', 'Rename an add-on.', require_app_option, info.bind(null, appkit))
-      //.command('addons:open ADDON_NAME', 'open an add-on\'s dashboard in your browser', require_app_option, info.bind(null, appkit))
-      //.command('addons:docs ADDON_NAME', 'open an add-on\'s documentation in your browser', require_app_option, info.bind(null, appkit))
-      //.command('addons:downgrade ADDON_NAME ADDON_SERVICE:PLAN', 'downgrade an existing add-on resource to PLAN', require_app_option, info.bind(null, appkit))
-      
+      .command('upgrade ADDON PLAN', false, require_app_wait_option, upgrade.bind(null, appkit))
+      .command('downgrade ADDON PLAN', false, require_app_wait_option, downgrade.bind(null, appkit))
   },
   update:function() {
     // do nothing.
