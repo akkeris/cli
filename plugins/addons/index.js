@@ -57,12 +57,12 @@ function promote(appkit, args) {
         if(err) {
           return appkit.terminal.error(err);
         }
-        console.log(appkit.terminal.markdown(`\n###===### Addon attachment ~~${addon.name}~~ Promoted\n`));
+        console.log(appkit.terminal.markdown(`\n###===### Addon attachment ~~${addon.name}~~ promoted\n`));
         appkit.terminal.print(err, addon);
       });
     } else {
       loader.end();
-      console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ Promoted\n`));
+      console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ promoted\n`));
       appkit.terminal.print(err, addon);
     }
   });
@@ -76,7 +76,7 @@ async function waitForAddon(appkit, args, addon, loader, statement) {
   if(!statement) {
     statement = 'Provisioned'
   }
-  await wait(5000)
+  await wait(6000)
   appkit.api.get('/apps/' + args.app + '/addons/' + addon.id, async function(err, addon) {
     if (err) {
       loader.end();
@@ -113,7 +113,11 @@ async function create(appkit, args) {
   let addon = null
   try {
     assert.ok(args.SERVICE_PLAN, 'No service plan was provided.');
-    let loader = appkit.terminal.loading(`Provisioning addon ${args.SERVICE_PLAN} and attaching it to ${args.app}`);
+  } catch (e) {
+    return appkit.terminal.error(e);
+  }
+  let loader = appkit.terminal.loading(`Provisioning addon ${args.SERVICE_PLAN} and attaching it to ${args.app}`);
+  try {
     loader.start();
     addon = await appkit.api.post(JSON.stringify({"plan":args.SERVICE_PLAN, "attachment":{"name":args.as}, "name":args.name}), `/apps/${args.app}/addons`)
     loader.end();
@@ -125,13 +129,13 @@ async function create(appkit, args) {
   try {
     assert.ok(addon, 'The addon to create was null, unsure how this happened')
     if (addon.state === 'provisioning' && args.wait) {
-      let l2 = appkit.terminal.loading(appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be provisioned`));
+      let l2 = appkit.terminal.loading(appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be provisioned (this may take 10 minutes)`));
       l2.start();
       await waitForAddon(appkit, args, addon, l2)
     } else if (addon.state === 'provisioning') {
       console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ is being created in the background. This app will restart when its finished.\n`));
     } else {
-      console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ Provisioned\n`));
+      console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ provisioned\n`));
       appkit.terminal.print(null, addon);
     }
   } catch (e) {
@@ -317,11 +321,11 @@ async function upgrade(appkit, args) {
     let addon_service = await appkit.api.get(`/addon-services/${addon.addon_service.id}`)
     let addon_plan = await appkit.api.get(`/addon-services/${addon_service.id}/plans/${args.PLAN}`)
     if(addon_service.supports_upgrading) {
+      let loader = appkit.terminal.loading(appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be upgraded`));
+      loader.start();
       await appkit.api.patch(JSON.stringify({"maintenance":true}), `/apps/${args.app}`)
       maintenance_ran = true
       let result = await appkit.api.patch(JSON.stringify({"plan":addon_plan.id}),`/apps/${args.app}/addons/${args.ADDON}`)
-      let loader = appkit.terminal.loading(appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be upgraded`));
-      loader.start();
       addon.state = "provisioning"
       await waitForAddon(appkit, args, addon, loader, 'upgraded')
     } else {
@@ -330,7 +334,7 @@ async function upgrade(appkit, args) {
   } catch (e) {
     appkit.terminal.error(e)
   } finally {
-    if(maintenace_ran) {
+    if(maintenance_ran) {
       await appkit.api.patch(JSON.stringify({"maintenance":false}), `/apps/${args.app}`)
     }
   }
@@ -358,7 +362,7 @@ async function downgrade(appkit, args) {
   } catch (e) {
     appkit.terminal.error(e)
   } finally {
-    if(maintenace_ran) {
+    if(maintenance_ran) {
       await appkit.api.patch(JSON.stringify({"maintenance":false}), `/apps/${args.app}`)
     }
   }
