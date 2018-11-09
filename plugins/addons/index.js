@@ -76,7 +76,7 @@ async function waitForAddon(appkit, args, addon, loader, statement) {
   if(!statement) {
     statement = 'Provisioned'
   }
-  await wait(6000)
+  await wait(5000)
   appkit.api.get('/apps/' + args.app + '/addons/' + addon.id, async function(err, addon) {
     if (err) {
       loader.end();
@@ -131,6 +131,7 @@ async function create(appkit, args) {
     if (addon.state === 'provisioning' && args.wait) {
       let l2 = appkit.terminal.loading(appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be provisioned (this may take 10 minutes)`));
       l2.start();
+      await wait(5000)
       await waitForAddon(appkit, args, addon, l2)
     } else if (addon.state === 'provisioning') {
       console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ is being created in the background. This app will restart when its finished.\n`));
