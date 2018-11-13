@@ -72,38 +72,42 @@ async function wait(timeInMills) {
   return new Promise((resolve, reject) => setTimeout(resolve, timeInMills))
 }
 
-async function waitForAddon(appkit, args, addon, loader, statement) {
-  if(!statement) {
-    statement = 'Provisioned'
+async function wait_on_addon(appkit, args, addon, loading_message) {
+  let loader = appkit.terminal.loading(loading_message)
+  try {
+    loader.start()
+    let state = ''
+    for(let i=0; i < 1000; i++) {
+      if(i === 999) {
+        throw new Error('It seems this addon is taking too long to complete its task, you should contact your system administrator to see if everything is alright.')
+      }
+      addon = await appkit.api.get(`/apps/${args.app}/addons/${addon.id}`)
+      if(addon.state !== 'provisioning') {
+        loader.end()
+        return addon;
+      } else if (addon.state_description && addon.state_description !== '' && addon.state_description !== state) {
+        state = addon.state_description
+        loader.end()
+        loader = appkit.terminal.loading(`${loading_message} (${addon.state_description})`)
+        loader.start()
+      }
+      await wait(5000)
+    }
+  } catch (e) {
+    loader.end()
+    throw e
   }
-  await wait(5000)
-  appkit.api.get('/apps/' + args.app + '/addons/' + addon.id, async function(err, addon) {
-    if (err) {
-      loader.end();
-      return appkit.terminal.error(err)
-    }
-    if (addon.state === 'provisioning') {
-      await waitForAddon(appkit, args, addon, loader, statement)
-    } else {
-      loader.end();
-      console.log(appkit.terminal.markdown(`###===### Addon ~~${addon.name}~~ ${statement}\n`));
-      appkit.terminal.print(err, addon);
-    }
-  });
 }
 
 async function wait_for_addon(appkit, args) {
   try {
     assert.ok(args.ADDON, 'No addon was provided.')
     let addon = await appkit.api.get(`/apps/${args.app}/addons/${args.ADDON}`)
-    let l2 = appkit.terminal.loading(appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be provisioned`));
-    l2.start();
-    if (addon.state !== 'provisioning') {
-      l2.end();
-      appkit.terminal.print(null, addon);
-      return
+    if (addon.state === 'provisioning') {
+      await wait_on_addon(appkit, args, addon, appkit.terminal.markdown(`###===### Waiting for addon ~~${addon.name}~~ to become available`))
     }
-    waitForAddon(appkit, args, addon, l2).catch((e) => appkit.terminal.error(e))
+    console.log(appkit.terminal.markdown(`###===### Addon ~~${addon.name} available~~\n`));
+    appkit.terminal.print(null, addon);
   } catch (e) {
     appkit.terminal.error(e)
   }
@@ -129,10 +133,9 @@ async function create(appkit, args) {
   try {
     assert.ok(addon, 'The addon to create was null, unsure how this happened')
     if (addon.state === 'provisioning' && args.wait) {
-      let l2 = appkit.terminal.loading(appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be provisioned (this may take 10 minutes)`));
-      l2.start();
-      await wait(5000)
-      await waitForAddon(appkit, args, addon, l2)
+      addon = await wait_on_addon(appkit, args, addon, appkit.terminal.markdown(`###===### Waiting for addon ~~${addon.name}~~ to be provisioned (this may take 10 minutes)`))
+      console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ provisioned\n`));
+      appkit.terminal.print(null, addon);
     } else if (addon.state === 'provisioning') {
       console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ is being created in the background. This app will restart when its finished.\n`));
     } else {
@@ -315,24 +318,36 @@ async function rename(appkit, args) {
 
 async function upgrade(appkit, args) {
   let maintenance_ran = false;
+  let loader = null
   try {
+    if(args.ADDON.indexOf(':') !== -1) {
+      return appkit.terminal.error(new Error(`The addon ${args.ADDON} could not be found.`))
+    }
     assert.ok(args.PLAN, 'No plan was specified')
     assert.ok(args.ADDON, 'No addon was specified')
     let addon = await appkit.api.get(`/apps/${args.app}/addons/${args.ADDON}`)
     let addon_service = await appkit.api.get(`/addon-services/${addon.addon_service.id}`)
     let addon_plan = await appkit.api.get(`/addon-services/${addon_service.id}/plans/${args.PLAN}`)
     if(addon_service.supports_upgrading) {
-      let loader = appkit.terminal.loading(appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be upgraded`));
-      loader.start();
+      loader = appkit.terminal.loading(appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be upgraded`));
+      loader.start()
       await appkit.api.patch(JSON.stringify({"maintenance":true}), `/apps/${args.app}`)
       maintenance_ran = true
       let result = await appkit.api.patch(JSON.stringify({"plan":addon_plan.id}),`/apps/${args.app}/addons/${args.ADDON}`)
       addon.state = "provisioning"
-      await waitForAddon(appkit, args, addon, loader, 'upgraded')
+      loader.end()
+      addon = await wait_on_addon(appkit, args, addon, appkit.terminal.markdown(`###===### Waiting for addon ~~${addon.name}~~ to be upgraded`))
+      console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ provisioned\n`));
+      appkit.terminal.print(null, addon);
     } else {
       throw new Error(`The service ${addon_service.name} does not support upgrades.`)
     }
   } catch (e) {
+    console.log(e)
+    if (loader) { 
+      loader.end()
+    }
+    appkit.terminal.error(new Error('The addon may currently be unavailable or unable to process upgrades, try again later.'))
     appkit.terminal.error(e)
   } finally {
     if(maintenance_ran) {
@@ -343,6 +358,7 @@ async function upgrade(appkit, args) {
 
 async function downgrade(appkit, args) {
   let maintenance_ran = false;
+  let loader = null
   try {
     assert.ok(args.PLAN, 'No plan was specified')
     assert.ok(args.ADDON, 'No addon was specified')
@@ -350,17 +366,24 @@ async function downgrade(appkit, args) {
     let addon_service = await appkit.api.get(`/addon-services/${addon.addon_service.id}`)
     let addon_plan = await appkit.api.get(`/addon-services/${addon_service.id}/plans/${args.PLAN}`)
     if(addon_service.supports_upgrading) {
+      loader = appkit.terminal.loading(appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be downgraded`));
+      loader.start()
       await appkit.api.patch(JSON.stringify({"maintenance":true}), `/apps/${args.app}`)
       maintenance_ran = true
       let result = await appkit.api.patch(JSON.stringify({"plan":addon_plan.id}),`/apps/${args.app}/addons/${args.ADDON}`)
-      let loader = appkit.terminal.loading(appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be downgraded`));
-      loader.start();
       addon.state = "provisioning"
-      await waitForAddon(appkit, args, addon, loader, 'downgraded')
+      loader.end()
+      addon = await wait_on_addon(appkit, args, addon, appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be downgraded`))
+      console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ provisioned\n`));
+      appkit.terminal.print(null, addon);
     } else {
       throw new Error(`The service ${addon_service.name} does not support downgrades.`)
     }
   } catch (e) {
+    if(loader) {
+      loader.end()
+    }
+    appkit.terminal.error(new Error('The addon may currently be unavailable or unable to process downgrades, try again later.'))
     appkit.terminal.error(e)
   } finally {
     if(maintenance_ran) {
