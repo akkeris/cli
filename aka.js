@@ -191,7 +191,7 @@ let zsh_shell = process.env.SHELL && process.env.SHELL.indexOf('zsh') !== -1;
 let available_commands = [];
 
 function install_auto_completions(appkit) {
-  let task = appkit.terminal.task('Installing auto complete scripts')
+  let task = appkit.terminal.task('Installing autocomplete scripts, this will take affect with the next shell.')
   task.start()
   if(zsh_shell) {
     // See: https://github.com/yargs/yargs/issues/1156
@@ -292,7 +292,7 @@ module.exports.init = function init() {
         "auth":{ "description":"The URL for the auth API end point." }
       }, set_profile.bind(null, module.exports))
     .command('autocomplete', `adds the shell autocompletion.`, {}, install_auto_completions.bind(null, module.exports))
-    .completion('__notused', find_auto_completions)
+    .completion('__notused', false, find_auto_completions)
     .recommendCommands()
   // map cli width for yargs
   module.exports.args.wrap(module.exports.args.terminalWidth())
