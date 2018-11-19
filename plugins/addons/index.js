@@ -2,6 +2,7 @@
 
 const assert = require('assert')
 
+
 function destroy(appkit, args) {
   assert.ok(args.ADDON, 'An addon wasnt provided.');
   assert.ok(args.app && args.app !== '', 'An application name was not provided.');
@@ -307,9 +308,10 @@ async function rename(appkit, args) {
     if(type === 'addon') {
       await appkit.api.patch(JSON.stringify({"attachment":{"name":args.NEW_NAME}}), `/apps/${args.app}/addons/${name}`)
     } else {
-      await appkit.api.patch(JSON.stringify({"name":argrs.NEW_NAME}, `/apps/${args.app}/addon-attachments/${name}`))
+      await appkit.api.patch(JSON.stringify({"name":args.NEW_NAME}, `/apps/${args.app}/addon-attachments/${name}`))
     }
     loader.end();
+    console.log(appkit.terminal.markdown(`###===### **${name}** has been succesfully renamed to ##${args.NEW_NAME}##`))
   } catch (e) {
     loader.end()
     appkit.terminal.error(e)
@@ -454,7 +456,7 @@ module.exports = {
     appkit.args
       .command('addons', 'manage (list) add-on resources', require_app_option, list_all_addons.bind(null, appkit))
       .command('addons:attach ADDON_NAME', 'attach add-on resource to an app', attach_create_option, attach.bind(null, appkit))
-      .command('addons:create SERVICE_PLAN', 'create an add-on resource', require_addon_create, create.bind(null, appkit))
+      .command('addons:create SERVICE_PLAN', 'create an add-on resource', require_addon_create, create.bind(null, appkit), [])
       .command('addons:destroy ADDON', 'destroy add-on resources', require_app_option, destroy.bind(null, appkit))
       .command('addons:delete ADDON', false, require_app_option, destroy.bind(null, appkit))
       .command('addons:remove ADDON', false, require_app_option, destroy.bind(null, appkit))
