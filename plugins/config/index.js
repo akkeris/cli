@@ -31,9 +31,9 @@ function get_config_var(appkit, args) {
 }
 
 function set_config_vars(appkit, args) {
-  let values_paired = args['KEY=VALUE'];
+  let values_paired = args['KEY_VALUE_PAIR'];
   let values = {};
-  if(args['KEY=VALUE'].length === 0) {
+  if(args['KEY_VALUE_PAIR'].length === 0) {
     return appkit.terminal.error("No valid key value pairs were provided.")
   }
   for(let value of values_paired) {
@@ -134,10 +134,10 @@ module.exports = {
       .command('apps:env:get [KEY]', false, config_option, get_config_var.bind(null, appkit))
       .command('env:get [KEY]', false, config_option, get_config_var.bind(null, appkit))
 
-      .command('config:set [KEY=VALUE..]', 'set one or more config vars', config_option, set_config_vars.bind(null, appkit))
-      .command('apps:config:set [KEY=VALUE..]', false, config_option, set_config_vars.bind(null, appkit))
-      .command('apps:env:set [KEY=VALUE..]', false, config_option, set_config_vars.bind(null, appkit))
-      .command('env:set [KEY=VALUE..]', false, config_option, set_config_vars.bind(null, appkit))
+      .command('config:set [KEY_VALUE_PAIR..]', 'set one or more config vars passing in one or more KEY=VALUE', config_option, set_config_vars.bind(null, appkit))
+      .command('apps:config:set [KEY_VALUE_PAIR..]', false, config_option, set_config_vars.bind(null, appkit))
+      .command('apps:env:set [KEY_VALUE_PAIR..]', false, config_option, set_config_vars.bind(null, appkit))
+      .command('env:set [KEY_VALUE_PAIR..]', false, config_option, set_config_vars.bind(null, appkit))
 
       .command('config:unset [KEY..]', 'unset one or more config vars', config_option, unset_config_vars.bind(null, appkit))
       .command('apps:config:unset [KEY..]', false, config_option, unset_config_vars.bind(null, appkit))
