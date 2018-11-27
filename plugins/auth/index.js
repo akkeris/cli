@@ -9,7 +9,7 @@ function login(appkit, args) {
     let loader = appkit.terminal.task('Logging you in');
     loader.start();
     let headers = {
-      'Authorization':'Basic ' + ((new Buffer(args.username + ':' + args.password)).toString('base64')),
+      'Authorization':'Basic ' + ((Buffer.from(args.username + ':' + args.password)).toString('base64')),
       'Content-Type':'application/json',
       'Accept':'application/json'
     };

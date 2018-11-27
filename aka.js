@@ -2,6 +2,7 @@
 
 "use strict"
 
+const assert = require('assert')
 const proc = require('child_process');
 const http = require('http');
 const https = require('https');
@@ -18,16 +19,69 @@ const AKA_UPDATE_INTERVAL = process.env.AKA_UPDATE_INTERVAL ? process.env.AKA_UP
 // Default - .aka_version
 const AKA_UPDATE_FILENAME = '.aka_version'
 
+function zzh_template(yargs) {
+  let cmd = path.basename(yargs.$0)
+  let cmd_path = yargs.$0;
+  if (cmd_path.match(/\.js$/)) {
+    cmd_path = `./${cmd_path}`
+  }
+  return `
+###-begin-${cmd}-completions-###
+_aka_yargs_completions()
+{
+  local reply
+  local si=$IFS
+  IFS=$'\n' reply=($(COMP_CWORD="$((CURRENT-1))" COMP_LINE="$BUFFER" COMP_POINT="$CURSOR" ${cmd_path} --get-yargs-completions "$\{words[@]\}"))
+  IFS=$si
+  _describe 'values' reply
+}
+compdef _aka_yargs_completions ${cmd}
+###-end-${cmd}-completions-###
+`
+}
+
+function bash_template(yargs) {
+  let cmd = path.basename(yargs.$0)
+  let cmd_path = yargs.$0;
+  if (cmd_path.match(/\.js$/)) {
+    cmd_path = `./${cmd_path}`
+  }
+  return `
+###-begin-${cmd}-completions-###
+_aka_yargs_completions()
+{
+    local cur_word args type_list
+
+    cur_word="$\{COMP_WORDS[COMP_CWORD]\}"
+    args=("$\{COMP_WORDS[@]\}")
+
+    # ask yargs to generate completions.
+    type_list=$(${cmd_path} --get-yargs-completions "$\{args[@]\}")
+
+    COMPREPLY=( $(compgen -W "$\{type_list\}" -- $\{cur_word\}) )
+
+    # if no match was found, fall back to filename completion
+    if [ $\{#COMPREPLY[@]\} -eq 0 ]; then
+      COMPREPLY=( $(compgen -f -- "$\{cur_word\}" ) )
+    fi
+
+    return 0
+}
+complete -F _aka_yargs_completions ${cmd}
+###-end-${cmd}-completions-###
+`
+}
+
 process.on('uncaughtException', (e) => {
   if(process.env.DEBUG) {
     console.error(e.message)
     console.error(e.stack)
   } else {
-    console.log("An unexpected error occured, if this persists try running `mv ~/.akkeris ~/.akkeris.backup`.")
+    console.log("An unexpected error occured, if this persists try running `mv ~/.akkeris ~/.akkeris.backup`.\n.  -> Pro tip: Add DEBUG=true to your environment for more information.")
   }
 })
 
-function init_plugins(module, plugins_dir) {
+function init_plugins(m, plugins_dir) {
   fs.readdirSync(plugins_dir).sort((a, b) => { return a < b ? -1 : 1 }).forEach((plugin => {
     if(path.basename(plugin).startsWith('.') || path.basename(plugin).startsWith("tmp")) {
       return;
@@ -35,20 +89,20 @@ function init_plugins(module, plugins_dir) {
     try {
       if(fs.statSync(path.join(plugins_dir, plugin, 'index.js')).isFile()) {
         try {
-          module.exports.plugins[plugin] = require(path.join(plugins_dir, plugin, 'index.js'));
+          m.exports.plugins[plugin] = require(path.join(plugins_dir, plugin, 'index.js'));
         } catch (err) {
-          console.log(module.exports.terminal.markdown(`\n !!▸!! error loading plugin "${plugin}": ${err}\n`));
+          console.log(m.exports.terminal.markdown(`\n !!▸!! error loading plugin "${plugin}": ${err}\n`));
         }
-        if(module.exports.plugins[plugin] && module.exports.plugins[plugin].init) {
+        if(m.exports.plugins[plugin] && m.exports.plugins[plugin].init) {
           try {
-            module.exports.plugins[plugin].init(module.exports);
+            m.exports.plugins[plugin].init(m.exports);
           } catch (err) {
-            console.log(module.exports.terminal.markdown(`\n !!▸!! error initializing plugin "${plugin}": ${err}\n`));
+            console.log(m.exports.terminal.markdown(`\n !!▸!! error initializing plugin "${plugin}": ${err}\n`));
           }
         }
       }
     } catch (err) {
-      console.log(module.exports.terminal.markdown(`\n !!▸!! error initializing plugin "${plugin}": ${err}\n`));
+      console.log(m.exports.terminal.markdown(`\n !!▸!! error initializing plugin "${plugin}": ${err}\n`));
     }
   }));
 }
@@ -142,6 +196,75 @@ function welcome() {
   proc.spawnSync('ak',['auth:profile'], {env:process.env, stdio:'inherit'});
   proc.spawnSync('ak',['auth:login'], {env:process.env, stdio:'inherit'});
 }
+ 
+let zsh_shell = process.env.SHELL && process.env.SHELL.indexOf('zsh') !== -1;
+
+// xyz[0] == command name + any arguments
+// xyz[1] == command description, if false no description
+// xyz[2] == optional params.
+// xyz[3] == function to call
+// xyz[4] == aliases
+// xyz[5] == overloaded async function(option)
+let available_commands = [];
+
+function install_auto_completions(appkit) {
+  let task = appkit.terminal.task('Installing autocomplete scripts, this will take affect with the next shell.')
+  task.start()
+  if(zsh_shell) {
+    // See: https://github.com/yargs/yargs/issues/1156
+    fs.writeFileSync(path.join(get_home(), '.zshrc'), zzh_template(module.exports.args), {'flag':'a'})
+  } else {
+    fs.writeFileSync(path.join(get_home(), '.bash_profile'), bash_template(module.exports.args), {'flag':'a'})
+  }
+  task.end('ok')
+}
+
+async function find_auto_completions(current, argv, cb) {
+  try {
+    if(argv._[1] || current === '--') {
+      let matched = available_commands.filter((c) => c[1] && c[0].replace(/\\/g, '').split(' ')[0].toLowerCase() === argv._[1])
+      if(matched.length > 0) {
+        // See if there's a command name, or if its just options left.
+        let m = matched[0][0].split(' ')
+        let ndx = (m.length - 1) - (argv._.filter((x) => x !== '').length - 2)
+        if(ndx === 0) {
+          let returns = Object.keys(matched[0][2]).map((option) => {
+            if(zsh_shell) {
+              return '--' + option.replace(/:/g, '\\:') + ':' + matched[0][2][option].description
+            } else {
+              return '--' + option
+            }
+          })
+          return cb(returns)
+        } else {
+          // find the next arg
+          if(matched[0][5]) {
+            try {
+              return cb(await matched[0][5](m[ndx]))
+            } catch (e) {
+              return cb([])
+            }
+          } else {
+            return cb([m[ndx]])
+          }
+        }
+      }
+    }
+
+    let matches = available_commands.filter((c) => c[1] && c[0].toLowerCase().startsWith(current.toLowerCase()));
+    if(matches.length === 0) {
+      // hail marry
+      matches = available_commands.filter((c) => c[1] && c[0].toLowerCase().indexOf(current.toLowerCase()) > -1);
+    }
+    if(zsh_shell) {
+      cb(matches.map((c) => c[0].replace(/:/g, '\\:').split(' ')[0] + ":" + c[1]))
+    } else {
+      cb(matches.map((c) => c[0].split(' ')[0]))
+    }
+  } catch (e) {
+    return cb([])
+  }
+}
 
 function check_for_updates(){
   const update_file_path = path.join(get_home(), '.akkeris', AKA_UPDATE_FILENAME).toString('utf8');
@@ -220,8 +343,17 @@ module.exports.init = function init() {
     module.exports.update_available = {};
   }
 
+  
   // Establish the base arguments for the CLI.
-  module.exports.args = require('yargs')
+  module.exports.args = require('yargs');
+  let pcommand = module.exports.args.command;
+  module.exports.args.command = function(...xyz) {
+    available_commands.push(xyz)
+    pcommand.call(module.exports.args, xyz[0],xyz[1],xyz[2],xyz[3],xyz[4])
+    return module.exports.args
+  }
+
+  module.exports.args
     .usage('Usage: akkeris COMMAND [--app APP] [command-specific-options]')
     .command('update', 'update the akkeris client', {}, module.exports.update.bind(null, module.exports))
     .command('version', 'display version', {}, module.exports.version.bind(null, module.exports))
@@ -229,11 +361,9 @@ module.exports.init = function init() {
     .command('auth:profile', 'Set the authorization endpoint and apps end point', {
         "apps":{ "description":"The URL for the apps API end point." },
         "auth":{ "description":"The URL for the auth API end point." }
-      }, 
-      set_profile.bind(null, module.exports))
-    .command('completion', 'show akkeris auto-completion script (e.g, "ak completion >> ~/.bashrc").', {}, () => {
-      module.exports.args.showCompletionScript();
-    })
+      }, set_profile.bind(null, module.exports))
+    .command('autocomplete', `adds the shell autocompletion.`, {}, install_auto_completions.bind(null, module.exports))
+    .completion('__notused', false, find_auto_completions)
     .recommendCommands()
   // map cli width for yargs
   module.exports.args.wrap(module.exports.args.terminalWidth())
@@ -247,7 +377,7 @@ module.exports.init = function init() {
   module.exports.config.third_party_plugins_dir = path.join(get_home(), '.akkeris', 'plugins')
   require('./lib/plugins.js').init(module.exports.args, module.exports);
 
-  console.assert(module.filename, 'No module.filename exists, no clue where we are. This is a very odd error.');
+  assert.ok(module.filename, 'No module.filename exists, no clue where we are. This is a very odd error.');
   
   // Scan and initialize the plugins as needed.
   init_plugins(module, module.exports.config.plugins_dir)
@@ -268,7 +398,7 @@ module.exports.version = function version(appkit, args) {
 
 // Update our dependencies and our plugins as needed.
 module.exports.update = function update(appkit) {
-  console.assert(appkit.config.third_party_plugins_dir, 'Update was ran without init being ran first, everything is empty.');
+  assert.ok(appkit.config.third_party_plugins_dir, 'Update was ran without init being ran first, everything is empty.');
   fs.readdirSync(appkit.config.third_party_plugins_dir).forEach((plugin => {
     try {
       if(fs.statSync(path.join(appkit.config.third_party_plugins_dir, plugin, '.git')).isDirectory()) {
@@ -301,7 +431,7 @@ module.exports.update = function update(appkit) {
 function is_redirect(type, res) { return type.toLowerCase() === 'get' && res.headers['location'] && (res.statusCode === 301 || res.statusCode === 302); }
 function is_response_ok(res) { return res.statusCode > 199 && res.statusCode < 300 ? true : false; }
 function response_body(type, callback, res) {
-  let body = new Buffer(0);
+  let body = Buffer.alloc(0);
   res.on('data', (e) => body = Buffer.concat([body,e]) );
   res.on('end', (e) => {
     if(res.headers['content-encoding'] === 'gzip' && body.length > 0) {
@@ -317,22 +447,44 @@ function response_body(type, callback, res) {
   });
 }
 
-function request(type, payload, rurl, headers, callback) {
-  let connector = rurl.startsWith('http://') ? http : https;
-  let opts = url.parse(rurl);
-  opts.method = type;
-  opts.headers = headers || {};
-  let req = connector.request(opts, response_body.bind(null, type, (e, d) => { 
-    if(d) {
-      d = JSON.parse(d)
+function req_help(type, payload, rurl, headers, callback, resolve, reject) {
+    let connector = rurl.startsWith('http://') ? http : https;
+    let opts = url.parse(rurl);
+    opts.method = type;
+    opts.headers = headers || {};
+    let req = connector.request(opts, response_body.bind(null, type, (e, d) => { 
+      if(d) {
+        d = JSON.parse(d)
+      }
+      if(callback) callback(e,d);
+      if(e) {
+        reject(e)
+      } else {
+        resolve(d)
+      }
+    }));
+    if(payload) {
+      req.write(payload);
     }
-    callback(e,d);
-  }));
-  if(payload) {
-    req.write(payload);
+    req.on('abort', (err) => {
+      if(callback) callback(new Error("Request aborted."))
+        reject(new Error("Request aborted."))
+    })
+    req.on('error', (err) => {
+      if(callback) callback(err); 
+      reject(err)
+    });
+    req.end();
+}
+
+function request(type, payload, rurl, headers, callback) {
+  if(callback) {
+    req_help(type, payload, rurl, headers, callback, () => {}, () => {})
+  } else {
+    return new Promise((resolve, reject) => {
+      req_help(type, payload, rurl, headers, null, resolve, reject)
+    })
   }
-  req.on('error', (err) => { callback(err); });
-  req.end();
 }
 
 function appkit_request(type, payload, rurl, callback) {
@@ -340,9 +492,6 @@ function appkit_request(type, payload, rurl, callback) {
   headers['content-type'] = headers['content-type'] || 'application/json';
   if(module.exports.account && module.exports.account.password) {
     headers['authorization'] = 'Bearer ' + module.exports.account.password;
-  }
-  if(module.exports.args && module.exports.args.argv && module.exports.args.argv.authtoken) {
-    headers['authorization'] = 'Bearer ' + module.exports.args.argv.authtoken;
   }
   // Override for bearer token
   if(process.env.API_TOKEN) {
@@ -352,14 +501,15 @@ function appkit_request(type, payload, rurl, callback) {
   if(process.env.API_AUTH) {
     headers['authorization'] = process.env.API_AUTH;
   }
-  headers['accept-encoding'] = 'gzip'
+  headers['accept'] = '*/*';
+  headers['accept-encoding'] = 'gzip';
   headers['user-agent'] = 'akkeris-cli';
 
   let full_url = rurl.startsWith("http") ? rurl : 
                 ( (module.exports.config.akkeris_api_host.startsWith("http") ? 
                     module.exports.config.akkeris_api_host : 
                     'https://' + module.exports.config.akkeris_api_host) + rurl);
-  request(type, payload, full_url, headers, callback);
+  return request(type, payload, full_url, headers, callback);
 }
 
 module.exports.http = {

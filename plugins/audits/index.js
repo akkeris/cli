@@ -1,11 +1,12 @@
 "use strict"
 
+const assert = require ('assert')
 const proc = require('child_process');
 const fs = require('fs');
 const SHA256 = require('crypto-js/sha256');
 
 function list(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
 
   let arr = args.app.split("-");
 
@@ -26,8 +27,8 @@ function list(appkit, args) {
 }
 
 function get(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.');
-  console.assert(args.id && args.id !== '', 'An activity id was not provided.');
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  assert.ok(args.id && args.id !== '', 'An activity id was not provided.');
 
   let arr = args.app.split("-");
 

@@ -1,6 +1,7 @@
 "use strict"
 
 const http = require('http');
+const assert = require('assert');
 
 function format_hooks(hook) {
   return `**ɧ ${hook.url}**
@@ -20,9 +21,8 @@ function list_hooks(appkit, args) {
 }
 
 function create_hooks(appkit, args) {
-  console.assert(args.URL.startsWith('http:') || args.URL.startsWith('https:'), 
+  assert.ok(args.URL.startsWith('http:') || args.URL.startsWith('https:'), 
     'The specified URL was invalid, only http and https are supported.');
-  args.URL = args.URL.toLowerCase();
   let payload = {url:args.URL, events:args.events, active:args.active, secret:args.secret};
 
   let task = appkit.terminal.task(`Creating webhook **ɧ ${args.URL}**`);
@@ -39,7 +39,7 @@ function create_hooks(appkit, args) {
 }
 
 function delete_hooks(appkit, args) {
-  console.assert(args.ID, 'A hook id was not provided!');
+  assert.ok(args.ID, 'A hook id was not provided!');
   let task = appkit.terminal.task(`Removing hook **ɧ ${args.ID}**`);
   task.start();
   appkit.api.delete('/apps/' + args.app + '/hooks/' + args.ID, (err) => {
@@ -135,8 +135,14 @@ module.exports = {
       .command('hooks', 'list webhooks for an app.', hooks_options, list_hooks.bind(null, appkit))
       .command('hooks:info ID', 'Get information on the specified webhook.', hooks_options, info_hooks.bind(null, appkit))
       .command('hooks:destroy ID', 'Remove the specified webhook.', hooks_options, delete_hooks.bind(null, appkit))
+      .command('hooks:remove ID', false, hooks_options, delete_hooks.bind(null, appkit))
+      .command('hooks:delete ID', false, hooks_options, delete_hooks.bind(null, appkit))
       .command('hooks:create URL', 'create a new webhook.', hooks_create_options, create_hooks.bind(null, appkit))
+      .command('hooks:add URL', false, hooks_create_options, create_hooks.bind(null, appkit))
       .command('hooks:deliveries ID', 'Get information on a webhook delivery.', hook_results_options, result.bind(null, appkit))
+      .command('hooks:result ID', false, hook_results_options, result.bind(null, appkit))
+      .command('hooks:results ID', false, hook_results_options, result.bind(null, appkit))
+      .command('hooks:sent ID', false, hook_results_options, result.bind(null, appkit))
 
   },
   update:function() {

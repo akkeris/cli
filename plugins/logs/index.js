@@ -2,33 +2,58 @@
 
 const https = require('https');
 const url = require('url');
+const assert = require('assert');
 
 function highlight(data) {
-  process.stdout.write(data.replace(/^([A-z0-9\:\-\+\.]+Z) ([A-z\-0-9]+) ([A-z\.0-9\/\[\]\-]+)\: /gm, '\u001b[36m$1\u001b[0m $2 \u001b[38;5;104m$3:\u001b[0m ')); 
+  process.stdout.write(data.replace(/^([A-z0-9\:\-\+\.]+Z) ([A-z\-0-9\.]+) ([A-z\.0-9\/\[\]\-]+)\: /gm, '\u001b[36m$1\u001b[0m $2 \u001b[38;5;104m$3:\u001b[0m ')); 
 }
 
-function logs(appkit, args) {
-  console.assert(args.app && args.app !== '', 'An application name was not provided.')
-  let payload = {lines:args.num, tail:args.tail}
-  appkit.api.post(JSON.stringify(payload), `/apps/${args.app}/log-sessions`, (err, log_session) => {
-    if(err) {
-      return appkit.terminal.error(err)
+let stream_restarts = 0
+async function stream_logs(appkit, colors, uri, payload) {
+  /* as a safety mechanism eventually timeout after 1000 restarts */
+  if(stream_restarts > 1000) {
+    process.exit(1)
+  }
+  let log_session = await appkit.api.post(JSON.stringify(payload), uri)
+  let logging_stream_url = url.parse(log_session.logplex_url);
+
+  let req = https.request(logging_stream_url, (res) => { 
+    if(!colors) {
+      res.pipe(process.stdout) 
+    } else {
+      res.setEncoding('utf8')
+      res.on('data', highlight)
+      res.on('error', (e) => { 
+        return appkit.terminal.error(e)
+        process.exit(1)
+      })
+      res.on('end', () => {
+        stream_restarts++;
+        setTimeout(stream_logs.bind(null, appkit, colors, uri, payload), 1000); 
+      })
     }
-    // the logplex_url should not be protected by any means, we use a pipe and https raw client
-    // to be able to force the request to stream the response back rather than buffering it.
-    let req = https.request(url.parse(log_session.logplex_url), (res) => { 
-      if(!args.colors) {
-        res.pipe(process.stdout) 
-      } else {
-        res.setEncoding('utf8')
-        res.on('data', highlight)
-        res.on('error', (e) => { /* go ahead and ignore these */ })
-      }
-    });
-    req.on('error', function(e) { /* go ahead and ignore these */ })
-    //req.setNoDelay(true)
-    req.end()
   });
+  req.on('error', function(e) {
+    return appkit.terminal.error(e)
+    process.exit(1)
+  })
+  req.setNoDelay(true)
+  req.end()
+}
+
+async function logs(appkit, args) {
+  try {
+    assert.ok(args.app || args.site, 'No application or site was provided.  Use either --site or --app to view logs.')
+    assert.ok(!(args.app && args.site), 'Both --site (-s) and --app (-a) were provided, logs can be viewed for a site or an app, not both.')
+    let payload = {lines:args.num, tail:args.tail}
+    let uri = `/apps/${args.app}/log-sessions`
+    if (args.site && args.site !== '') {
+      uri = `/sites/${args.site}/log-sessions`
+    }
+    await stream_logs(appkit, args.colors, uri, payload)
+  } catch(e) {
+    appkit.terminal.error(e)
+  }
 }
 
 module.exports = {
@@ -36,9 +61,15 @@ module.exports = {
     let logs_option = {
       'app':{
         'alias':'a',
-        'demand':true,
+        'demand':false,
         'string':true,
-        'description':'The app to act on.'
+        'description':'The app to view the logs for, this cannot be used with -s option.'
+      },
+      'site':{
+        'alias':'s',
+        'demand':false,
+        'string':true,
+        'description':'The site to view the logs for, this cannot be used with -a option.'
       },
       'num':{
         'alias':'n',
