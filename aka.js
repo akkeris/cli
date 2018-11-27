@@ -268,7 +268,8 @@ async function find_auto_completions(current, argv, cb) {
 
 function check_for_updates(){
   const update_file_path = path.join(get_home(), '.akkeris', AKA_UPDATE_FILENAME).toString('utf8');
-  // First time checking, need to create file
+  
+  // If update file DNE, this is our first time checking. Check immediately
   if (!fs.existsSync(update_file_path)) {
     spawn_update_check(update_file_path);
     return {};
@@ -276,15 +277,15 @@ function check_for_updates(){
   else {
     const file_stats = fs.statSync(update_file_path);
 
-    // If the CLI is up to date, the file will be empty
-    if (file_stats.size < 1) {
-      return {};
-    }
-
     // Only check for updates when it's been at least AKA_UPDATE_INTERVAL ms since last check
     const last_update = file_stats.mtimeMs;
     if ((Date.now() - last_update) > AKA_UPDATE_INTERVAL) {
       spawn_update_check(update_file_path);
+    }
+
+    // If the CLI is up to date, the file will be empty
+    if (file_stats.size < 1) {
+      return {};
     }
 
     try {
