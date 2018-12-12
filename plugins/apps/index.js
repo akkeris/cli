@@ -192,12 +192,11 @@ function info(appkit, args) {
   **Attached Addons:**\t${attachments ? attachments.map((x) => { return '\t' + x.name; }).join('\n\t\t') : ''}
   **Dynos:**\t${dynos ? dynos.map((x) => { return '\t' + x.type + ': ' + x.quantity}).join('\n\t\t') : ''}
   **Pipeline:**\t\t${pipeline ? pipeline.pipeline.name + ' - ' + pipeline.stage : ''}
-  **Git:**\t\t\t${app.git_url}
+  **Git:**\t\t\t${app.git_url}${app.git_branch ? ('#' + app.git_branch) : ''}
   **Last Released:**\t${app.released_at ? new Date(app.released_at).toLocaleString() : 'Never'}
   **Slug:**\t\t\t${app.image}
   **Owner:**\t\t${app.organization.name}
   **Region:**\t\t${app.region.name}
-  **Stack:**\t\t${app.stack.name}
   **Service ENV:**\t\t${app.simple_name.toUpperCase() + '_SERVICE_HOST'}, ${app.simple_name.toUpperCase() + '_SERVICE_PORT'}
   **URL:**\t\t\t${app.web_url}`));
           });

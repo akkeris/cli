@@ -43,17 +43,17 @@ function destroy(appkit, args) {
 }
 
 function promote(appkit, args) {
-  assert.ok(args.ADDON_NAME, 'No addon name was provided.');
-  let loader = appkit.terminal.loading(`Promoting addon ${args.ADDON_NAME} to the primary addon service on ${args.app}`);
+  assert.ok(args.ADDON_ID, 'No addon name was provided.');
+  let loader = appkit.terminal.loading(`Promoting addon ${args.ADDON_ID} to the primary addon service on ${args.app}`);
   loader.start();
 
   let payload = {primary:true};
-  appkit.api.patch(JSON.stringify(payload), `/apps/${args.app}/addons/${args.ADDON_NAME}`, function(err, addon) {
+  appkit.api.patch(JSON.stringify(payload), `/apps/${args.app}/addons/${args.ADDON_ID}`, function(err, addon) {
     if(err && err.code !== 404) {
       loader.end();
       return appkit.terminal.error(err);
     } else if (err && err.code === 404) {
-      appkit.api.patch(JSON.stringify(payload), `/apps/${args.app}/addon-attachments/${args.ADDON_NAME}`, function(err, addon) {
+      appkit.api.patch(JSON.stringify(payload), `/apps/${args.app}/addon-attachments/${args.ADDON_ID}`, function(err, addon) {
         loader.end()
         if(err) {
           return appkit.terminal.error(err);
@@ -256,8 +256,8 @@ function info_addons(appkit, args) {
 
 function attach(appkit, args) {
   assert.ok(args.app && args.app !== '', 'No application was specified.');
-  assert.ok(args.ADDON_NAME && args.ADDON_NAME !== '', 'No addon id was specified.');
-  let loader = appkit.terminal.loading('Attaching addon ' + args.ADDON_NAME + ' to ' + args.app);
+  assert.ok(args.ADDON_ID && args.ADDON_ID !== '', 'No addon id was specified.');
+  let loader = appkit.terminal.loading('Attaching addon ' + args.ADDON_ID + ' to ' + args.app);
   loader.start();
   appkit.api.get('/apps/' + args.app, (err, data) => {
     if(err) {
@@ -265,7 +265,7 @@ function attach(appkit, args) {
       return appkit.terminal.error(err);
     }
     assert.ok(data.id, 'Ensure the app id is defined.');
-    let payload = {"app":data.id, "addon":args.ADDON_NAME, force:(args.confirm && args.confirm === args.ADDON_NAME ? true : false), name:(args.as ? args.as : null)};
+    let payload = {"app":data.id, "addon":args.ADDON_ID, force:(args.confirm && args.confirm === args.ADDON_ID ? true : false), name:(args.as ? args.as : null)};
     appkit.api.post(JSON.stringify(payload), '/apps/' + args.app + '/addon-attachments',  (err, data) => {
       loader.end();
       appkit.terminal.print(err, data);
@@ -275,8 +275,8 @@ function attach(appkit, args) {
 
 function detach(appkit, args) {
   assert.ok(args.app && args.app !== '', 'No application was specified.');
-  assert.ok(args.ATTACHMENT_NAME && args.ATTACHMENT_NAME !== '', 'No attachment name or id was specified.');
-  let loader = appkit.terminal.loading('Detaching addon ' + args.ATTACHMENT_NAME + ' from ' + args.app);
+  assert.ok(args.ADDON_ID && args.ADDON_ID !== '', 'No attachment name or id was specified.');
+  let loader = appkit.terminal.loading('Detaching addon ' + args.ADDON_ID + ' from ' + args.app);
   loader.start();
   appkit.api.get('/apps/' + args.app, (err, app) => {
     if(err) {
@@ -284,12 +284,12 @@ function detach(appkit, args) {
       return appkit.terminal.error(err);
     }
     assert.ok(app.id, 'Ensure the app id is defined.');
-    appkit.api.delete('/apps/' + args.app + '/addon-attachments/' + args.ATTACHMENT_NAME,  (err, data) => {
+    appkit.api.delete('/apps/' + args.app + '/addon-attachments/' + args.ADDON_ID,  (err, data) => {
       loader.end();
       if(err) {
         return appkit.terminal.error(err);
       }
-      console.log(appkit.terminal.markdown(`###===### **${args.ATTACHMENT_NAME}** has been succesfully detached from ##${app.name}##`))
+      console.log(appkit.terminal.markdown(`###===### **${args.ADDON_ID}** has been succesfully detached from ##${app.name}##`))
     });
   });
 }
@@ -455,7 +455,7 @@ module.exports = {
 
     appkit.args
       .command('addons', 'manage (list) add-on resources', require_app_option, list_all_addons.bind(null, appkit))
-      .command('addons:attach ADDON_NAME', 'attach add-on resource to an app', attach_create_option, attach.bind(null, appkit))
+      .command('addons:attach ADDON_ID', 'attach add-on resource to an app', attach_create_option, attach.bind(null, appkit))
       .command('addons:create SERVICE_PLAN', 'create an add-on resource', require_addon_create, create.bind(null, appkit), [])
       .command('addons:destroy ADDON', 'destroy add-on resources', require_app_option, destroy.bind(null, appkit))
       .command('addons:delete ADDON', false, require_app_option, destroy.bind(null, appkit))
@@ -463,21 +463,21 @@ module.exports = {
       .command('addons:rename NEW_NAME', 'Rename an add-on attachment name.', require_rename, rename.bind(null, appkit))
       .command('addons:upgrade ADDON PLAN', 'upgrade an addons plan', require_app_wait_option, upgrade.bind(null, appkit))
       .command('addons:downgrade ADDON PLAN', 'downgrade an addon plan', require_app_wait_option, downgrade.bind(null, appkit))
-      .command('addons:detach ATTACHMENT_NAME', 'detach add-on resource from an app', require_app_option, detach.bind(null, appkit))
+      .command('addons:detach ADDON_ID', 'detach add-on resource from an app', require_app_option, detach.bind(null, appkit))
       .command('addons:info ADDON', 'Show info about an add-on and its attachments.', require_app_option, info_addons.bind(null, appkit))
       .command('addons:plans SERVICE', 'list all available plans for an add-on service', {}, list_addons_plans.bind(null, appkit))
       .command('addons:services', 'list all available add-on services', {}, list_addons.bind(null, appkit))
       .command('addons:wait ADDON', 'show provisioning status of the add-ons on the app', require_app_option, wait_for_addon.bind(null, appkit))
       .command('addons:plans:info SERVICE SERVICE_PLAN', 'Show info about an add-on service plan', {}, list_addon_plan_info.bind(null, appkit))
-      .command('addons:promote ADDON_NAME', 'Promote an addon and make it the primary for the addon service', require_app_option, promote.bind(null, appkit))
+      .command('addons:promote ADDON_ID', 'Promote an addon and make it the primary for the addon service', require_app_option, promote.bind(null, appkit))
       // aliases
       .command('addon', false, require_app_option, list_attached_addons.bind(null, appkit))
-      .command('addon:attach ADDON_NAME', false, attach_create_option, attach.bind(null, appkit))
+      .command('addon:attach ADDON_ID', false, attach_create_option, attach.bind(null, appkit))
       .command('addon:create SERVICE_PLAN', false, require_app_option, create.bind(null, appkit))
       .command('addon:destroy ADDON', false, require_app_option, destroy.bind(null, appkit))
       .command('addon:delete ADDON', false, require_app_option, destroy.bind(null, appkit))
       .command('addon:remove ADDON', false, require_app_option, destroy.bind(null, appkit))
-      .command('addon:detach ATTACHMENT_NAME', false, require_app_option, detach.bind(null, appkit))
+      .command('addon:detach ADDON_ID', false, require_app_option, detach.bind(null, appkit))
       .command('addon:info ADDON', false, require_app_option, info_addons.bind(null, appkit))
       .command('addon:plans SERVICE', false, {}, list_addons_plans.bind(null, appkit))
       .command('addon:services', false, {}, list_addons.bind(null, appkit))
@@ -488,7 +488,7 @@ module.exports = {
       .command('service:plans SERVICE', false, {}, list_addons_plans.bind(null, appkit))
       .command('service:plan SERVICE', false, {}, list_addons_plans.bind(null, appkit))
       .command('plans SERVICE', false, {}, list_addons_plans.bind(null, appkit))
-      .command('addons:primary ADDON_NAME', false, require_app_option, promote.bind(null, appkit))
+      .command('addons:primary ADDON_ID', false, require_app_option, promote.bind(null, appkit))
       .command('upgrade ADDON PLAN', false, require_app_wait_option, upgrade.bind(null, appkit))
       .command('downgrade ADDON PLAN', false, require_app_wait_option, downgrade.bind(null, appkit))
   },

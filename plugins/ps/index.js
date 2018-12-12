@@ -437,6 +437,7 @@ module.exports = {
       //.command('ps:type [TYPE | DYNO=TYPE [DYNO=TYPE ...]]', 'manage dyno types', require_app_option, type.bind(null, appkit))
 
       // aliases
+      .command('forward PORT', false, require_app_option, forward.bind(null, appkit))
       .command('restart [TYPE]', false, require_app_option, restart.bind(null, appkit))
       .command('scale [TYPE=AMOUNT ...]', false, require_app_option, scale.bind(null, appkit))
       .command('sizes', false, {}, list_plans.bind(null,appkit))

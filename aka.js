@@ -266,7 +266,7 @@ async function find_auto_completions(current, argv, cb) {
   }
 }
 
-function check_for_updates(){
+function check_for_updates() {
   const update_file_path = path.join(get_home(), '.akkeris', AKA_UPDATE_FILENAME).toString('utf8');
   
   // If update file DNE, this is our first time checking. Check immediately
@@ -312,6 +312,36 @@ function spawn_update_check(update_file_path) {
     detached: true, 
     stdio: [ 'ignore', output, 'ignore' ] 
   }).unref();
+}
+
+// This checks to see if -a (--app) is in the requested config set,
+// in a .akkeris
+function find_app_middleware(appkit, argv, context) {
+  if (context.availableOptions.app || (context.availableOptions.a && context.availableOptions.a.includes("app"))) {
+    // we don't want to do anything destructive implicitly.
+    if(argv._ && argv._[0] && (argv._[0].includes('destroy') || argv._[0].includes('delete') || argv._[0].includes('remove') || argv._[0].includes('unset'))) {
+      return
+    }
+    if(!argv.a && !argv.app && process.env.AKKERIS_APP) {
+      argv.a = argv.app = process.env.AKKERIS_APP
+      console.log(appkit.terminal.markdown(`###===### Using **⬢ ${argv.a}** from environment variable ##$AKKERIS_APP##`));
+    } else if(!argv.a && !argv.app && !process.env.AKKERIS_APP) {
+      let branch_name = proc.spawnSync('git',['rev-parse','--abbrev-ref','HEAD'], {env:process.env}).stdout.toString('utf8').trim();
+      let apps = proc.spawnSync('git',['config','--get-regexp','branch.*.akkeris'], {env:process.env}).stdout.toString('utf8').trim();
+      if(branch_name === '' || !branch_name) {
+        return
+      }
+      apps = apps.split('\n').filter((x) => x !== '').map((x) => {
+        let [branch_info, name] = x.split(' ')
+        let branch = branch_info.split('.')[1]
+        return {branch, name}
+      }).filter((x) =>  x.branch === branch_name)
+      if(apps.length === 1) {
+        argv.a = argv.app = apps[0].name
+        console.log(appkit.terminal.markdown(`###===### Using app **⬢ ${argv.a}** from ##git config --get branch.${apps[0].branch}.akkeris##`));
+      }
+    }
+  }
 }
 
 // Initialize, setup any items at runtime
@@ -366,11 +396,13 @@ module.exports.init = function init() {
     .command('autocomplete', `adds the shell autocompletion.`, {}, install_auto_completions.bind(null, module.exports))
     .completion('__notused', false, find_auto_completions)
     .recommendCommands()
+
+  if(module.exports.args.preChecksMiddleware) {
+    module.exports.args.preChecksMiddleware(find_app_middleware.bind(null, module.exports)) 
+  }
+
   // map cli width for yargs
   module.exports.args.wrap(module.exports.args.terminalWidth())
-  module.exports.random_tips = [
-    '🚀  Fun tip! You can use "latest" rather than a specific ID for builds and releases when getting info.',
-  ];
 
   // load plugins
   module.exports.plugins = {};
@@ -387,6 +419,16 @@ module.exports.init = function init() {
   // Grab netrc info
   const netrc = require('netrc')();
   module.exports.account = netrc[module.exports.config.akkeris_api_host];
+
+  // Make sure we have the best tips to recommend
+  module.exports.random_tips = [
+    module.exports.terminal.markdown('🚀  Fun tip! You can use ##latest## rather than a specific ID for builds and releases when getting info.'),
+    module.exports.terminal.markdown('🚀  Hate using -a all the time? Run ##git config --add branch.BRANCH.akkeris APP## to default to APP when in BRANCH.'),
+    module.exports.terminal.markdown('🚀  Hate specifying an app all the time? Set the ##$AKKERIS_APP## to the app your working on to default to that app.'),
+    module.exports.terminal.markdown('🚀  Did you know? When using repo:set if you dont specify a token it will use your organizations token.'),
+    module.exports.terminal.markdown('🚀  Did you know theres more out there? Run ##aka plugins## to explore additional features to aka!'),
+    module.exports.terminal.markdown('🚀  Did you know? You can use ak as a short cut for aka'),
+  ];
 }
 
 module.exports.version = function version(appkit, args) {
