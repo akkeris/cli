@@ -328,6 +328,9 @@ function find_app_middleware(appkit, argv, context) {
     } else if(!argv.a && !argv.app && !process.env.AKKERIS_APP) {
       let branch_name = proc.spawnSync('git',['rev-parse','--abbrev-ref','HEAD'], {env:process.env}).stdout.toString('utf8').trim();
       let apps = proc.spawnSync('git',['config','--get-regexp','branch.*.akkeris'], {env:process.env}).stdout.toString('utf8').trim();
+      if(branch_name === '' || !branch_name) {
+        return
+      }
       apps = apps.split('\n').filter((x) => x !== '').map((x) => {
         let [branch_info, name] = x.split(' ')
         let branch = branch_info.split('.')[1]
