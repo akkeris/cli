@@ -468,7 +468,10 @@ module.exports.update = function update(appkit) {
   proc.spawnSync('npm',['update', '-g', 'akkeris'], {cwd:__dirname, env:process.env, stdio:'inherit'});
   
   // Clear 'update available' file
-  fs.unlinkSync(path.join(get_home(), '.akkeris', AKA_UPDATE_FILENAME).toString('utf8'));
+  let update_file = path.join(get_home(), '.akkeris', AKA_UPDATE_FILENAME).toString('utf8')
+  if(fs.existsSync(update_file)) {
+    fs.unlinkSync(update_file);
+  }
 }
 
 function is_redirect(type, res) { return type.toLowerCase() === 'get' && res.headers['location'] && (res.statusCode === 301 || res.statusCode === 302); }
