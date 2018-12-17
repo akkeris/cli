@@ -187,7 +187,7 @@ function info(appkit, args) {
         appkit.api.get('/apps/' + args.app + '/pipeline-couplings', function(err, pipeline) {
           appkit.api.get('/apps/' + args.app + '/formation', function(err, dynos) {
             console.log(appkit.terminal.markdown(`###===### **⬢ ${app.name}** ${app.preview ? '- ^^preview^^' : ''}
-  **ID:**\t\t\t${app.id}
+  **ID:**\t\t${app.id}
   **Addons:**\t${addons ? addons.map((x) => { return '\t' + x.name; }).join('\n\t\t') : ''}
   **Attached Addons:**\t${attachments ? attachments.map((x) => { return '\t' + x.name; }).join('\n\t\t') : ''}
   **Dynos:**\t${dynos ? dynos.map((x) => { return '\t' + x.type + ': ' + x.quantity}).join('\n\t\t') : ''}
