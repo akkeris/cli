@@ -431,7 +431,7 @@ module.exports.init = function init() {
     .command('update', 'update the akkeris client', {}, module.exports.update.bind(null, module.exports))
     .command('version', 'display version', {}, module.exports.version.bind(null, module.exports))
     .command('squirrel', false, {}, squirrel)
-    .command('hoho', 'celebrate your holiday spirit!', {}, hoho)
+    .command('hoho', '🎅 celebrate your holiday spirit!', {}, hoho)
     .command('auth:profile', 'Set the authorization endpoint and apps end point', {
         "apps":{ "description":"The URL for the apps API end point." },
         "auth":{ "description":"The URL for the auth API end point." }
