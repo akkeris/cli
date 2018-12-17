@@ -126,6 +126,48 @@ function create_dir(directory) {
   }
 }
 
+function hoho() {
+  console.log(`                             ______
+                            ,'      \`.
+                           /    _,-'_ \\   __..--..__
+                          ;. _,'---._\`\`.-'          \`-.
+                         (  )),'   \`.(-'               \`.
+                          \`'/ (.) (.) \\\`._               \`.
+                        <  (   _(_)_   )  >                \\
+                       <    \`,'_,-._\`.'    >      ,         :
+                    _,-<     \`' \`-' \`'     >     /          |
+                 ,-'    <                 > .   :   ,       |
+               ,'        \`._           _,'   \\  |  /        ;
+             ,'       _     \`-._____,-'  -._  \\,'./        /
+            /       ,'        |     |       \`(    :._    ,'
+           /      ;;          ;     :         :   ' \\\`--<
+          :      /;       ___.  __   .___     \`.=,_,' \\  \`.
+          ;----.:/      -----'  --   ' ----   /;(     /   :
+         (,---.\`\\           :         :     ,'/ \\)---'    /
+        ,'- \`  \`'           :         :    '-;_,' \\\`-.__,'
+       /  .__;.-.'          '         '           :
+       \`-\`\`    |             .       .            |
+               :             '       '            ;
+                \\  \`.    .    :     :  ,   ,'    /
+                 \`-._\`-.__\\___|_____|_/_,-'___,-'
+                    |                        |
+                    |________________________|
+                      |   |    |    |    | |
+                      |-.-'--.-'--.-'--.-'-|
+                      |_|____|____|____|___|
+                      |   |    |    |    | |
+                      |-.-'--.-'--.-'--.-'-|
+                      |_|____|____|____|___|
+                      |   |    |    |    | | SSt
+
+
+
+                      HAPPY HOLIDAYS, AND 
+                      MERRY CHRISTMAS AND
+                      HAPPY HANUKKAH
+                      `)
+}
+
 function squirrel() {
   console.log(`
                               _
@@ -389,6 +431,7 @@ module.exports.init = function init() {
     .command('update', 'update the akkeris client', {}, module.exports.update.bind(null, module.exports))
     .command('version', 'display version', {}, module.exports.version.bind(null, module.exports))
     .command('squirrel', false, {}, squirrel)
+    .command('hoho', 'celebrate your holiday spirit!', {}, hoho)
     .command('auth:profile', 'Set the authorization endpoint and apps end point', {
         "apps":{ "description":"The URL for the apps API end point." },
         "auth":{ "description":"The URL for the auth API end point." }
