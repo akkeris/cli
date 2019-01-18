@@ -30,36 +30,44 @@ function get_config_var(appkit, args) {
   });
 }
 
-function set_config_vars(appkit, args) {
-  let values_paired = args['KEY_VALUE_PAIR'];
-  let values = {};
-  if(args['KEY_VALUE_PAIR'].length === 0) {
-    return appkit.terminal.error("No valid key value pairs were provided.")
-  }
-  for(let value of values_paired) {
-    if(value.indexOf('=') !== -1) {
-      let key = value.substring(0, value.indexOf('='));
-      let val = value.substring(value.indexOf('=') + 1);
-      if(key === 'PORT') {
-        return appkit.terminal.error("The PORT config var is assigned and should not be set, use ps:forward to change the listening port.")
-      }
-      if(key && val) {
-        values[key] = val;
-        if(args.unescape) {
-          values[key] = values[key].replace(/\\n/g, '\n')
+async function set_config_vars(appkit, args) {
+  try {
+    let values_paired = args['KEY_VALUE_PAIR'];
+    let values = {};
+    if(args['KEY_VALUE_PAIR'].length === 0) {
+      return appkit.terminal.error("No valid key value pairs were provided.")
+    }
+    let port = null
+    for(let value of values_paired) {
+      if(value.indexOf('=') !== -1) {
+        let key = value.substring(0, value.indexOf('='));
+        let val = value.substring(value.indexOf('=') + 1);
+        if(key.toUpperCase() === 'PORT') {
+          port = parseInt(val, 10);
+        } else {
+          if(key && val) {
+            values[key] = val;
+            if(args.unescape) {
+              values[key] = values[key].replace(/\\n/g, '\n')
+            }
+          }
         }
       }
     }
-  }
-  if(Object.keys(values).length === 0) {
-    return appkit.terminal.error('No valid key value pairs were provided.');
-  }
-  appkit.api.patch(JSON.stringify(values), `/apps/${args.app}/config-vars`, (err, config_vars) => {
-    if(err) {
-      return appkit.terminal.error(err);
+    if(Object.keys(values).length === 0 && port === null) {
+      return appkit.terminal.error('No config vars were provided.');
     }
-    print_vars(appkit, args, config_vars);
-  });
+    if (port) {
+      await appkit.api.patch(JSON.stringify({port}), `/apps/${args.app}/formation/web`)
+    }
+    if(Object.keys(values).length !== 0) {
+      print_vars(appkit, args, await appkit.api.patch(JSON.stringify(values), `/apps/${args.app}/config-vars`));
+    } else {
+      print_vars(appkit, args, await appkit.api.get(`/apps/${args.app}/config-vars`));
+    }
+  } catch (err) {
+    return appkit.terminal.error(err);
+  }
 }
 
 function unset_config_vars(appkit, args) {
