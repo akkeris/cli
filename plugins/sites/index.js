@@ -73,7 +73,7 @@ module.exports = {
       'demand':false,
       'string':true,
       'default':'us-seattle',
-      'description':'The region (defaults to "us").'
+      'description':'The region to place the site in.'
     }, internal = {
       'boolean':true,
       'default':false,
