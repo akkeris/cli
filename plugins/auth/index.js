@@ -26,7 +26,7 @@ function login(appkit, args) {
         if(err.body) {
           err.body = err.body.toString('utf8');
         }
-        if(err.body && err.body.indexOf('2FA') > -1 || err.body.indexOf('OTP')) {
+        if(err.body && err.body.indexOf('2FA') > -1 || err.body && err.body.indexOf('OTP')) {
           let otp_header = Object.keys(err.headers).filter((x) => { return x.toLowerCase().indexOf("-otp") !== -1 && x.toLowerCase().startsWith("x-") })
           if(otp_header.length !== 1) {
             loader.end('error')
