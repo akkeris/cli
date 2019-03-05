@@ -128,18 +128,50 @@ function create_dir(directory) {
 
 function squirrel() {
   console.log(`
-                              _
-                          .-'\` \`}
-                  _./)   /       }
-                .'o   \\ |       }
-                '.___.'\`.\\    {\`
-                /\`\\_/  , \`.    }
-                \\=' .-'   _\`\  {
-                 \`'\`;/      \`,  }
-                    _\\       ;  }
-                   /__\`;-...'--'
 
-                   SQUIRREL!
+                      ''              .
+                      +d/           -yd.
+                      +mdy-...--..-/hdm.
+                      'dmmdyhyyyyyhdmms
+                       /mhhhhhddddddyd.
+                       .dmyhhhhhhhdhhh
+                       .yddyhhyyyhhyds
+                      .ohhyyyssdysyhys-
+                     .+yhyyhooydyoohys+'
+                    -+syssys/:smh+/oso+-
+                   -oyyysooo++sdy++oooo/
+                  -oyyyoo+++++++//:+++so-
+                 :yhyyo::-::::::::--::+yo
+               '+hhyo/-...----:-------/yy.
+               .hhssso+:-.....-.....--:+s/
+               -dhshdys+-.'........-//ooo/
+               'hmhhhddy+:--------/+oyhyy.
+                ydmmddmddhy++:-:+ohhdddh+
+               'oddddhhdmmhhhsoyyhdmmdy:'
+               -sddmh++/ohdhdddhhhhdmm+
+               /ydddy//::oso+oossoohmm+
+               /yhdhy/:-:+/::::////hmd:
+               /ydmdo--://:---:/:/odmo
+              'syhds/o:::--.-::::/ymd+
+              /sydho:::::-..-::::/omho'
+             .syhdd+---::-..-::://sdhs.
+             .sydhh+-:-::--.-:::/ohhys-
+             :ohhss+///+/::-:+//++osyy/.'
+            .ooo/++oshy++///+hy///+ooyo:..''
+            :so+/:::+yyso+++sh+---/+ohys//-..'
+            +hss+:-::/++/++///---:+oyhhyo/:-..'
+            sdho+/:::://::/:::-:-/oshdmho++/-.'
+            yddyy/://:/+///://::-:+ydmmdy+/:-.'
+           'ymdhy+os+/+sysoohs////+sddNmh+::-'
+            .hddhssoo+osdmdmmhso+oshddNmh+:.'
+             .hddhhssssyhdmmdhhyyyhdddmds+.
+              .hmmNmddmmmNMNNNNNNmmmmmy:'
+         :/+oosshdmmddNNNNNmNNNmdhmdhyo:.
+         -+ooo+ooo+/:--.''   ''./yysyhhho
+
+
+
+                     SQUIRREL!
 
   `)
 }
