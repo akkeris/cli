@@ -348,7 +348,7 @@ async function upgrade(appkit, args) {
     if (loader) { 
       loader.end()
     }
-    appkit.terminal.error(new Error('The addon may currently be unavailable or unable to process upgrades, try again later.'))
+    appkit.terminal.error(e)
   } finally {
     if(maintenance_ran) {
       await appkit.api.patch(JSON.stringify({"maintenance":false}), `/apps/${args.app}`)
@@ -383,7 +383,7 @@ async function downgrade(appkit, args) {
     if(loader) {
       loader.end()
     }
-    appkit.terminal.error(new Error('The addon may currently be unavailable or unable to process downgrades, try again later.'))
+    appkit.terminal.error(e)
   } finally {
     if(maintenance_ran) {
       await appkit.api.patch(JSON.stringify({"maintenance":false}), `/apps/${args.app}`)
