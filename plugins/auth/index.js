@@ -18,7 +18,13 @@ function login(appkit, args) {
       headers = Object.assign(headers, OTP)
     }
     appkit.http.post(
-      JSON.stringify({'notes':'Akkeris CLI Token (' + require('os').hostname() + ')', 'note':'Akkeris CLI Token', 'notes_url':'', 'fingerprint':''}), 
+      JSON.stringify({
+        'notes':'Akkeris CLI Token (' + require('os').hostname() + ')', 
+        'note':'Akkeris CLI Token (' + (new Date()).toISOString() + ')', 
+        'notes_url':'', 
+        'fingerprint':'',
+        'scopes':['read:user','read:org'],
+      }), 
       `https://${appkit.config.akkeris_auth_host}/authorizations`, 
       headers,
     (err, data) => {
@@ -26,11 +32,11 @@ function login(appkit, args) {
         if(err.body) {
           err.body = err.body.toString('utf8');
         }
-        if(err.body && err.body.indexOf('2FA') > -1 || err.body && err.body.indexOf('OTP')) {
+        if(err.body && err.body.indexOf('2FA') > -1 || err.body && err.body.indexOf('OTP') > -1) {
           let otp_header = Object.keys(err.headers).filter((x) => { return x.toLowerCase().indexOf("-otp") !== -1 && x.toLowerCase().startsWith("x-") })
           if(otp_header.length !== 1) {
             loader.end('error')
-            return appkit.terminal.error("Unable to determine type of two factor OTP: " + err.body)
+            return appkit.terminal.error("Unable to determine type of two factor OTP: " + err.body, true)
           }
           loader.end('ok');
           appkit.terminal.question('Two Factor Token: ', (OTP) => {
@@ -40,7 +46,7 @@ function login(appkit, args) {
           });
         } else {
           loader.end('error');
-          return appkit.terminal.error(err);
+          return appkit.terminal.error(err, true);
         }
       } else {
         loader.end('ok');
