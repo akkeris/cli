@@ -219,6 +219,14 @@ function load_profile() {
       welcome()
     }
   }
+  process.env.AKKERIS_AUTH_HOST = process.env.AKKERIS_AUTH_HOST.toLowerCase().trim()
+  process.env.AKKERIS_API_HOST = process.env.AKKERIS_API_HOST.toLowerCase().trim()
+  if (process.env.AKKERIS_AUTH_HOST.startsWith('https://') || process.env.AKKERIS_AUTH_HOST.startsWith('http://')) {
+    process.env.AKKERIS_AUTH_HOST = (new url.URL(process.env.AKKERIS_AUTH_HOST)).hostname
+  }
+  if (process.env.AKKERIS_API_HOST.startsWith('https://') || process.env.AKKERIS_API_HOST.startsWith('http://')) {
+    process.env.AKKERIS_API_HOST = (new url.URL(process.env.AKKERIS_API_HOST)).hostname
+  }
 }
 
 function welcome() {
@@ -589,6 +597,9 @@ function appkit_request(type, payload, rurl, callback) {
                 ( (module.exports.config.akkeris_api_host.startsWith("http") ? 
                     module.exports.config.akkeris_api_host : 
                     'https://' + module.exports.config.akkeris_api_host) + rurl);
+  if (process.env.DEBUG) {
+    console.log(` => [akkeris-debug-http] ${type} ${full_url} ${JSON.stringify(headers)} ${JSON.stringify(payload)} `)
+  }
   return request(type, payload, full_url, headers, callback);
 }
 
