@@ -12,7 +12,7 @@ let stream_restarts = 0
 async function stream_logs(appkit, colors, uri, payload) {
   /* as a safety mechanism eventually timeout after 1000 restarts */
   if(stream_restarts > 1000) {
-    process.exit(1)
+    return process.exit(1)
   }
   let log_session = await appkit.api.post(JSON.stringify(payload), uri)
   let logging_stream_url = url.parse(log_session.logplex_url);
@@ -23,9 +23,8 @@ async function stream_logs(appkit, colors, uri, payload) {
     } else {
       res.setEncoding('utf8')
       res.on('data', highlight)
-      res.on('error', (e) => { 
+      res.on('error', (e) => {
         return appkit.terminal.error(e)
-        process.exit(1)
       })
       res.on('end', () => {
         stream_restarts++;
@@ -33,9 +32,12 @@ async function stream_logs(appkit, colors, uri, payload) {
       })
     }
   });
-  req.on('error', function(e) {
+  req.on('error', (e) => {
+    if (e.code === "ECONNRESET") {
+      stream_restarts++;
+      return setTimeout(stream_logs.bind(null, appkit, colors, uri, payload), 1000);
+    }
     return appkit.terminal.error(e)
-    process.exit(1)
   })
   req.setNoDelay(true)
   req.end()
