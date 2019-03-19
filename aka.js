@@ -10,6 +10,9 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 const zlib = require('zlib');
+const inquirer = require('inquirer');
+const fuzzy = require('fuzzy');
+inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
 
 // Only check to updates when our last update check was this long ago (ms)
 // Default - 86400000 (24 hours)
@@ -18,59 +21,6 @@ const AKA_UPDATE_INTERVAL = process.env.AKA_UPDATE_INTERVAL ? process.env.AKA_UP
 // Filename of saved update information
 // Default - .aka_version
 const AKA_UPDATE_FILENAME = '.aka_version'
-
-function zzh_template(yargs) {
-  let cmd = path.basename(yargs.$0)
-  let cmd_path = yargs.$0;
-  if (cmd_path.match(/\.js$/)) {
-    cmd_path = `./${cmd_path}`
-  }
-  return `
-###-begin-${cmd}-completions-###
-_aka_yargs_completions()
-{
-  local reply
-  local si=$IFS
-  IFS=$'\n' reply=($(COMP_CWORD="$((CURRENT-1))" COMP_LINE="$BUFFER" COMP_POINT="$CURSOR" ${cmd_path} --get-yargs-completions "$\{words[@]\}"))
-  IFS=$si
-  _describe 'values' reply
-}
-compdef _aka_yargs_completions ${cmd}
-###-end-${cmd}-completions-###
-`
-}
-
-function bash_template(yargs) {
-  let cmd = path.basename(yargs.$0)
-  let cmd_path = yargs.$0;
-  if (cmd_path.match(/\.js$/)) {
-    cmd_path = `./${cmd_path}`
-  }
-  return `
-###-begin-${cmd}-completions-###
-_aka_yargs_completions()
-{
-    local cur_word args type_list
-
-    cur_word="$\{COMP_WORDS[COMP_CWORD]\}"
-    args=("$\{COMP_WORDS[@]\}")
-
-    # ask yargs to generate completions.
-    type_list=$(${cmd_path} --get-yargs-completions "$\{args[@]\}")
-
-    COMPREPLY=( $(compgen -W "$\{type_list\}" -- $\{cur_word\}) )
-
-    # if no match was found, fall back to filename completion
-    if [ $\{#COMPREPLY[@]\} -eq 0 ]; then
-      COMPREPLY=( $(compgen -f -- "$\{cur_word\}" ) )
-    fi
-
-    return 0
-}
-complete -F _aka_yargs_completions ${cmd}
-###-end-${cmd}-completions-###
-`
-}
 
 process.on('uncaughtException', (e) => {
   if(process.env.DEBUG) {
@@ -176,6 +126,62 @@ function squirrel() {
   `)
 }
 
+function squirrel_2() {
+  `
+                                                                0k       kO         
+             xdx0        xO                                 0kxxddO   0lldox        
+            c,;cd        c:ox                              O0ocllccO Od;;:cox      
+           x;;;;:xkkkO0Oc,;llO                            Okol:::::dx;;,;::oOOodk0   
+          0c;;;;;;;;:ccc;,;lcd                          kkxoc,,;,;l;''';;;c::cld0  
+       Oo;;:;;;;;;;;:lllccclclO                          k:;:,','''''.''';;;:;clk    
+     0:,;;;;,,,,'',;:cllolclccx                     kxd OOc,''.''....''.,;:;:lodO    
+     c:::;;,,,',,:dkxxxoldoc;lxk                    kc:cccl;'.'....''.'',,;:cclx     
+     c:;;;;:cc:ccxl'..ldoodoloxk                 Oxxol;,,,,,'.'..'.'''','::::oO      
+     :'',::cccoooc;;,;xxodooodddk                xlxlc:,,,''......'..'.';;:ok0       
+    k;.;cooccloxxxxOkkdoooooddddxO             Oolc;;c:;''''..........',,:odx        
+    d'.,clxolodxxkkxxdxdddddddxxdd              0o:;,'','.............',;llokkk      
+    kc,.,oooddxxxkkxxkkkxdddxxxooook            Odc:;,.''.............',;cclx0       
+      Oocloddxxxxxxdxxxkkkkkxdoloooolodx         d:',''...............',;::oO0       
+        Ol::clcoddddxkkOOOkxdolooooll:::ccclx    kc;''................',::odxk0      
+          OxdoodkxxxkOOOkkxddolloollccc:cccccccd  x:'.................'.,:dokkx      
+           kddddxxxxkOO0Oxxxdoloolcccc:ccccccccccdOc,..................,,;coxk       
+          oodxddkkxkO0 0Okxdoooollccc:;:ccc:ccccccc:,'..................,;;cdxO      
+         xlodxxxOOOOO00Okxdooodollllc::;::c::cccc:::,'.................''';;clO      
+         olddkkkkkOO00Oxddolllolllcllc:::c::ccccc::;;'...................,,;:dO      
+         llolkOkxkOOOkllolllolcllllllc::ccccccccc::;;,...................';cldkx     
+        0cccokkkdkOOxocclccllclcclolcccclllllllccc:::;,.................',:cldxO     
+        Oc:cdkxddOkxocccclolc:::cclllclllllclllllccc::;.................';::lxk      
+        k;:ldxooxOdlc:;clllccccccccllclccccccclllclc::;'...............',::lodx0     
+        x,coddoxklc::c:ccllcccc:cloddollllc::::cclcll:;'...............'';;clddk     
+        oloooddoolcc:::cccc::::coxxkkxxxdol:;:ccclllc:;,................,,,:lox      
+      Olccolllcccc:c;;;:;::;:coxkkkxddddoc:::ccclllc:;;,................',;clk       
+     0;;;,:c:loolcccc:cc:::ccllooddddoolccccccclllloc:;,..'.............';xk0        
+     0'..,',.:     xc;;:;;;::ccloddxdollccccllllllccc::;'..''.........',:cx          
+      0xx:..dO      o;;;;,;:clodddxddollcccccllcllccc:::,''..........',lkO           
+                     xc:;,;clllldddoollllllllllllllcc:::;''.......',,ldk             
+                      0l:;;:clcllooollcllcllclclccc:::;;;,''.''.',;:ld0              
+                       k:;,;:ccclooolcccclcllllccccc::;;,',,',',;codO0               
+                        d:;,::::lloc:cccclllllclc:ccc:::;,,,,,;cdO0                  
+                         kc;;;:;::c:;;:::ccccccccccccc:;;::ldxk0                     
+                           Oo:;::;;,,;:;;;:::::::::c:::;;ck                          
+                         k0 00xl::;;',;;,;:;;;;;;;:::;;;,;;ck                        
+                     dc;...........,'','',,,,;;;,;;,,,,,;;coO                        
+                    kxdc;;;;;;;,'........'.''''',,,,:codk                            
+                     xc;:::::;;;:;;,.......',;:;loxO                                 
+                     Oxo,:c;,;:ldxlldddxkkO0                                         
+                   _____             _               _   _ 
+                  / ____|           (_)             | | | |
+                 | (___   __ _ _   _ _ _ __ _ __ ___| | | |
+                  \\___ \\ / _  | | | | |  __|  __/ _ \\ | | |
+                  ____) | (_| | |_| | | |  | | |  __/ | |_|
+                 |_____/ \\__, |\\__,_|_|_|  |_|  \\___|_| (_)
+                            | |                            
+                            |_|      
+
+  `.split('\n').forEach((i, idx) => setTimeout(() => console.log(i), 25 * idx));
+}
+
+
 function set_profile(appkit, args, cb) {
   if(!args || !args.auth || !args.app) {
     appkit.terminal.question('Akkeris Auth Host (auth.example.com): ', (auth) => {
@@ -241,71 +247,29 @@ function welcome() {
  
 let zsh_shell = process.env.SHELL && process.env.SHELL.indexOf('zsh') !== -1;
 
-// xyz[0] == command name + any arguments
-// xyz[1] == command description, if false no description
-// xyz[2] == optional params.
-// xyz[3] == function to call
-// xyz[4] == aliases
-// xyz[5] == overloaded async function(option)
-let available_commands = [];
-
 function install_auto_completions(appkit) {
-  let task = appkit.terminal.task('Installing autocomplete scripts, this will take affect with the next shell.')
-  task.start()
-  if(zsh_shell) {
-    // See: https://github.com/yargs/yargs/issues/1156
-    fs.writeFileSync(path.join(get_home(), '.zshrc'), zzh_template(module.exports.args), {'flag':'a'})
-  } else {
-    fs.writeFileSync(path.join(get_home(), '.bash_profile'), bash_template(module.exports.args), {'flag':'a'})
-  }
-  task.end('ok')
-}
+  
+  let task = appkit.terminal.task('Installing autocomplete scripts, this will take affect with the next shell.');
+  task.start();
 
-async function find_auto_completions(current, argv, cb) {
-  try {
-    if(argv._[1] || current === '--') {
-      let matched = available_commands.filter((c) => c[1] && c[0].replace(/\\/g, '').split(' ')[0].toLowerCase() === argv._[1])
-      if(matched.length > 0) {
-        // See if there's a command name, or if its just options left.
-        let m = matched[0][0].split(' ')
-        let ndx = (m.length - 1) - (argv._.filter((x) => x !== '').length - 2)
-        if(ndx === 0) {
-          let returns = Object.keys(matched[0][2]).map((option) => {
-            if(zsh_shell) {
-              return '--' + option.replace(/:/g, '\\:') + ':' + matched[0][2][option].description
-            } else {
-              return '--' + option
-            }
-          })
-          return cb(returns)
-        } else {
-          // find the next arg
-          if(matched[0][5]) {
-            try {
-              return cb(await matched[0][5](m[ndx]))
-            } catch (e) {
-              return cb([])
-            }
-          } else {
-            return cb([m[ndx]])
-          }
-        }
-      }
-    }
+  let script;
 
-    let matches = available_commands.filter((c) => c[1] && c[0].toLowerCase().startsWith(current.toLowerCase()));
-    if(matches.length === 0) {
-      // hail marry
-      matches = available_commands.filter((c) => c[1] && c[0].toLowerCase().indexOf(current.toLowerCase()) > -1);
-    }
-    if(zsh_shell) {
-      cb(matches.map((c) => c[0].replace(/:/g, '\\:').split(' ')[0] + ":" + c[1]))
-    } else {
-      cb(matches.map((c) => c[0].split(' ')[0]))
-    }
-  } catch (e) {
-    return cb([])
-  }
+  // Override _stream.write and return a function that rolls back the override (https://stackoverflow.com/questions/9609393/catching-console-log-in-node-js)
+  const hook_stream = (_stream, fn) => {
+    const old_write = _stream.write;
+    _stream.write = fn;
+    return () => _stream.write = old_write;
+  };
+
+  // Capture the autocomplete script that yargs sends to stdout
+  const unhook_stdout = hook_stream(process.stdout, (str) => script = `\n${str}`);
+  appkit.args.showCompletionScript();
+  unhook_stdout();
+  
+  // Write to zsh/bash profile
+  fs.writeFileSync(path.join(get_home(), zsh_shell ? '.zshrc' : '.bash_profile'), script, {'flag':'a'}); 
+
+  task.end('ok');
 }
 
 function check_for_updates() {
@@ -358,8 +322,9 @@ function spawn_update_check(update_file_path) {
 
 // This checks to see if -a (--app) is in the requested config set,
 // in a .akkeris
-function find_app_middleware(appkit, argv, context) {
-  if (context.availableOptions.app || (context.availableOptions.a && context.availableOptions.a.includes("app"))) {
+function find_app_middleware(appkit, argv, yargs) {
+  const options = yargs.getOptions().string;
+  if (options.includes("app") || options.includes("a")) {
     // we don't want to do anything destructive implicitly.
     if(argv._ && argv._[0] && (argv._[0].includes('destroy') || argv._[0].includes('delete') || argv._[0].includes('remove') || argv._[0].includes('unset'))) {
       return
@@ -382,7 +347,37 @@ function find_app_middleware(appkit, argv, context) {
         argv.a = argv.app = apps[0].name
         console.log(appkit.terminal.markdown(`###===### Using app **⬢ ${argv.a}** from ##git config --get branch.${apps[0].branch}.akkeris##`));
       }
+      argv.a = argv.app = "~$force_select_app$~"; // If no app was provided, trigger app search
     }
+  }
+}
+
+// Retrieve a list of apps and let the user select one 
+async function appSelect(appkit, argv) {
+  if (argv.a === '~$force_select_app$~' || argv.app === '~$force_select_app$~') {
+    console.log('');
+
+    // Retrieve list of apps from API
+    const appNames = (await appkit.api.get('/apps')).map(i => i.name);
+    
+    // Prompt user to search for or select an app from the list
+    const searchApps = async (input) => fuzzy.filter((input || ''), appNames).map(e => e.original);
+    const prompt = inquirer.prompt({
+      type: 'autocomplete',
+      name: 'app',
+      message: 'Select an app',
+      suffix: ':',
+      source: (answers, input) => searchApps(input),
+    });
+
+    // Cancel on ESC key
+    process.stdin.on('keypress', (ch, key) => key && key.name === 'escape' && prompt.ui.close() );
+    
+    // Overwrite app name with the selected app
+    const answer = await prompt;
+    argv.a = argv.app = answer.app;
+    
+    console.log('');
   }
 }
 
@@ -416,32 +411,23 @@ module.exports.init = function init() {
     module.exports.update_available = {};
   }
 
-  
   // Establish the base arguments for the CLI.
   module.exports.args = require('yargs');
-  let pcommand = module.exports.args.command;
-  module.exports.args.command = function(...xyz) {
-    available_commands.push(xyz)
-    pcommand.call(module.exports.args, xyz[0],xyz[1],xyz[2],xyz[3],xyz[4])
-    return module.exports.args
-  }
-
+  
   module.exports.args
     .usage('Usage: akkeris COMMAND [--app APP] [command-specific-options]')
     .command('update', 'update the akkeris client', {}, module.exports.update.bind(null, module.exports))
     .command('version', 'display version', {}, module.exports.version.bind(null, module.exports))
     .command('squirrel', false, {}, squirrel)
+    .command('squirrel_2.0', false, {}, squirrel_2)
     .command('auth:profile', 'Set the authorization endpoint and apps end point', {
         "apps":{ "description":"The URL for the apps API end point." },
         "auth":{ "description":"The URL for the auth API end point." }
       }, set_profile.bind(null, module.exports))
     .command('autocomplete', `adds the shell autocompletion.`, {}, install_auto_completions.bind(null, module.exports))
-    .completion('__notused', false, find_auto_completions)
     .recommendCommands()
-
-  if(module.exports.args.preChecksMiddleware) {
-    module.exports.args.preChecksMiddleware(find_app_middleware.bind(null, module.exports)) 
-  }
+    .middleware(find_app_middleware.bind(null, module.exports), true)
+    .middleware(appSelect.bind(null, module.exports))
 
   // map cli width for yargs
   module.exports.args.wrap(module.exports.args.terminalWidth())
