@@ -336,6 +336,7 @@ function find_app_middleware(appkit, argv, yargs) {
       let branch_name = proc.spawnSync('git',['rev-parse','--abbrev-ref','HEAD'], {env:process.env}).stdout.toString('utf8').trim();
       let apps = proc.spawnSync('git',['config','--get-regexp','branch.*.akkeris'], {env:process.env}).stdout.toString('utf8').trim();
       if(branch_name === '' || !branch_name) {
+        argv.a = argv.app = "~$force_select_app$~"; // If no app was provided, trigger app search
         return
       }
       apps = apps.split('\n').filter((x) => x !== '').map((x) => {
