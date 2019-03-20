@@ -453,13 +453,21 @@ module.exports = {
       'description':'The addon to rename'
     };
 
+    let require_addon_delete = JSON.parse(JSON.stringify(require_app_option));
+    require_addon_delete.confirm = {
+      'alias': 'c',
+      'demand': false,
+      'string': true,
+      'description': 'Confirm (in advance) the name of the addon to destroy.'
+    };
+
     appkit.args
       .command('addons', 'manage (list) add-on resources', require_app_option, list_all_addons.bind(null, appkit))
       .command('addons:attach ADDON_ID', 'attach add-on resource to an app', attach_create_option, attach.bind(null, appkit))
       .command('addons:create SERVICE_PLAN', 'create an add-on resource', require_addon_create, create.bind(null, appkit), [])
-      .command('addons:destroy ADDON', 'destroy add-on resources', require_app_option, destroy.bind(null, appkit))
-      .command('addons:delete ADDON', false, require_app_option, destroy.bind(null, appkit))
-      .command('addons:remove ADDON', false, require_app_option, destroy.bind(null, appkit))
+      .command('addons:destroy ADDON', 'destroy add-on resources', require_addon_delete, destroy.bind(null, appkit))
+      .command('addons:delete ADDON', false, require_addon_delete, destroy.bind(null, appkit))
+      .command('addons:remove ADDON', false, require_addon_delete, destroy.bind(null, appkit))
       .command('addons:rename NEW_NAME', 'Rename an add-on attachment name.', require_rename, rename.bind(null, appkit))
       .command('addons:upgrade ADDON PLAN', 'upgrade an addons plan', require_app_wait_option, upgrade.bind(null, appkit))
       .command('addons:downgrade ADDON PLAN', 'downgrade an addon plan', require_app_wait_option, downgrade.bind(null, appkit))
@@ -474,9 +482,9 @@ module.exports = {
       .command('addon', false, require_app_option, list_attached_addons.bind(null, appkit))
       .command('addon:attach ADDON_ID', false, attach_create_option, attach.bind(null, appkit))
       .command('addon:create SERVICE_PLAN', false, require_app_option, create.bind(null, appkit))
-      .command('addon:destroy ADDON', false, require_app_option, destroy.bind(null, appkit))
-      .command('addon:delete ADDON', false, require_app_option, destroy.bind(null, appkit))
-      .command('addon:remove ADDON', false, require_app_option, destroy.bind(null, appkit))
+      .command('addon:destroy ADDON', false, require_addon_delete, destroy.bind(null, appkit))
+      .command('addon:delete ADDON', false, require_addon_delete, destroy.bind(null, appkit))
+      .command('addon:remove ADDON', false, require_addon_delete, destroy.bind(null, appkit))
       .command('addon:detach ADDON_ID', false, require_app_option, detach.bind(null, appkit))
       .command('addon:info ADDON', false, require_app_option, info_addons.bind(null, appkit))
       .command('addon:plans SERVICE', false, {}, list_addons_plans.bind(null, appkit))

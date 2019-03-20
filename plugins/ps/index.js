@@ -419,12 +419,22 @@ module.exports = {
         'description':'will remove active healthcheck'
       }
     };
+
+    let require_confirm_app_option = Object.assign(require_app_option, {
+      'confirm':{
+        'alias':'c',
+        'demand':false,
+        'string':true,
+        'description':'Confirm (in advance) the name of the app that owns the dyno to destroy.'
+      }
+    });
+
     appkit.args
       .command('ps', 'list dynos for an app', require_app_option, list.bind(null, appkit))
       .command('ps:create TYPE', 'create a type of dyno', require_formation_create_option, create.bind(null, appkit))
       .command('ps:update TYPE', 'update a type of dyno', require_formation_create_option, update.bind(null, appkit))
       .command('ps:forward PORT', 'forward web traffic to specific port', require_app_option, forward.bind(null, appkit))
-      .command('ps:destroy TYPE', 'deletes a type of dyno', require_app_option, destroy.bind(null, appkit))
+      .command('ps:destroy TYPE', 'deletes a type of dyno', require_confirm_app_option, destroy.bind(null, appkit))
       .command('ps:kill DYNO', 'stop a dyno', require_app_option, stop.bind(null, appkit))
       .command('ps:restart [TYPE]', 'restart app dynos', require_app_option, restart.bind(null, appkit))
       .command('ps:scale [TYPE=AMOUNT ...]', 'scale dyno quantity up or down', require_app_option, scale.bind(null, appkit))
