@@ -327,6 +327,9 @@ function find_app_middleware(appkit, argv, yargs) {
   if (options.includes("app") || options.includes("a")) {
     // we don't want to do anything destructive implicitly.
     if(argv._ && argv._[0] && (argv._[0].includes('destroy') || argv._[0].includes('delete') || argv._[0].includes('remove') || argv._[0].includes('unset'))) {
+      if (!argv.a && !argv.app) {
+        argv.a = argv.app = "~$force_select_app$~"; // If no app was provided, trigger app search
+      }
       return
     }
     if(!argv.a && !argv.app && process.env.AKKERIS_APP) {
