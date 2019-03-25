@@ -181,7 +181,6 @@ function squirrel_2() {
   `.split('\n').forEach((i, idx) => setTimeout(() => console.log(i), 25 * idx));
 }
 
-
 function set_profile(appkit, args, cb) {
   if(!args || !args.auth || !args.app) {
     appkit.terminal.question('Akkeris Auth Host (auth.example.com): ', (auth) => {
@@ -323,12 +322,15 @@ function spawn_update_check(update_file_path) {
 // This checks to see if -a (--app) is in the requested config set,
 // in a .akkeris
 function find_app_middleware(appkit, argv, yargs) {
+  if (argv._ && argv._[0] && (argv._[0] === 'apps:create' || argv._[0] === 'create')) return; // Handle in `create_app_prechecks`
+  const force_select_app = () => { argv.a = argv.app = "~$force_select_app$~"; };
+
   const options = yargs.getOptions().string;
   if (options.includes("app") || options.includes("a")) {
     // we don't want to do anything destructive implicitly.
     if(argv._ && argv._[0] && (argv._[0].includes('destroy') || argv._[0].includes('delete') || argv._[0].includes('remove') || argv._[0].includes('unset'))) {
       if (!argv.a && !argv.app) {
-        argv.a = argv.app = "~$force_select_app$~"; // If no app was provided, trigger app search
+        force_select_app();
       }
       return
     }
@@ -339,7 +341,7 @@ function find_app_middleware(appkit, argv, yargs) {
       let branch_name = proc.spawnSync('git',['rev-parse','--abbrev-ref','HEAD'], {env:process.env}).stdout.toString('utf8').trim();
       let apps = proc.spawnSync('git',['config','--get-regexp','branch.*.akkeris'], {env:process.env}).stdout.toString('utf8').trim();
       if(branch_name === '' || !branch_name) {
-        argv.a = argv.app = "~$force_select_app$~"; // If no app was provided, trigger app search
+        force_select_app();
         return
       }
       apps = apps.split('\n').filter((x) => x !== '').map((x) => {
@@ -350,38 +352,136 @@ function find_app_middleware(appkit, argv, yargs) {
       if(apps.length === 1) {
         argv.a = argv.app = apps[0].name
         console.log(appkit.terminal.markdown(`###===### Using app **⬢ ${argv.a}** from ##git config --get branch.${apps[0].branch}.akkeris##`));
+      } else {
+        force_select_app();
       }
-      argv.a = argv.app = "~$force_select_app$~"; // If no app was provided, trigger app search
     }
   }
 }
 
 // Retrieve a list of apps and let the user select one 
-async function appSelect(appkit, argv) {
-  if (argv.a === '~$force_select_app$~' || argv.app === '~$force_select_app$~') {
-    console.log('');
+async function select_app_middleware(appkit, argv) {
+  if (argv._ && argv._[0] && (argv._[0] === 'apps:create' || argv._[0] === 'create')) return; // Handle in `create_app_middleware`
 
-    // Retrieve list of apps from API
+  if (argv.a === '~$force_select_app$~' || argv.app === '~$force_select_app$~') {
     const appNames = (await appkit.api.get('/apps')).map(i => i.name);
-    
-    // Prompt user to search for or select an app from the list
+    if (appNames.length === 0) {
+      appkit.terminal.error(appkit.terminal.markdown('###===### No apps were found. At least one app must exist in order to use this command.'));
+    }
+
+    console.log();
+    console.log(appkit.terminal.markdown('!!Missing parameter:!! ^^app^^'));
+    console.log(appkit.terminal.markdown('###(Press [CTRL+C] to cancel at any time)###'));
+    console.log();
+
+    // Prompt user to search for / select an app from the list
     const searchApps = async (input) => fuzzy.filter((input || ''), appNames).map(e => e.original);
-    const prompt = inquirer.prompt({
+    const answer = await inquirer.prompt({
       type: 'autocomplete',
       name: 'app',
       message: 'Select an app',
       suffix: ':',
       source: (answers, input) => searchApps(input),
     });
-
-    // Cancel on ESC key
-    process.stdin.on('keypress', (ch, key) => key && key.name === 'escape' && prompt.ui.close() );
     
     // Overwrite app name with the selected app
-    const answer = await prompt;
     argv.a = argv.app = answer.app;
     
-    console.log('');
+    console.log();
+  }
+}
+
+// If options are missing during apps:create, provide the opportunity to select them
+function create_app_prechecks(argv, yargs) {
+  if (argv._ && argv._[0] && (argv._[0] === 'apps:create' || argv._[0] === 'create')) {
+    if (!argv.s && !argv.space) {
+      argv.s = argv.space = "~$select_space$~";
+    }
+    if (!argv.o && !argv.org) {
+      argv.o = argv.org = "~$select_org$~";
+    }
+    if (!argv.NAME) {
+      argv.NAME = "~$select_name$~";
+    }
+  }
+}
+
+// Let the user enter missing apps:create options
+async function create_app_middleware(appkit, argv) {
+  const questions = [];
+  const missing = [];
+
+  if (argv.NAME === "~$select_name$~") {
+    missing.push('name');
+    questions.push({
+      type: 'input',
+      name: 'app',
+      message: 'Enter a name for your app',
+      suffix: ':',
+      validate: (value) => {
+        if (value.length === 0) {
+          return 'This field is required.'
+        } else if (!value.match(/^[0-9A-Za-z]+$/i)) {
+          return 'Alphanumeric characters only';
+        }
+        return true;
+      },
+    });
+  }
+
+  if (argv.space === "~$select_space$~") {
+    missing.push('space');
+    const spaceNames = (await appkit.api.get('/spaces')).map(i => i.name).sort();
+    if (spaceNames.length === 0) {
+      appkit.terminal.error(appkit.terminal.markdown('###===### No spaces were found. At least one space must exist in order to create an app.'));
+    }
+    const searchSpaces = async (input) => fuzzy.filter((input || ''), spaceNames).map(e => e.original);
+    questions.push({
+      type: 'autocomplete',
+      name: 'space',
+      message: 'Select a space',
+      suffix: ':',
+      source: (answers, input) => searchSpaces(input),
+    });
+  }
+
+  if (argv.org === "~$select_org$~") {
+    missing.push('org');
+    const orgNames = (await appkit.api.get('/organizations')).map(i => i.name).sort();
+    if (orgNames.length === 0) {
+      appkit.terminal.error(appkit.terminal.markdown('###===### No orgs were found. At least one org must exist in order to create an app.'));
+    }
+    const searchOrgs = async (input) => fuzzy.filter((input || ''), orgNames).map(e => e.original);
+    questions.push({
+      type: 'autocomplete',
+      name: 'org',
+      message: 'Select an org',
+      suffix: ':',
+      source: (answers, input) => searchOrgs(input),
+    });
+  }
+
+  if (questions.length !== 0) {
+    console.log();
+    console.log(appkit.terminal.markdown(`!!Missing parameters:!! ^^${missing.join(', ')}^^`));
+    console.log(appkit.terminal.markdown('###(Press [CTRL+C] to cancel at any time)###'));
+    console.log();
+
+    // Prompt user for input on missing options
+    const answers = await inquirer.prompt(questions);
+
+    console.log();
+
+    // Replace argv with answers to questions
+    if (answers.app) {
+      argv.NAME = answers.app;
+    }
+    if (answers.space) {
+      argv.space = argv.s = answers.space;
+    }
+    if (answers.org) {
+      argv.org = argv.o = answers.org;
+    }
   }
 }
 
@@ -430,8 +530,8 @@ module.exports.init = function init() {
       }, set_profile.bind(null, module.exports))
     .command('autocomplete', `adds the shell autocompletion.`, {}, install_auto_completions.bind(null, module.exports))
     .recommendCommands()
-    .middleware(find_app_middleware.bind(null, module.exports), true)
-    .middleware(appSelect.bind(null, module.exports))
+    .middleware([create_app_prechecks, find_app_middleware.bind(null, module.exports)], true)
+    .middleware([create_app_middleware.bind(null, module.exports), select_app_middleware.bind(null, module.exports)])
 
   // map cli width for yargs
   module.exports.args.wrap(module.exports.args.terminalWidth())
