@@ -22,20 +22,20 @@ function app_or_error(appkit, name, cb) {
   });
 }
 
-let create_apps_options = {
-  "space":{
+const create_apps_options = yargs => yargs
+  .option('space', {
     "alias":"s",
     "string":true,
     "demand":true,
     "description":"The space to create the app in"
-  },
-  "org":{
+  }).option('org', {
     "alias":"o",
     "string":true,
     "demand":true,
     "description":"The organization to create the app under"
-  }
-}
+  }).positional('NAME', {
+     "string": true 
+  });
 
 function create(appkit, args) {
   if(!args.NAME) {
