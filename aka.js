@@ -326,7 +326,8 @@ function find_app_middleware(appkit, argv, yargs) {
   const force_select_app = () => { argv.a = argv.app = "~$force_select_app$~"; };
 
   const options = yargs.getOptions().string;
-  if (options.includes("app") || options.includes("a")) {
+  const requiredOptions = yargs.getDemandedOptions();
+  if ((options.includes("app") || options.includes("a")) && 'app' in requiredOptions) {
     // we don't want to do anything destructive implicitly.
     if(argv._ && argv._[0] && (argv._[0].includes('destroy') || argv._[0].includes('delete') || argv._[0].includes('remove') || argv._[0].includes('unset'))) {
       if (!argv.a && !argv.app) {
