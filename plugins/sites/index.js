@@ -95,22 +95,21 @@ function delete_site(appkit, args) {
 }
 
 
-    let require_site_option = {
-      'site':{
-        'alias':'s',
-        'demand':true,
-        'string':true,
-        'description':'The site to destroy.'
-      }
-    };
- let destroy_site_option = Object.assign(require_site_option, {
+ const destroy_site_option = {
+      'site': {
+         'alias': 's',
+         'demand': true,
+         'string': true,
+         'description': 'The site to destroy.'
+      },
       'confirm':{
         'alias':'c',
         'demand':false,
         'boolean':true,
         'description':'Confirm (in advance) the name of the site to destroy.'
-      }
-    })
+      },
+}
+ 
 
 module.exports = {
   init(appkit) {
