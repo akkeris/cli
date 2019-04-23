@@ -270,28 +270,28 @@ module.exports = {
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to act on.'
+        'description':'The app to act on'
       },
       'source-url':{
         'alias':'s',
         'demand':true,
         'string':true,
-        'description':'The URL for the sources, this must be a tar.gz or zip file.'
+        'description':'The URL for the sources - this must be a tar.gz or zip file'
       },
       'version':{
         'alias':'v',
         'string':true,
-        'description':'The version of the build or code to be built (informative only).'
+        'description':'The version of the build or code to be built (informative only)'
       },
       'branch':{
         'alias':'b',
         'string':true,
-        'description':'The branch where the sources where pulled from (informative only).'
+        'description':'The branch where the sources where pulled from (informative only)'
       },
       'repo':{
         'alias':'r',
         'string':true,
-        'description':'The repo where the sources were pulled (as a URL, informative only).'
+        'description':'The repo where the sources were pulled (as a URL, informative only)'
       }
     }
     let require_app_option = {
@@ -299,7 +299,7 @@ module.exports = {
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to act on.'
+        'description':'The app to act on'
       }
     };
     let require_app_build_option = {
@@ -307,7 +307,7 @@ module.exports = {
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to act on.'
+        'description':'The app to act on'
       }
     };
 
@@ -316,7 +316,7 @@ module.exports = {
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to act on.'
+        'description':'The app to act on'
       },
       'tail':{
         'alias':'t',
@@ -331,7 +331,7 @@ module.exports = {
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to enable to auto deploy on.'
+        'description':'The app to enable to auto deploy on'
       },
       'repo':{
         'alias':'r',
@@ -348,12 +348,12 @@ module.exports = {
       'status_check':{
         'boolean':true,
         'default':true,
-        'description':'Whether to wait for status checks on the repo'
+        'description':'Wait for status checks on the repo'
       },
       'auto_deploy':{
         'boolean':true,
         'default':true,
-        'description':'Whether to deploy automatically after a build succeeds'
+        'description':'Automatically deploy after a build succeeds'
       },
       'username':{
         'alias':'u',

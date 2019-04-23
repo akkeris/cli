@@ -117,20 +117,20 @@ module.exports = {
         alias: 'a',
         demand: true,
         string: true,
-        description: 'ID or full app name.'
+        description: 'ID or full app name'
       },
       site: {
         alias: 's',
         demand: true,
         string: true,
-        description: 'ID or site name.'
+        description: 'ID or site name'
       },
       region: {
         alias: 'r',
         demand: false,
         string: true,
         default: 'us',
-        description: 'The region (defaults to "us").'
+        description: 'The region (defaults to "us")'
       }
     }
 
@@ -139,19 +139,19 @@ module.exports = {
         alias: 'a',
         demand: false,
         string: true,
-        description: 'The app to query on.'
+        description: 'The app to query on'
       },
       site: {
         alias: 's',
         demand: false,
         string: true,
-        description: 'The ID or site name of the site in which to add the route.'
+        description: 'The site to query on (ID or name)'
       }
     }
 
-    appkit.args.command('routes', 'show route information for an app.', query_opts, list_routes.bind(null, appkit))
-    appkit.args.command('routes:create SOURCE_PATH TARGET_PATH', "route https traffic from a site to an app", create_opts, create_route.bind(null, appkit))
-    appkit.args.command('routes:remove ID', 'delete a route', {}, delete_route.bind(null, appkit))
+    appkit.args.command('routes', 'Show route information for an app.', query_opts, list_routes.bind(null, appkit))
+    appkit.args.command('routes:create SOURCE_PATH TARGET_PATH', "Route HTTPS traffic from a site to an app", create_opts, create_route.bind(null, appkit))
+    appkit.args.command('routes:remove ID', 'Delete a route', {}, delete_route.bind(null, appkit))
 
   },
   update() {

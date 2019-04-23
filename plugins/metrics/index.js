@@ -89,7 +89,7 @@ module.exports = {
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to act on.'
+        'description':'The app to act on'
       }
     };
     let require_app_option = {
@@ -97,29 +97,29 @@ module.exports = {
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to act on.'
+        'description':'The app to act on'
       },
       'resolution':{
         'alias':'r',
         'demand':false,
         'string':true,
-        'description':'The resolution to use (e.g., 30m, 10m, 5m, 1h, 1d)'
+        'description':'The resolution to use (e.g. 30m, 10m, 5m, 1h, 1d)'
       },
       'from':{
         'alias':'f',
         'demand':false,
         'string':true,
-        'description':'The from date to use (e.g., 1/1/2000 05:05:02AM)'
+        'description':'The \'from\' date to use (e.g. 1/1/2000 05:05:02AM)'
       },
       'to':{
         'alias':'t',
         'demand':false,
         'string':true,
-        'description':'The to date to use (e.g., 1/1/2000 05:05:02AM)'
+        'description':'The \'to\' date to use (e.g., 1/1/2000 05:05:02AM)'
       }
     };
     appkit.args
-      .command('metrics', 'view metric samples', require_app_option, metrics.bind(null, appkit))
+      .command('metrics', 'View metrics for an app', require_app_option, metrics.bind(null, appkit))
   },
   update:function() {
     // do nothing.

@@ -190,7 +190,7 @@ module.exports = {
         'default':false,
         'demand':false,
         'boolean':true,
-        'description':'Show all of the releases not just the last 10.'
+        'description':'Show all of the releases (not just the last 10)'
       }
     }
     let create_release_option = {
@@ -198,13 +198,13 @@ module.exports = {
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to deploy to.'
+        'description':'The app to deploy to'
       },
       'version':{
         'alias':'v',
         'demand':false,
         'string':true,
-        'description':'Notes or an internal version number for this release.'
+        'description':'Notes or an internal version number for this release'
       }
     }
     let require_app_option = {
@@ -212,7 +212,7 @@ module.exports = {
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to act on.'
+        'description':'The app to act on'
       }
     };
     let require_rollback_option = {
@@ -220,14 +220,14 @@ module.exports = {
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to rollback.'
+        'description': 'The app to roll back'
       }
     };
     appkit.args
-      .command('releases', 'list releases on an app', Object.assign(require_app_option, all_option), list.bind(null, appkit))
-      .command('releases:create URL', 'deploy a new version of code from a zip, tgz or docker URL', create_release_option, create.bind(null, appkit))
-      .command('releases:info [RELEASE]', 'view release info', require_app_option, info.bind(null, appkit))
-      .command('releases:rollback [RELEASE]', 'rollback to a previous release on an app', require_rollback_option, rollback.bind(null, appkit))
+      .command('releases', 'List releases on an app', Object.assign(require_app_option, all_option), list.bind(null, appkit))
+      .command('releases:create URL', 'Deploy a new version of an app from a .zip, .tgz, or docker image', create_release_option, create.bind(null, appkit))
+      .command('releases:info [RELEASE]', 'View release info', require_app_option, info.bind(null, appkit))
+      .command('releases:rollback [RELEASE]', 'Roll back to a previous release on an app', require_rollback_option, rollback.bind(null, appkit))
       // aliases
       .command('release', false, Object.assign(require_app_option, all_option), list.bind(null, appkit))
       .command('releases:list', false, Object.assign(require_app_option, all_option), list.bind(null, appkit))

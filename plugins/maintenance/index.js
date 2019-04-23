@@ -38,13 +38,14 @@ module.exports = {
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to act on.'
+        'description': 'The app to act on'
       }
     };
+    
     appkit.args
-      .command('maintenance', 'display the current maintenance status of app', require_app_option, info.bind(null, appkit))
-      .command('maintenance:on', 'put the app into maintenance mode', require_app_option, on.bind(null, appkit))
-      .command('maintenance:off', 'take the app out of maintenance mode', require_app_option, off.bind(null, appkit))
+      .command('maintenance', 'Display the maintenance mode status of an app', require_app_option, info.bind(null, appkit))
+      .command('maintenance:on', 'Put an app into maintenance mode', require_app_option, on.bind(null, appkit))
+      .command('maintenance:off', 'Take an app out of maintenance mode', require_app_option, off.bind(null, appkit))
   },
   update:function() {
     // do nothing.

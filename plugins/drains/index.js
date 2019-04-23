@@ -82,13 +82,13 @@ let require_app_option = {
     'alias':'a',
     'demand':false,
     'string':true,
-    'description':'The app to use, this cannot be used with -s option.'
+    'description':'The app to use (cannot be used with -s option)'
   },
   'site':{
     'alias':'s',
     'demand':false,
     'string':true,
-    'description':'The site to use, this cannot be used with -a option.'
+    'description':'The site to use (cannot be used with -a option)'
   },
 };
 
@@ -96,10 +96,10 @@ module.exports = {
 
   init:function(appkit) {
     appkit.args
-      .command('drains', 'list log drains on an app or site.', require_app_option, list_drains.bind(null, appkit))
-      .command('drains:info ID', 'Get information on the specified log drain.', require_app_option, info_drains.bind(null, appkit))
-      .command('drains:remove ID', 'Remove a log drain from an app or site.', require_app_option, delete_drains.bind(null, appkit))
-      .command('drains:create URL', 'create a new log drain, forward it to the specified syslog URL.', require_app_option, create_drains.bind(null, appkit))
+      .command('drains', 'List log drains on an app or site', require_app_option, list_drains.bind(null, appkit))
+      .command('drains:info ID', 'Get information on the specified log drain', require_app_option, info_drains.bind(null, appkit))
+      .command('drains:remove ID', 'Remove a log drain from an app or site', require_app_option, delete_drains.bind(null, appkit))
+      .command('drains:create URL', 'Create a new log drain, forwarded to the specified syslog URL', require_app_option, create_drains.bind(null, appkit))
       .command('drains:add URL', false, require_app_option, create_drains.bind(null, appkit))
   },
   update:function() {

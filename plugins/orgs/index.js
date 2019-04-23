@@ -26,10 +26,18 @@ function create_orgs(appkit, args) {
 
 module.exports = {
   init:function(appkit) {
+    const create_org_options = {
+      contact: {
+        string: true,
+        demand: false,
+        description: 'The contact information for the new organization'
+      }
+    };
+
     appkit.args
-      .command('orgs', 'list available organizations your a member of.', {}, list_orgs.bind(null, appkit))
-      .command('orgs:info NAME', 'Get information on the specified organization.', {}, info_orgs.bind(null, appkit))
-      .command('orgs:create NAME', 'create a new organization.', {contact:{string:true, demand:false, description:'The organization contact information.'}}, create_orgs.bind(null, appkit))
+      .command('orgs', 'List available Akkeris organizations', {}, list_orgs.bind(null, appkit))
+      .command('orgs:info NAME', 'Get information on the specified organization', {}, info_orgs.bind(null, appkit))
+      .command('orgs:create NAME', 'Create a new organization', create_org_options, create_orgs.bind(null, appkit))
   },
   update:function() {
     // do nothing.
