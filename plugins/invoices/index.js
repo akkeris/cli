@@ -77,26 +77,26 @@ module.exports = {
         'alias':'o',
         'demand':false,
         'string':true,
-        'description':'Filter by organization.'
+        'description':'Filter by organization'
       },
       'space':{
         'alias':'s',
         'demand':false,
         'string':true,
-        'description':'Filter by space.'
+        'description':'Filter by space'
       },
       'details':{
         'alias':'d',
         'demand':false,
         'boolean':true,
         'default':false,
-        'description':'Show itemized details.'
+        'description':'Show itemized details'
       }
     };
     
     appkit.args
-      .command('invoices', 'list all invoices for all organizations', invoices, list.bind(null, appkit))
-      .command('invoices:info ID', 'get invoice', invoices, get.bind(null, appkit))
+      .command('invoices', 'List invoices for all organizations', invoices, list.bind(null, appkit))
+      .command('invoices:info ID', 'Get information on a specific invoice', invoices, get.bind(null, appkit))
       
   },
   update:function() {

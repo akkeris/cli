@@ -30,11 +30,11 @@ module.exports = {
         'demand':false,
         'boolean':true,
         'default':false,
-        'description':'output in json format'
+        'description':'Output in JSON format'
       }
     };
     appkit.args
-      .command('stacks', 'list available stacks for deployment', config_option, get_stacks.bind(null, appkit))
+      .command('stacks', 'List available stacks for deployment', config_option, get_stacks.bind(null, appkit))
   },
   update:function() {
     // do nothing.

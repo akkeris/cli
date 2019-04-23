@@ -116,31 +116,32 @@ module.exports = {
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to act on.'
+        'description': 'The app to act on'
       },
       'user':{
         'alias':'u',
         'string':true,
-        'description':'Filter the activity by user'
+        'description': 'Filter the activity by user'
       },
       'limit':{
         'alias':'l',
         'number':true,
-        'description':'Number of results to limit by (default is 10)'
+        'description': 'Number of results to limit by (default is 10)'
       }
     };
+
     let require_app_option = {
       'app':{
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to act on.'
+        'description':'The app to act on'
       }
     };
 
     appkit.args
-      .command('audits', 'list audits on an app', require_list_option, list.bind(null, appkit))
-      .command('audits:info AUDIT_ID', 'info on a specific audits on an app', require_app_option, get.bind(null,appkit))
+      .command('audits', 'List audits for an app', require_list_option, list.bind(null, appkit))
+      .command('audits:info AUDIT_ID', 'Display detailed information for an audit', require_app_option, get.bind(null,appkit))
   },
   update:function() {
     // do nothing.

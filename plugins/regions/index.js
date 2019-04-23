@@ -24,31 +24,31 @@ function get_regions(appkit, args) {
 
 module.exports = {
   init:function(appkit) {
-    let config_option = {
+    const config_option = {
       'common':{
         'alias':'c',
         'demand':false,
         'boolean':true,
         'default':true,
-        'description':'show regions for common runtime'
+        'description': 'Show regions for common runtime'
       },
       'private':{
         'alias':'p',
         'demand':false,
         'boolean':true,
         'default':true,
-        'description':'show regions for private spaces'
+        'description': 'Show regions for private spaces'
       },
       'json':{
         'alias':'j',
         'demand':false,
         'boolean':true,
         'default':false,
-        'description':'output in json format'
+        'description': 'Output in json format'
       }
     };
     appkit.args
-      .command('regions', 'list available regions for deployment', config_option, get_regions.bind(null, appkit))
+      .command('regions', 'List available regions for deployment', config_option, get_regions.bind(null, appkit))
   },
   update:function() {
     // do nothing.

@@ -65,39 +65,39 @@ module.exports = {
         'alias':'a',
         'demand':false,
         'string':true,
-        'description':'The app to view the logs for, this cannot be used with -s option.'
+        'description': 'The app to view logs for (cannot be used with -s option)'
       },
       'site':{
         'alias':'s',
         'demand':false,
         'string':true,
-        'description':'The site to view the logs for, this cannot be used with -a option.'
+        'description': 'The site to view logs for (cannot be used with -a option)'
       },
       'num':{
         'alias':'n',
         'demand':false,
         'number':true,
         'default':100,
-        'description':'number of lines to display'
+        'description': 'Number of lines to display'
       },
       'tail':{
         'alias':'t',
         'demand':false,
         'boolean':true,
         'default':false,
-        'description':'continually stream logs'
+        'description': 'Continually stream logs'
       },
       'colors':{
         'alias':'c',
         'demand':false,
         'boolean':true,
         'default':true,
-        'description':'whether to allow tty colors in logs'
+        'description': 'Allow tty colors in logs'
       }
     };
     appkit.args
-      .command('logs',  'print logs for the specified app', logs_option, logs.bind(null, appkit))
-      .command('log',   false, logs_option, logs.bind(null, appkit))
+      .command('logs', 'Display logs for an app or site', logs_option, logs.bind(null, appkit))
+      .command('log', false, logs_option, logs.bind(null, appkit))
   },
   update:function() {
     // do nothing.

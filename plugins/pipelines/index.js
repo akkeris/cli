@@ -208,7 +208,7 @@ function destroy(appkit, args) {
   appkit.api.delete('/pipelines/' + args.PIPELINE, appkit.terminal.print);
 }
 
-let require_app_option = {
+const require_app_option = {
   'app':{
     'alias':'a',
     'demand':true,
@@ -217,44 +217,54 @@ let require_app_option = {
   }
 };
 
-let require_app_stage_option = JSON.parse(JSON.stringify(require_app_option));
-require_app_stage_option.stage = {"alias":"s","description":"stage of pipeline [review, development, staging, production]","choices":["review", "development", "staging", "production"],"demand":true};
-
-let require_app_promote_option = JSON.parse(JSON.stringify(require_app_option));
-require_app_promote_option.to = {
-  "alias":"t", 
-  "description":"comma separated list of apps to promote to", 
-  array:true
+const require_app_stage_option = {
+  ...require_app_option,
+  "stage": {
+    "alias": "s",
+    "description": "Pipeline stage",
+    "choices": ["review", "development", "staging", "production"],
+    "demand": true
+  }
 };
-require_app_promote_option.release = {
-  'alias':'r',
-  'demand':false,
-  'string':true,
-  'description':'The release uuid to promote, otherwise the latest release is used.'
-}
-require_app_promote_option.unsafe = {
-  'alias':'u',
-  'demand':false,
-  'string':true,
-  'description':'Request an unsafe promotion, which will proceed even if missing config vars or addons are found in the destination app.'
-}
+
+const require_app_promote_option = {
+  ...require_app_option,
+  "to": {
+    "alias": "t", 
+    "description": "Comma-separated list of apps to promote to", 
+    "array": true
+  },
+  "release": {
+    "alias": "r",
+    "demand": false,
+    "string": true,
+    "description": "The release uuid to promote (defaults to the last release)"
+  },
+  "unsafe": {
+    "alias": "u",
+    "demand": false,
+    "string": true,
+    "description": "Request an unsafe promotion - proceeds even if missing config vars or addons are found in the destination app"
+  }
+};
 
 module.exports = {
 
   init:function(appkit) {
     appkit.args
-      .command('pipelines', 'list all pipelines.', {}, list.bind(null, appkit))
-      .command('pipelines:add PIPELINE', 'add this app to a pipeline.', require_app_stage_option, add.bind(null, appkit))
-      .command('pipelines:create NAME', 'create a new pipeline', {}, create.bind(null, appkit))
-      .command('pipelines:destroy PIPELINE', 'destroys a pipeline', {}, destroy.bind(null, appkit))
-      //.command('pipelines:diff', 'compares the latest release of this app to its downstream apps', {}, diff.bind(null, appkit))
-      .command('pipelines:info PIPELINE', 'show the list of apps in a pipeline', {}, list_apps_info.bind(null, appkit))
-      .command('pipelines:list', 'list pipelines you have access to', list.bind(null, appkit))
-      .command('pipelines:promote', 'promote the latest release of this app to its downstream apps(s)', require_app_promote_option, promote.bind(null, appkit))
+      .command('pipelines', 'List all pipelines', {}, list.bind(null, appkit))
+      .command('pipelines:add PIPELINE', 'Add an app to a pipeline', require_app_stage_option, add.bind(null, appkit))
+      .command('pipelines:create NAME', 'Create a new pipeline', {}, create.bind(null, appkit))
+      .command('pipelines:destroy PIPELINE', 'Permanently destroy a pipeline', {}, destroy.bind(null, appkit))
+      .command('pipelines:info PIPELINE', 'Display the list of apps in a pipeline', {}, list_apps_info.bind(null, appkit))
+      .command('pipelines:promote', 'Promote the latest release of an app to its downstream apps(s)', require_app_promote_option, promote.bind(null, appkit))
+      .command('pipelines:remove', 'Remove an app from a pipeline', require_app_option, remove.bind(null, appkit))
+      .command('pipelines:update', 'Update an app\'s stage in a pipeline', require_app_stage_option, update.bind(null, appkit))
+      // Aliases
+      .command('pipelines:list', false, list.bind(null, appkit))
       .command('promote', false, require_app_promote_option, promote.bind(null, appkit))
-      .command('pipelines:remove', 'remove this app from its pipeline', require_app_option, remove.bind(null, appkit))
       //.command('pipelines:rename', 'rename a pipeline', {}, rename.bind(null, appkit))
-      .command('pipelines:update', 'update this app\'s stage in a pipeline', require_app_stage_option, update.bind(null, appkit))
+      //.command('pipelines:diff', 'compares the latest release of this app to its downstream apps', {}, diff.bind(null, appkit))
   },
   update:function() {
     // do nothing.

@@ -80,7 +80,7 @@ module.exports = {
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to act on.'
+        'description': 'The app to act on'
       }
     };
     let require_auto_build_option = {
@@ -88,7 +88,7 @@ module.exports = {
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to enable to auto deploy on.'
+        'description': 'The app to enable to automatic deployments on'
       },
       'username':{
         'alias':'u',
@@ -104,9 +104,9 @@ module.exports = {
       }
     };
     appkit.args
-      .command('repo', 'get information on which repo is being watched for auto-deploys', require_app_option, info.bind(null, appkit))
-      .command('repo:set REPO [BRANCH]', 'watch a repo and branch and auto-deploy with changes', require_auto_build_option, set.bind(null, appkit))
-      .command('repo:unset', 'stop watching a repository and deploying on change (if set)', require_app_option, unset.bind(null, appkit))
+      .command('repo', 'Display which Git repository is being watched for auto deployment of an app', require_app_option, info.bind(null, appkit))
+      .command('repo:set REPO [BRANCH]', 'Watch a Git repository and automatically deploy changes to an app', require_auto_build_option, set.bind(null, appkit))
+      .command('repo:unset', 'Stop watching a Git repository and do not automatically deploy changes to an app', require_app_option, unset.bind(null, appkit))
       .help()
   },
   update:function() {

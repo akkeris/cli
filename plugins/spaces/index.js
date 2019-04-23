@@ -60,31 +60,31 @@ module.exports = {
         string:true,
         demand:false,
         alias:'d',
-        description:'The description of the space.'
+        description:'The description of the space'
       },
       compliance:{
         array:true,
         demand:false,
         alias:'c',
-        description:'A space separated list of tags to add for compliance, e.g. -c prod socs'
+        description:'A space separated list of tags to add for compliance (e.g. "prod socs")'
       },
       internal:{
         boolean:true,
         demand:false,
         alias:'i',
-        description:'Whether the space will host internal-only applications (true|false).'
+        description:'Host internal-only applications (true|false)'
       },
       stack:{
         array:false,
         demand:false,
         alias:'s',
-        description:'Specify the stack (and region) to create this space in (see aka stacks).'
+        description:'Specify the stack (and region) to create this space in (see aka stacks)'
       }
     };
     appkit.args
-      .command('spaces', 'list available spaces.', {}, list_spaces.bind(null, appkit))
-      .command('spaces:info NAME', 'Get information on the specified space.', {}, info_spaces.bind(null, appkit))
-      .command('spaces:create NAME', 'create a new space.', space_options, create_space.bind(null, appkit))
+      .command('spaces', 'List available spaces', {}, list_spaces.bind(null, appkit))
+      .command('spaces:info NAME', 'Get information on a space', {}, info_spaces.bind(null, appkit))
+      .command('spaces:create NAME', 'Create a new space', space_options, create_space.bind(null, appkit))
 
   },
   update:function() {

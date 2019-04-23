@@ -521,15 +521,18 @@ module.exports.init = function init() {
   
   module.exports.args
     .usage('Usage: akkeris COMMAND [--app APP] [command-specific-options]')
-    .command('update', 'update the akkeris client', {}, module.exports.update.bind(null, module.exports))
-    .command('version', 'display version', {}, module.exports.version.bind(null, module.exports))
+    .command('update', 'Update the Akkeris client', {}, module.exports.update.bind(null, module.exports))
+    .command('version', 'Display current version', {}, module.exports.version.bind(null, module.exports))
+    .command('auth:profile', 'Set the authorization and apps endpoints', {
+        "apps":{ "description": "The URL for the Apps API end point" },
+        "auth":{ "description": "The URL for the Auth API end point" }
+      }, set_profile.bind(null, module.exports))
+    .command('autocomplete', `Install bash/zsh shell autocompletion`, {}, install_auto_completions.bind(null, module.exports))
+
+    // Secret Commands
     .command('squirrel', false, {}, squirrel)
     .command('squirrel_2.0', false, {}, squirrel_2)
-    .command('auth:profile', 'Set the authorization endpoint and apps end point', {
-        "apps":{ "description":"The URL for the apps API end point." },
-        "auth":{ "description":"The URL for the auth API end point." }
-      }, set_profile.bind(null, module.exports))
-    .command('autocomplete', `adds the shell autocompletion.`, {}, install_auto_completions.bind(null, module.exports))
+
     .recommendCommands()
     .middleware([create_app_prechecks, find_app_middleware.bind(null, module.exports)], true)
     .middleware([create_app_middleware.bind(null, module.exports), select_app_middleware.bind(null, module.exports)])
@@ -557,10 +560,10 @@ module.exports.init = function init() {
   module.exports.random_tips = [
     module.exports.terminal.markdown('🚀  Fun tip! You can use ##latest## rather than a specific ID for builds and releases when getting info.'),
     module.exports.terminal.markdown('🚀  Hate using -a all the time? Run ##git config --add branch.BRANCH.akkeris APP## to default to APP when in BRANCH.'),
-    module.exports.terminal.markdown('🚀  Hate specifying an app all the time? Set the ##$AKKERIS_APP## to the app your working on to default to that app.'),
-    module.exports.terminal.markdown('🚀  Did you know? When using repo:set if you dont specify a token it will use your organizations token.'),
-    module.exports.terminal.markdown('🚀  Did you know theres more out there? Run ##aka plugins## to explore additional features to aka!'),
-    module.exports.terminal.markdown('🚀  Did you know? You can use ak as a short cut for aka'),
+    module.exports.terminal.markdown('🚀  Hate specifying an app all the time? Set the ##$AKKERIS_APP## to the app you\'re working on to default to that app.'),
+    module.exports.terminal.markdown('🚀  Did you know? When using repo:set if you don\'t specify a token it will use your organization\'s token.'),
+    module.exports.terminal.markdown('🚀  Did you know? There\'s more out there! Run ##aka plugins## to explore optional akkeris features!'),
+    module.exports.terminal.markdown('🚀  Did you know? You can use \'ak\' as a short cut for \'aka\'!'),
   ];
 }
 

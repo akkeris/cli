@@ -107,21 +107,21 @@ module.exports = {
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to act on.'
+        'description':'The app to act on'
       },
       'shell':{
         'alias':'s',
         'demand':false,
         'boolean':true,
         'default':false,
-        'description':'output config vars in shell format'
+        'description':'Display environment variables in shell format'
       },
       'json':{
         'alias':'j',
         'demand':false,
         'boolean':true,
         'default':false,
-        'description':'output config vars in json format'
+        'description':'Display environment variables in JSON format'
       },
       'unescape':{
         'alias':'u',
@@ -132,22 +132,22 @@ module.exports = {
       }
     };
     appkit.args
-      .command('config', 'list config environment variables for an app', config_option, get_config_vars.bind(null, appkit))
+      .command('config', 'List environment variables for an app', config_option, get_config_vars.bind(null, appkit))
       .command('apps:config', false, config_option, get_config_vars.bind(null, appkit))
       .command('apps:env', false, config_option, get_config_vars.bind(null, appkit))
       .command('env', false, config_option, get_config_vars.bind(null, appkit))
 
-      .command('config:get [KEY]', 'get a config var for an app', config_option, get_config_var.bind(null, appkit))
+      .command('config:get [KEY]', 'Get the value of an environment variable', config_option, get_config_var.bind(null, appkit))
       .command('apps:config:get [KEY]', false, config_option, get_config_var.bind(null, appkit))
       .command('apps:env:get [KEY]', false, config_option, get_config_var.bind(null, appkit))
       .command('env:get [KEY]', false, config_option, get_config_var.bind(null, appkit))
 
-      .command('config:set [KEY_VALUE_PAIR..]', 'set one or more config vars passing in one or more KEY=VALUE', config_option, set_config_vars.bind(null, appkit))
+      .command('config:set [KEY_VALUE_PAIR..]', 'Set one or more environment variables (KEY=VALUE pairs)', config_option, set_config_vars.bind(null, appkit))
       .command('apps:config:set [KEY_VALUE_PAIR..]', false, config_option, set_config_vars.bind(null, appkit))
       .command('apps:env:set [KEY_VALUE_PAIR..]', false, config_option, set_config_vars.bind(null, appkit))
       .command('env:set [KEY_VALUE_PAIR..]', false, config_option, set_config_vars.bind(null, appkit))
 
-      .command('config:unset [KEY..]', 'unset one or more config vars', config_option, unset_config_vars.bind(null, appkit))
+      .command('config:unset [KEY..]', 'Remove one or more environment variables', config_option, unset_config_vars.bind(null, appkit))
       .command('apps:config:unset [KEY..]', false, config_option, unset_config_vars.bind(null, appkit))
       .command('apps:env:unset [KEY..]', false, config_option, unset_config_vars.bind(null, appkit))
       .command('env:unset [KEY..]', false, config_option, unset_config_vars.bind(null, appkit))

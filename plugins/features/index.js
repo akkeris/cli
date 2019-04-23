@@ -50,20 +50,21 @@ module.exports = {
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to act on.'
+        'description':'The app to act on'
       }
     }
 
     appkit.args
-      .command('features', 'list available features on an app', require_app_option, list.bind(null, appkit))
+      .command('features', 'List available features on an app', require_app_option, list.bind(null, appkit))
+      .command('features:disable FEATURE', 'Disable a feature on an app', require_app_option, disable.bind(null, appkit))
+      .command('features:enable FEATURE', 'Enable a feature on an app', require_app_option, enable.bind(null, appkit))
+      .command('features:info FEATURE', 'Get information on a feature for an app', require_app_option, info.bind(null, appkit))
+      // Aliases
       .command('app:features', false, require_app_option, list.bind(null, appkit))
-      .command('features:disable FEATURE', 'disable a feature on an app', require_app_option, disable.bind(null, appkit))
-      .command('app:features:disable FEATURE', false, require_app_option, disable.bind(null, appkit))
-      .command('features:enable FEATURE', 'enable a feature on an app', require_app_option, enable.bind(null, appkit))
-      .command('app:features:enable FEATURE', false, require_app_option, enable.bind(null, appkit))
-      .command('features:info FEATURE', 'get information on a feature for an app', require_app_option, info.bind(null, appkit))
       .command('app:features:info FEATURE', false, require_app_option, info.bind(null, appkit))
-  },
+      .command('app:features:disable FEATURE', false, require_app_option, disable.bind(null, appkit))
+      .command('app:features:enable FEATURE', false, require_app_option, enable.bind(null, appkit))
+    },
   update:function() {
     // do nothing.
   },

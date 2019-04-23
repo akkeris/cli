@@ -366,27 +366,28 @@ function stop(appkit, args) {
 
 module.exports = {
   init:function(appkit) {
-    let require_app_option = {
+    const require_app_option = {
       'app':{
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to act on.'
+        'description':'The app to act on'
       }
     };
-    let require_formation_create_option = {
+
+    const require_formation_create_option = {
       'app':{
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to act on.'
+        'description':'The app to act on'
       },
       'size':{
         'alias':'s',
         'demand':false,
         'string':true,
-        'choices':[undefined, 'scout', 'constellation', 'akira', 'galaxy', 'sovereign'],
-        'description':'The size of the dyno to provision (see ak ps:sizes)'
+        'choices': [undefined, 'scout', 'constellation', 'akira', 'galaxy', 'sovereign'],
+        'description': 'The size of the dyno to provision (see ak ps:sizes)'
       },
       'quantity':{
         'alias':'q',
@@ -399,54 +400,54 @@ module.exports = {
         'alias':'c',
         'demand':false,
         'string':true,
-        'description':'The command to run on the build image when deploying, leaving this blank will use the default run command in the image.'
+        'description':'The command to run on the build image when deploying (defaults to default image run command)'
       },
       'port':{
         'alias':'p',
         'demand':false,
         'integer':true,
-        'description':'The port to use for web running processes, this must be a value between 1024 and 65535, it can only be set when type is web.'
+        'description':'The port to use for web processes (web dyno only, between 1024-65535)'
       },
       'healthcheck':{
         'alias':'h',
         'demand':false,
         'string':true,
-        'description':'The healtheck endpoint for checking app ready, this must be a valid uri (/path), it can only be set when type is web.'
+        'description':'Healtheck endpoint for checking app readiness (web dyno only, must be valid URI /path)'
       },
       'removeHealthcheck':{
         'alias':'r',
         'demand':false,
-        'description':'will remove active healthcheck'
+        'description':'Remove active healthcheck'
       }
     };
 
-    let require_confirm_app_option = Object.assign(require_app_option, {
+    const require_confirm_app_option = {
+      ...require_app_option,
       'confirm':{
-        'alias':'c',
-        'demand':false,
-        'string':true,
-        'description':'Confirm (in advance) the name of the app that owns the dyno to destroy.'
+        'alias': 'c',
+        'demand': false,
+        'string': true,
+        'description': 'Confirm (in advance) the name of the app that owns the dyno to destroy'
       }
-    });
+    }
 
     appkit.args
-      .command('ps', 'list dynos for an app', require_app_option, list.bind(null, appkit))
-      .command('ps:create TYPE', 'create a type of dyno', require_formation_create_option, create.bind(null, appkit))
-      .command('ps:update TYPE', 'update a type of dyno', require_formation_create_option, update.bind(null, appkit))
-      .command('ps:forward PORT', 'forward web traffic to specific port', require_app_option, forward.bind(null, appkit))
-      .command('ps:destroy TYPE', 'deletes a type of dyno', require_confirm_app_option, destroy.bind(null, appkit))
-      .command('ps:kill DYNO', 'stop a dyno', require_app_option, stop.bind(null, appkit))
-      .command('ps:restart [TYPE]', 'restart app dynos', require_app_option, restart.bind(null, appkit))
-      .command('ps:scale [TYPE=AMOUNT ...]', 'scale dyno quantity up or down', require_app_option, scale.bind(null, appkit))
-      .command('ps:stop DYNO', 'stop a dyno', require_app_option, stop.bind(null, appkit))
-      .command('ps:sizes', 'list dyno sizes',{}, list_plans.bind(null,appkit))
+      .command('ps', 'List dynos for an app', require_app_option, list.bind(null, appkit))
+      .command('ps:create TYPE', 'Create a new dyno', require_formation_create_option, create.bind(null, appkit))
+      .command('ps:update TYPE', 'Update dyno settings', require_formation_create_option, update.bind(null, appkit))
+      .command('ps:forward PORT', 'Forward web traffic to specific port', require_app_option, forward.bind(null, appkit))
+      .command('ps:destroy TYPE', 'Permanently delete a dyno', require_confirm_app_option, destroy.bind(null, appkit))
+      .command('ps:kill DYNO', 'Stop a dyno', require_app_option, stop.bind(null, appkit))
+      .command('ps:restart [TYPE]', 'Restart a dyno', require_app_option, restart.bind(null, appkit))
+      .command('ps:scale [TYPE=AMOUNT ...]', 'Scale dyno quantity up or down', require_app_option, scale.bind(null, appkit))
+      .command('ps:sizes', 'List available dyno sizes',{}, list_plans.bind(null,appkit))
       //.command('ps:copy FILE')
       //.command('ps:socks')
       //.command('ps:exec COMMAND')
       //.command('ps:resize', '', require_app_option, resize.bind(null, appkit))
       //.command('ps:type [TYPE | DYNO=TYPE [DYNO=TYPE ...]]', 'manage dyno types', require_app_option, type.bind(null, appkit))
-
-      // aliases
+      // Aliases
+      .command('ps:stop DYNO', false, require_app_option, stop.bind(null, appkit))
       .command('forward PORT', false, require_app_option, forward.bind(null, appkit))
       .command('restart [TYPE]', false, require_app_option, restart.bind(null, appkit))
       .command('scale [TYPE=AMOUNT ...]', false, require_app_option, scale.bind(null, appkit))

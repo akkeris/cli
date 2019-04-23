@@ -94,7 +94,7 @@ module.exports = {
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to act on.'
+        'description':'The app to act on'
       }
     };
     let hook_results_options = {
@@ -102,13 +102,13 @@ module.exports = {
         'alias':'a',
         'demand':true,
         'string':true,
-        'description':'The app to act on.'
+        'description':'The app to act on'
       },
       'all':{
         'demand':true,
         'boolean':true,
         'default':false,
-        'description':'Show all hook results.'
+        'description':'Show all hook results'
       }
     };
     let hooks_create_options = JSON.parse(JSON.stringify(hooks_options));
@@ -116,30 +116,31 @@ module.exports = {
       array:true,
       demand:true,
       alias:'e',
-      description:'A space separated of events (one of): "build release formation_change logdrain_change addon_change config_change destory preview released crashed preview-released"'
+      description:'A space separated list of one or more events [build release formation_change logdrain_change addon_change config_change destory preview released crashed preview-released]'
     };
     hooks_create_options.secret = {
       string:true,
       demand:true,
       alias:'s',
-      description:'The secret to use for calculating the sha1 hash.'
+      description:'The secret to use for calculating the SHA1 hash'
     };
     hooks_create_options.active = {
       boolean:true,
       demand:true,
       default:true,
-      description:'Make this hook active or inactive.'
+      description:'Make this hook active or inactive'
     };
 
     appkit.args
-      .command('hooks', 'list webhooks for an app.', hooks_options, list_hooks.bind(null, appkit))
-      .command('hooks:info ID', 'Get information on the specified webhook.', hooks_options, info_hooks.bind(null, appkit))
-      .command('hooks:destroy ID', 'Remove the specified webhook.', hooks_options, delete_hooks.bind(null, appkit))
+      .command('hooks', 'List configured webhooks for an app', hooks_options, list_hooks.bind(null, appkit))
+      .command('hooks:info ID', 'Get information on the specified webhook', hooks_options, info_hooks.bind(null, appkit))
+      .command('hooks:destroy ID', 'Remove the specified webhook', hooks_options, delete_hooks.bind(null, appkit))
+      .command('hooks:create URL', 'Configure a new webhook', hooks_create_options, create_hooks.bind(null, appkit))
+      .command('hooks:deliveries ID', 'Get information on the delivery of a webhook', hook_results_options, result.bind(null, appkit))
+      // Aliases
       .command('hooks:remove ID', false, hooks_options, delete_hooks.bind(null, appkit))
       .command('hooks:delete ID', false, hooks_options, delete_hooks.bind(null, appkit))
-      .command('hooks:create URL', 'create a new webhook.', hooks_create_options, create_hooks.bind(null, appkit))
       .command('hooks:add URL', false, hooks_create_options, create_hooks.bind(null, appkit))
-      .command('hooks:deliveries ID', 'Get information on a webhook delivery.', hook_results_options, result.bind(null, appkit))
       .command('hooks:result ID', false, hook_results_options, result.bind(null, appkit))
       .command('hooks:results ID', false, hook_results_options, result.bind(null, appkit))
       .command('hooks:sent ID', false, hook_results_options, result.bind(null, appkit))
