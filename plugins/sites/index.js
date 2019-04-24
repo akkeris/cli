@@ -56,7 +56,6 @@ function create_site(appkit, args) {
   });
 }
 
-
 function site_or_error(appkit, domain, cb) {
   appkit.api.get('/sites/' + domain, (err, site) => {
     if(err) {
@@ -94,6 +93,24 @@ function delete_site(appkit, args) {
   });
 }
 
+module.exports = {
+  init(appkit) {
+    const create_sites_options = {
+      region: {
+        'alias':'r',
+        'demand':false,
+        'string':true,
+        'default':'us-seattle',
+        'description':'The region to place the site in'
+      },
+      internal :{
+        'boolean':true,
+        'default':false,
+        'demand':false,
+        'alias':'i',
+        'description':'Only host internal-only applications'
+      }
+    };
 
  const destroy_site_option = {
       'site': {
@@ -108,36 +125,9 @@ function delete_site(appkit, args) {
         'boolean':true,
         'description':'Confirm (in advance) the name of the site to destroy.'
       },
-}
- 
-
-module.exports = {
-  init(appkit) {
-    const app = {
-      'alias':'a',
-      'demand':true,
-      'string':true,
-      'description':'The app to act on.'
-    }, domain = {
-      'alias':'d',
-      'demand':true,
-      'string':true,
-      'description':'The domain for the site.'
-    }, region = {
-      'alias':'r',
-      'demand':false,
-      'string':true,
-      'default':'us-seattle',
-      'description':'The region to place the site in.'
-    }, internal = {
-      'boolean':true,
-      'default':false,
-      'demand':false,
-      'alias':'i',
-      'description':'Whether the site will host internal-only applications (defaults to false).'
-    }
-    appkit.args.command('sites', 'show site information.', {}, list_sites.bind(null, appkit))
-    appkit.args.command('sites:create DOMAIN', 'create a site (domain) in the router.', {region, internal}, create_site.bind(null, appkit))
+    };
+    appkit.args.command('sites', 'Show site information', {}, list_sites.bind(null, appkit))
+    appkit.args.command('sites:create DOMAIN', 'Create a site (domain) in the Akkeris router', create_sites_options, create_site.bind(null, appkit))
     appkit.args.command('sites:destroy', 'delete a site',destroy_site_option, delete_site.bind(null, appkit))
   },
   update() {
