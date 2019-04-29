@@ -56,6 +56,43 @@ function create_site(appkit, args) {
   });
 }
 
+function site_or_error(appkit, domain, cb) {
+  appkit.api.get('/sites/' + domain, (err, site) => {
+    if(err) {
+      appkit.terminal.error(err);
+    } else {
+      cb(site);
+    }
+  });
+}
+
+
+function delete_site(appkit, args) {
+  assert.ok(args.site && args.site !== '', 'An site name was not provided.');
+  site_or_error(appkit, args.site, (site) => {
+    let del = (input) => {
+      if(input === site.domain) {
+        let task = appkit.terminal.task(`Destroying **⬢ ${site.domain}** (including all routes)`);
+        task.start();
+        appkit.api.delete('/sites/' + args.site, (err, del_info) => {
+          if(err) {
+            task.end('error');
+            return appkit.terminal.error(err);
+          }
+          task.end('ok');
+        });
+      } else {
+        appkit.terminal.soft_error(`Confirmation did not match !!${site.domain}!!. Aborted.`);
+      }
+    };
+    if(args.confirm===true) {
+      del(args.site);
+    } else {
+      appkit.terminal.confirm(` ~~▸~~    WARNING: This will delete **⬢ ${site.domain}** including all routes.\n ~~▸~~    To proceed, type !!${site.domain}!!\n`, del);
+    }
+  });
+}
+
 module.exports = {
   init(appkit) {
     const create_sites_options = {
@@ -74,9 +111,23 @@ module.exports = {
         'description':'Only host internal-only applications'
       }
     };
-
+ const destroy_site_option = {
+      'site': {
+         'alias': 's',
+         'demand': true,
+         'string': true,
+         'description': 'The site to destroy.'
+      },
+      'confirm':{
+        'alias':'c',
+        'demand':false,
+        'boolean':true,
+        'description':'Confirm (in advance) the name of the site to destroy.'
+      },
+    };
     appkit.args.command('sites', 'Show site information', {}, list_sites.bind(null, appkit))
     appkit.args.command('sites:create DOMAIN', 'Create a site (domain) in the Akkeris router', create_sites_options, create_site.bind(null, appkit))
+    appkit.args.command('sites:destroy', 'delete a site',destroy_site_option, delete_site.bind(null, appkit))
   },
   update() {
     // do nothing.
