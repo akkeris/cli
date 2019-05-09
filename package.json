@@ -1,6 +1,6 @@
 {
   "name": "akkeris",
-  "version": "2.8.12",
+  "version": "2.8.13",
   "description": "Akkeris CLI",
   "main": "aka.js",
   "scripts": {

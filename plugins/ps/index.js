@@ -386,7 +386,6 @@ module.exports = {
         'alias':'s',
         'demand':false,
         'string':true,
-        'choices': [undefined, 'scout', 'constellation', 'akira', 'galaxy', 'sovereign'],
         'description': 'The size of the dyno to provision (see ak ps:sizes)'
       },
       'quantity':{
