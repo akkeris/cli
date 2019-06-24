@@ -280,9 +280,8 @@ function scale(appkit, args) {
       return console.log(appkit.terminal.markdown('###===### Unable to increase dynos, no formation (or dyno types, processes, web, worker, etc) were found.'));
     }
 
-
     let scale = {};
-    args['TYPE=AMOUNT'].forEach((x) => {
+    args['KEY_VALUE_PAIR'].forEach((x) => {
       if(x.indexOf('=') !== -1) {
         let n = x.split('=');
         let size = n[1].indexOf(':') === -1 ? [n[1], null] : n[1].split(':')
@@ -438,7 +437,7 @@ module.exports = {
       .command('ps:destroy TYPE', 'Permanently delete a dyno', require_confirm_app_option, destroy.bind(null, appkit))
       .command('ps:kill DYNO', 'Stop a dyno', require_app_option, stop.bind(null, appkit))
       .command('ps:restart [TYPE]', 'Restart a dyno', require_app_option, restart.bind(null, appkit))
-      .command('ps:scale [TYPE=AMOUNT ...]', 'Scale dyno quantity up or down', require_app_option, scale.bind(null, appkit))
+      .command('ps:scale [KEY_VALUE_PAIR..]', 'Scale dyno quantity up or down (dyno=quantity, e.g, web=2)', require_app_option, scale.bind(null, appkit))
       .command('ps:sizes', 'List available dyno sizes',{}, list_plans.bind(null,appkit))
       //.command('ps:copy FILE')
       //.command('ps:socks')
@@ -449,7 +448,7 @@ module.exports = {
       .command('ps:stop DYNO', false, require_app_option, stop.bind(null, appkit))
       .command('forward PORT', false, require_app_option, forward.bind(null, appkit))
       .command('restart [TYPE]', false, require_app_option, restart.bind(null, appkit))
-      .command('scale [TYPE=AMOUNT ...]', false, require_app_option, scale.bind(null, appkit))
+      .command('scale [KEY_VALUE_PAIR..]', false, require_app_option, scale.bind(null, appkit))
       .command('sizes', false, {}, list_plans.bind(null,appkit))
 
   },
