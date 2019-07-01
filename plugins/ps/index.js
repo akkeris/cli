@@ -225,6 +225,7 @@ function update(appkit, args) {
   }
 
   let task = appkit.terminal.task(`Updating dyno for app ^^^${args.app}^^^, type **${args.TYPE}**`);
+  task.start();
   appkit.api.patch(JSON.stringify(payload), '/apps/' + args.app + '/formation/' + args.TYPE, (err, data) => {
     if(err) {
       task.end('error');
