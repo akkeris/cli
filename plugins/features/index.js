@@ -13,20 +13,22 @@ function list(appkit, args) {
 }
 
 function disable(appkit, args) {
-  appkit.api.patch(JSON.stringify({"enabled":false}), `/apps/${args.app}/features/${args.FEATURE}`, (err, feature) => {
+  appkit.api.patch(JSON.stringify({"enabled":false}), `/apps/${args.app}/features/${args.FEATURE}`, async (err, feature) => {
     if(err) {
       appkit.terminal.error(err)
     } else {
+      await appkit.api.patch(JSON.stringify({"RESTART":Math.random()}),`/apps/${args.app}/config-vars`); // TODO: REMOVE
       console.log(appkit.terminal.markdown(`**⬢ ${args.app}** - ${feature.display_name} - ##disabled##`))
     }
   })
 }
 
 function enable(appkit, args) {
-  appkit.api.patch(JSON.stringify({"enabled":true}), `/apps/${args.app}/features/${args.FEATURE}`, (err, feature) => {
+  appkit.api.patch(JSON.stringify({"enabled":true}), `/apps/${args.app}/features/${args.FEATURE}`, async (err, feature) => {
     if(err) {
       appkit.terminal.error(err)
     } else {
+      await appkit.api.patch(JSON.stringify({"RESTART":Math.random()}),`/apps/${args.app}/config-vars`); // TODO: REMOVE
       console.log(appkit.terminal.markdown(`**⬢ ${args.app}** - ${feature.display_name} - ^^enabled^^`))
     }
   })
