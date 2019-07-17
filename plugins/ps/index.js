@@ -237,22 +237,30 @@ function update(appkit, args) {
   });
 }
 
-function restart(appkit, args) {
+async function restart(appkit, args) {
   assert.ok(args.app && args.app !== '', 'An application name was not provided.');
-  let task = appkit.terminal.task(`Restarting **⬢ ${args.app}${args.TYPE ? ':' + args.TYPE : ''}**`);
+  let task = appkit.terminal.task(`Restarting **⬢ ${args.app}**${args.TYPE ? (" ^^^" + args.TYPE + "^^^") : ""}`);
   task.start();
-  let urld = '/apps/' + args.app + '/dynos';
-  if(args.TYPE) {
-    urld += '/' + args.TYPE ;
-  }
-  appkit.api.delete(urld, (err, result) => {
-    if(err) {
-      task.end('error')
-      appkit.terminal.error(err);
+  try {
+    if(args.TYPE) {
+      let [type, dyno] = args.TYPE.split(".")
+      let dynos = await appkit.api.get('/apps/' + args.app + '/dynos');
+      if(dyno) {
+        assert.ok(dynos.filter((x) => x.type.toLowerCase() === type.toLowerCase() && x.name.toLowerCase() === dyno.toLowerCase()).length === 1, 
+          `The specified dyno ${type}.${dyno} was not found.`)
+      } else {
+        assert.ok(dynos.filter((x) => x.type.toLowerCase() === type.toLowerCase()).length >= 1,
+          `The specified dyno type ${type} was not found.`)
+      }
+      await appkit.api.delete(`/apps/${args.app}/dynos/${args.TYPE}`);
     } else {
-      task.end('ok');
+      await appkit.api.delete(`/apps/${args.app}/dynos`);
     }
-  });
+    task.end('ok');
+  } catch (err) {
+    task.end('error')
+    appkit.terminal.error(err);
+  }
 }
 
 function forward(appkit, args) {
@@ -341,27 +349,27 @@ function scale(appkit, args) {
   });
 }
 
-function stop(appkit, args) {
-  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
-  assert.ok(args.DYNO && args.DYNO !== '', 'No dyno was specified, use ak ps -a [app] to get a list of running dynos.');
-
-  if(args.DYNO.indexOf('.') === -1) {
-    console.log("No running dyno was specified, e.g., web.324ksd232-321e, see list below.");
-    console.log()
-    list(appkit, args);
-    return;
+async function stop(appkit, args) {
+  try {
+    assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+    assert.ok(args.DYNO && args.DYNO !== '', 'No dyno was specified, use ak ps -a [app] to get a list of running dynos.');
+    assert.ok(args.DYNO.indexOf(".") !== -1, 'No dyno was specified, use ak ps -a [app] to get a list of running dynos.');
+  } catch (e) {
+    return appkit.terminal.error(e);
   }
-  let task = appkit.terminal.task('Stopping dyno ' + args.DYNO);
+  let [type, dyno] = args.DYNO.split('.')
+  let task = appkit.terminal.task(`Stopping dyno **⬢ ${args.app}** ^^^${args.DYNO}^^^`);
   task.start();
-  appkit.api.post('', '/apps/' + args.app + '/dynos/' + args.DYNO + '/actions/stop', (err, result) => {
-    if(err) {
-      task.end('error');
-      return appkit.terminal.error(err);
-    } else {
-      task.end('ok');
-      appkit.terminal.print(err, result);
-    }
-  });
+  try {
+    let dynos = await appkit.api.get('/apps/' + args.app + '/dynos');
+    assert.ok(dynos.filter((x) => x.type.toLowerCase() === type.toLowerCase() && x.name.toLowerCase() === dyno.toLowerCase()).length === 1, 
+      `The specified dyno ${type}.${dyno} was not found.`)
+    let result = await appkit.api.delete('/apps/' + args.app + '/dynos/' + type.toLowerCase() + "." + dyno.toLowerCase())
+    task.end('ok');
+  } catch (e) {
+    task.end('error');
+    return appkit.terminal.error(e);
+  }
 }
 
 module.exports = {
