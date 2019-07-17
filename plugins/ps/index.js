@@ -361,10 +361,10 @@ async function stop(appkit, args) {
   let task = appkit.terminal.task(`Stopping dyno **⬢ ${args.app}** ^^^${args.DYNO}^^^`);
   task.start();
   try {
-    let dynos = await appkit.api.get('/apps/' + args.app + '/dynos');
+    let dynos = await appkit.api.get(`/apps/${args.app}/dynos`);
     assert.ok(dynos.filter((x) => x.type.toLowerCase() === type.toLowerCase() && x.name.toLowerCase() === dyno.toLowerCase()).length === 1, 
       `The specified dyno ${type}.${dyno} was not found.`)
-    let result = await appkit.api.delete('/apps/' + args.app + '/dynos/' + type.toLowerCase() + "." + dyno.toLowerCase())
+    let result = await appkit.api.delete(`/apps/${args.app}/dynos/${type.toLowerCase()}.${dyno.toLowerCase()}`)
     task.end('ok');
   } catch (e) {
     task.end('error');
