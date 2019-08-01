@@ -243,8 +243,9 @@ const require_app_promote_option = {
   "unsafe": {
     "alias": "u",
     "demand": false,
-    "string": true,
-    "description": "Request an unsafe promotion - proceeds even if missing config vars or addons are found in the destination app"
+    "boolean": true,
+    "default": false,
+    "description": "Promotes release even if missing config vars or addons are found in the destination app"
   }
 };
 
