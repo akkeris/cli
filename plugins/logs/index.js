@@ -8,51 +8,40 @@ function highlight(data) {
   process.stdout.write(data.replace(/^([A-z0-9\:\-\+\.]+Z) ([A-z\-0-9\.]+) ([A-z\.0-9\/\[\]\-]+)\: /gm, '\u001b[36m$1\u001b[0m $2 \u001b[38;5;104m$3:\u001b[0m ')); 
 }
 
-let stream_restarts = 0
 async function stream_logs(appkit, colors, uri, payload) {
-  /* as a safety mechanism eventually timeout after 1000 restarts */
-  if(stream_restarts > 1000) {
-    return process.exit(1)
-  }
-  let log_session = await appkit.api.post(JSON.stringify(payload), uri)
+  let log_session = await appkit.api.post(JSON.stringify(payload), uri);
   let logging_stream_url = url.parse(log_session.logplex_url);
-
   let req = https.request(logging_stream_url, (res) => { 
     if(!colors) {
-      res.pipe(process.stdout) 
+      res.pipe(process.stdout);
     } else {
-      res.setEncoding('utf8')
-      res.on('data', highlight)
-      res.on('error', (e) => {
-        return appkit.terminal.error(e)
-      })
-      res.on('end', () => {
-        stream_restarts++;
-        setTimeout(stream_logs.bind(null, appkit, colors, uri, payload), 1000); 
-      })
+      res.setEncoding('utf8');
+      res.on('data', highlight);
     }
+    res.on('error', (e) => {
+      appkit.terminal.error(e);
+      process.exit(1);
+    });
+    res.on('end', () => process.exit(0));
   });
   req.on('error', (e) => {
-    if (e.code === "ECONNRESET") {
-      stream_restarts++;
-      return setTimeout(stream_logs.bind(null, appkit, colors, uri, payload), 1000);
-    }
-    return appkit.terminal.error(e)
-  })
-  req.setNoDelay(true)
-  req.end()
+    appkit.terminal.error(e);
+    process.exit(1);
+  });
+  req.setNoDelay(true);
+  req.end();
 }
 
 async function logs(appkit, args) {
   try {
-    assert.ok(args.app || args.site, 'No application or site was provided.  Use either --site or --app to view logs.')
-    assert.ok(!(args.app && args.site), 'Both --site (-s) and --app (-a) were provided, logs can be viewed for a site or an app, not both.')
-    let payload = {lines:args.num, tail:args.tail}
-    let uri = `/apps/${args.app}/log-sessions`
+    assert.ok(args.app || args.site, 'No application or site was provided.  Use either --site or --app to view logs.');
+    assert.ok(!(args.app && args.site), 'Both --site (-s) and --app (-a) were provided, logs can be viewed for a site or an app, not both.');
+    let payload = {lines:args.num, tail:args.tail};
+    let uri = `/apps/${args.app}/log-sessions`;
     if (args.site && args.site !== '') {
-      uri = `/sites/${args.site}/log-sessions`
+      uri = `/sites/${args.site}/log-sessions`;
     }
-    await stream_logs(appkit, args.colors, uri, payload)
+    await stream_logs(appkit, args.colors, uri, payload);
   } catch(e) {
     appkit.terminal.error(e)
   }
