@@ -64,6 +64,9 @@ function set(appkit, args) {
 
 function info(appkit, args) {
   assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  if(args._.length > 1) {
+    return appkit.terminal.error('If you are trying to attach a repo please use aka repo:set -a <appname>')
+  }
   appkit.api.get(`/apps/${args.app}/builds/auto/github`, (err, data) => {
     if(err) {
       return appkit.terminal.error(err);
