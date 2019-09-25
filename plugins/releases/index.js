@@ -182,60 +182,98 @@ async function rollback(appkit, args) {
   }
 }
 
+async function rebuild(appkit, args) {
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  try {
+    const release = await find_release(appkit, args.app, args.release);
+    assert.ok(release.slug.id, `Unable to find build information for release ${args.release}`);
+
+    let task = appkit.terminal.task(`Rebuilding **${args.release} on ⬢${args.app} **`);
+    task.start();
+
+    const build = await appkit.api.put(null, `/apps/${args.app}/builds/${release.slug.id}`);
+    wait_for_build(appkit, args.app, build.id, (err, result) => {
+      if (err) {
+        task.end('error');
+        return appkit.terminal.error(err);
+      }
+      task.end('ok');
+    });
+  } catch (err) {
+    return appkit.terminal.error(err);
+  }
+}
 
 module.exports = {
   init:function(appkit) {
-    let all_option = {
-      'all':{
-        'default':false,
-        'demand':false,
-        'boolean':true,
-        'description':'Show all of the releases (not just the last 10)'
+    const require_app_option = {
+      app:{
+        alias: 'a',
+        demand: true,
+        string: true,
+        description: 'The app to act on'
       }
-    }
-    let create_release_option = {
-      'app':{
-        'alias':'a',
-        'demand':true,
-        'string':true,
-        'description':'The app to deploy to'
+    };
+
+    const create_release_option = {
+      app: {
+        ...require_app_option.app,
+        description: 'The app to deploy to',
       },
-      'version':{
-        'alias':'v',
-        'demand':false,
-        'string':true,
-        'description':'Notes or an internal version number for this release'
-      }
-    }
-    let require_app_option = {
-      'app':{
-        'alias':'a',
-        'demand':true,
-        'string':true,
-        'description':'The app to act on'
+      version: {
+        alias: 'v',
+        demand: false,
+        string: true,
+        description: 'Notes or an internal version number for this release'
       }
     };
-    let require_rollback_option = {
-      'app':{
-        'alias':'a',
-        'demand':true,
-        'string':true,
-        'description': 'The app to roll back'
+
+    const releases_options = {
+      all: {
+        default: false,
+        demand: false,
+        boolean: true,
+        description: 'Show all of the releases (not just the last 10)'
+      },
+      ...require_app_option,
+    };
+
+    const require_rollback_option = {
+      app: {
+        alias: 'a',
+        demand: true,
+        string: true,
+        description: 'The app to roll back'
       }
     };
+
+    const rebuild_options = {
+      release: {
+        alias: 'RELEASE',
+        demand: false,
+        string: true,
+        description: 'The release to rebuild',
+        default: 'latest',
+      },
+      ...require_app_option,
+    };
+
     appkit.args
-      .command('releases', 'List releases on an app', Object.assign(require_app_option, all_option), list.bind(null, appkit))
+      .command('releases', 'List releases on an app', releases_options, list.bind(null, appkit))
       .command('releases:create URL', 'Deploy a new version of an app from a .zip, .tgz, or docker image', create_release_option, create.bind(null, appkit))
       .command('releases:info [RELEASE]', 'View release info', require_app_option, info.bind(null, appkit))
       .command('releases:rollback [RELEASE]', 'Roll back to a previous release on an app', require_rollback_option, rollback.bind(null, appkit))
+      .command('releases:rebuild', 'Rebuild a previous release (defaults to latest)', rebuild_options, rebuild.bind(null, appkit))
       // aliases
-      .command('release', false, Object.assign(require_app_option, all_option), list.bind(null, appkit))
-      .command('releases:list', false, Object.assign(require_app_option, all_option), list.bind(null, appkit))
-      .command('release:list', false, Object.assign(require_app_option, all_option), list.bind(null, appkit))
+      .command('release', false, releases_options, list.bind(null, appkit))
+      .command('releases:list', false, releases_options, list.bind(null, appkit))
+      .command('release:list', false, releases_options, list.bind(null, appkit))
       .command('release:create URL', false, create_release_option, create.bind(null, appkit))
       .command('release:info [RELEASE]', false, require_app_option, info.bind(null, appkit))
       .command('release:rollback [RELEASE]', false, require_rollback_option, rollback.bind(null, appkit))
       .command('rollback [RELEASE]', false, require_rollback_option, rollback.bind(null, appkit))
+      .command('apps:rebuild', false, rebuild_options, rebuild.bind(null, appkit))
+      .command('rebuild', false, rebuild_options, rebuild.bind(null, appkit))
   },
   update:function() {
     // do nothing.
