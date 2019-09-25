@@ -51,6 +51,6 @@ module.exports = {
     // do nothing.
   },
   group:'apps',
-  help:'manage apps (create, destroy)',
+  help:'put apps in or out of maintenance mode',
   primary:true
 }

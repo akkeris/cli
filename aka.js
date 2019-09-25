@@ -423,7 +423,7 @@ function print_all_help(appkit, argv, errorMessage) {
   ui.div(chalk.bold('\nAkkeris CLI Help\n'));
   
   // Render each command group
-  Object.keys(appkit.plugins).sort().forEach((group) => {
+  Object.keys(appkit.plugins).sort().filter(group => !appkit.plugins[group].hidden).forEach((group) => {
     ui.div({ width: 20, text: `• ${group}` }, { text: capitalize(appkit.plugins[group].help) });
   });
   
@@ -451,7 +451,7 @@ function help(appkit, argv) {
 
 
   if ((invokedByHelp && argv.a) || (
-    old_help && old_help === "1" || old_help.toLowerCase() === "true" || old_help.toLowerCase() === "t"
+    old_help && (old_help === "1" || old_help.toLowerCase() === "true" || old_help.toLowerCase() === "t")
   )) {
     // Show old (full) help:
     print_old_help(appkit);
@@ -459,7 +459,7 @@ function help(appkit, argv) {
   }
 
   if (invokedByHelp && groupProvided) {
-    const validGroup = Object.keys(appkit.plugins).find(group => group === argv.group[0])
+    const validGroup = Object.keys(appkit.plugins).filter(group => !appkit.plugins[group].hidden).find(group => group === argv.group[0])
     if (validGroup) {
       print_group_help(argv, validGroup);      
       return;
@@ -471,6 +471,27 @@ function help(appkit, argv) {
   }
 
   print_all_help(appkit, argv, errorMessage);
+}
+
+// If the `help` command has the help flag, ignore it
+// If any other command has the --help flag, show normal Yargs help for that command
+function help_flag_middleware(appkit, argv, yargs) {
+  if (argv._ && argv.help) {
+    if (argv._.length === 0 || argv._.includes('help')) {
+      help(appkit, argv)
+      process.exit(0)
+    } else {
+      yargs.help(true).parse()
+    }
+  }
+}
+
+// Get rid of invalid options on the help command
+function help_options_middleware(argv) {
+  const validKeys = ['_', '$0', 'group', 'a', 'all'];
+  if (argv._ && (argv._.length === 0 || argv._.includes('help'))) {
+    Object.keys(argv).filter(key => !validKeys.includes(key)).forEach(badKey => { delete argv[badKey]; });
+  }
 }
 
 // This checks to see if -a (--app) is in the requested config set,
@@ -637,27 +658,6 @@ async function create_app_middleware(appkit, argv) {
     if (answers.org) {
       argv.org = argv.o = answers.org;
     }
-  }
-}
-
-// If the `help` command has the help flag, ignore it
-// If any other command has the --help flag, show normal Yargs help for that command
-function help_flag_middleware(appkit, argv, yargs) {
-  if (argv._ && argv.help) {
-    if (argv._.length === 0 || argv._.includes('help')) {
-      help(appkit, argv)
-      process.exit(0)
-    } else {
-      yargs.help(true).parse()
-    }
-  }
-}
-
-// Get rid of invalid options on the help command
-function help_options_middleware(argv) {
-  const validKeys = ['_', '$0', 'group', 'a', 'all'];
-  if (argv._ && (argv._.length === 0 || argv._.includes('help'))) {
-    Object.keys(argv).filter(key => !validKeys.includes(key)).forEach(badKey => { delete argv[badKey]; });
   }
 }
 
