@@ -12,7 +12,6 @@ const url = require('url');
 const zlib = require('zlib');
 const inquirer = require('inquirer');
 const fuzzy = require('fuzzy');
-const chalk = require('chalk');
 const stringWidth = require('string-width');
 inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
 
@@ -155,7 +154,7 @@ function squirrel_2() {
         Ol::clcoddddxkkOOOkxdolooooll:::ccclx    kc;''................',::odxk0      
           OxdoodkxxxkOOOkkxddolloollccc:cccccccd  x:'.................'.,:dokkx      
            kddddxxxxkOO0Oxxxdoloolcccc:ccccccccccdOc,..................,,;coxk       
-          oodxddkkxkO0 0Okxdoooollccc:;:ccc:ccccccc:,'..................,;;cdxO      
+          oodxddkkxkO000Okxdoooollccc:;:ccc:ccccccc:,'..................,;;cdxO      
          xlodxxxOOOOO00Okxdooodollllc::;::c::cccc:::,'.................''';;clO      
          olddkkkkkOO00Oxddolllolllcllc:::c::ccccc::;;'...................,,;:dO      
          llolkOkxkOOOkllolllolcllllllc::ccccccccc::;;,...................';cldkx     
@@ -189,6 +188,38 @@ function squirrel_2() {
                             |_|      
 
   `.split('\n').forEach((i, idx) => setTimeout(() => console.log(i), 25 * idx));
+}
+
+
+function squirrel_3() {
+  console.log(`
+              ,;:;;,
+              ;;;;;
+      .=',    ;:;;:,
+    /_', "=. ';:;:;
+    @=:__,  \,;:;:'
+      _(\.=  ;:;;'
+      \`"_(  _/="\`
+       \`"'\`\`
+
+       baby squirrel
+  `);
+}
+
+function squirrel_selector() {
+  switch(Math.floor(Math.random() * 3)) {
+    case 0:
+      squirrel();
+      break;
+    case 1:
+      squirrel_2();
+      break;
+    case 2:
+      squirrel_3();
+      break;
+    default:
+      squirrel();
+  }
 }
 
 function set_profile(appkit, args, cb) {
@@ -371,11 +402,11 @@ function print_ui(cliui, errorMessage) {
 }
 
 // Print help for a specific command group
-function print_group_help(argv, group) {
+function print_group_help(appkit, argv, group) {
   // Initialize UI
   let errorMessage = ''
   const ui = require('cliui')({width: process.stdout.columns})
-  ui.div(chalk.bold('\nAkkeris CLI Help\n'))
+  ui.div(appkit.terminal.bold('\nAkkeris CLI Help\n'))
 
   // Reset yargs so we can initialize it with only the plugin that we want
   const newYargs = require('yargs');
@@ -397,12 +428,12 @@ function print_group_help(argv, group) {
     if (foundCommand && foundCommand.length > 0) {
       newYargs.help(true).parse(`${foundCommand[0][0]} --help`)
     } else {
-      errorMessage = `${chalk.red.italic("Invalid command:")} ${givenCommand}`
+      errorMessage = `${appkit.terminal.italic(appkit.terminal.markdown("!!Invalid command:!!"))} ${givenCommand}`
     }
   }
 
   // Render the name of the group
-  ui.div(chalk.italic(capitalize(group)))
+  ui.div(appkit.terminal.italic(capitalize(group)))
 
   // Render all of the group commands
   const commands = newYargs.getUsageInstance().getCommands().sort((a, b) => a[0] < b[0] ? -1 : 1);
@@ -416,7 +447,7 @@ function print_group_help(argv, group) {
   ui.div();
 
   // Render helper text
-  ui.div(`\n${chalk.italic('Run')} ${chalk.yellow.italic(`${argv["$0"]} help <group> <command>`)} ${chalk.italic('to view help documentation for a specific command')}`);
+  ui.div(`\n${appkit.terminal.italic('Run')} ${appkit.terminal.italic(appkit.terminal.markdown(`~~${argv["$0"]} help <group> <command>~~`))} ${appkit.terminal.italic('to view help documentation for a specific command')}`);
   
   print_ui(ui, errorMessage);
 }
@@ -425,7 +456,7 @@ function print_group_help(argv, group) {
 function print_all_help(appkit, argv, errorMessage) {
   // Initialize UI
   const ui = require('cliui')({width: process.stdout.columns});
-  ui.div(chalk.bold('\nAkkeris CLI Help\n'));
+  ui.div(appkit.terminal.bold('\nAkkeris CLI Help\n'));
   
   // Render each command group
   Object.keys(appkit.plugins).sort().filter(group => !appkit.plugins[group].hidden).forEach((group) => {
@@ -433,7 +464,7 @@ function print_all_help(appkit, argv, errorMessage) {
   });
   
   // Render helper text
-  ui.div(`\n${chalk.italic('Run')} ${chalk.yellow.italic(`${argv["$0"]} help <group>`)} ${chalk.italic('to view help documentation for a specific command group')}`);
+  ui.div(`\n${appkit.terminal.italic('Run')} ${appkit.terminal.italic(appkit.terminal.markdown(`~~${argv["$0"]} help <group>~~`))} ${appkit.terminal.italic('to view help documentation for a specific command group')}`);
   
   print_ui(ui, errorMessage);
 }
@@ -466,13 +497,13 @@ function help(appkit, argv) {
   if (invokedByHelp && groupProvided) {
     const validGroup = Object.keys(appkit.plugins).filter(group => !appkit.plugins[group].hidden).find(group => group === argv.group[0])
     if (validGroup) {
-      print_group_help(argv, validGroup);      
+      print_group_help(appkit, argv, validGroup);      
       return;
     } else {
-      errorMessage = `${chalk.red.italic("Invalid command group:")} ${argv.group[0]}`;
+      errorMessage = `${appkit.terminal.italic(appkit.terminal.markdown("!!Invalid command group:!!"))} ${argv.group[0]}`;
     }
   } else if (!invokedByHelp && argv.group) {
-    errorMessage = `${chalk.red.italic("Unrecognized command:")} ${argv.group[0]}`;
+    errorMessage = `${appkit.terminal.italic(appkit.terminal.markdown("!!Unrecognized command:!!"))} ${argv.group[0]}`;
   }
 
   print_all_help(appkit, argv, errorMessage);
@@ -710,8 +741,7 @@ module.exports.init = function init() {
     .command('autocomplete', `Install bash/zsh shell autocompletion`, {}, install_auto_completions.bind(null, module.exports))
 
     // Secret Commands
-    .command('squirrel', false, {}, squirrel)
-    .command('squirrel_2.0', false, {}, squirrel_2)
+    .command('squirrel', false, {}, squirrel_selector)
 
     .recommendCommands()
     .middleware([help_options_middleware, help_flag_middleware.bind(null, module.exports)], true)
@@ -745,6 +775,7 @@ module.exports.init = function init() {
     module.exports.terminal.markdown('🚀  Did you know? When using repo:set if you don\'t specify a token it will use your organization\'s token.'),
     module.exports.terminal.markdown('🚀  Did you know? There\'s more out there! Run ##aka plugins## to explore optional akkeris features!'),
     module.exports.terminal.markdown('🚀  Did you know? You can use \'ak\' as a short cut for \'aka\'!'),
+    module.exports.terminal.markdown('🚀  You should try \'aka squirrel\'!'),
   ];
 }
 
