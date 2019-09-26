@@ -228,21 +228,26 @@ function set_profile(appkit, args, cb) {
   }
 }
 
+function load_config() {
+  let config = JSON.parse(fs.readFileSync(path.join(get_home(), '.akkeris', 'config.json')).toString('UTF8'))
+  process.env.AKKERIS_AUTH_HOST = config.auth;
+  process.env.AKKERIS_API_HOST = config.apps;
+  process.env.AKKERIS_UPDATES = config.updates ? config.updates : 0;
+  if (!process.env.AKKERIS_HELP_OLD) {
+    process.env.AKKERIS_HELP_OLD = config.old_help ? config.old_help : 0;
+  }
+}
+
 function load_profile() {
   if(!process.env.AKKERIS_API_HOST || !process.env.AKKERIS_AUTH_HOST) {
     try {
-      let config = JSON.parse(fs.readFileSync(path.join(get_home(), '.akkeris', 'config.json')).toString('UTF8'))
-      process.env.AKKERIS_AUTH_HOST = config.auth;
-      process.env.AKKERIS_API_HOST = config.apps;
-      process.env.AKKERIS_UPDATES = config.updates ? config.updates : 0;
-      if (!process.env.AKKERIS_HELP_OLD) {
-        process.env.AKKERIS_HELP_OLD = config.old_help ? config.old_help : 0;
-      }
+      load_config()
     } catch (e) {
       if(process.argv && (process.argv[1] === 'auth:profile' || process.argv[2] === 'auth:profile' || process.argv[3] === 'auth:profile')) {
         return;
       }
       welcome()
+      load_config()
     }
   }
   process.env.AKKERIS_AUTH_HOST = process.env.AKKERIS_AUTH_HOST.toLowerCase().trim()
