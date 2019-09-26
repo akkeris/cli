@@ -227,7 +227,6 @@ function set_profile(appkit, args, cb) {
     appkit.terminal.question('Akkeris Auth Host (auth.example.com): ', (auth) => {
       appkit.terminal.question('Akkeris Apps Host (apps.example.com): ', (apps) => {
         appkit.terminal.question('Periodically check for updates? (y/n): ', (updates) => {
-          appkit.terminal.question('Always show the old Akkeris help? (y/n) ', (old_help) => {
             auth = auth.toLowerCase().trim()
             apps = apps.toLowerCase().trim()
             if (auth.startsWith('https://') || auth.startsWith('http://')) {
@@ -241,18 +240,11 @@ function set_profile(appkit, args, cb) {
             } else {
               updates = "0";
             }
-            if (old_help.toLowerCase().trim() === 'yes' || old_help.toLowerCase().trim() === 'y') {
-              old_help = "1";
-            } else {
-              old_help = "0";
-            }
-            fs.writeFileSync(path.join(get_home(), '.akkeris', 'config.json'), JSON.stringify({auth, apps, updates, old_help}, null, 2));
+            fs.writeFileSync(path.join(get_home(), '.akkeris', 'config.json'), JSON.stringify({auth, apps, updates}, null, 2));
             process.env.AKKERIS_API_HOST = apps
             process.env.AKKERIS_AUTH_HOST = auth
             process.env.AKKERIS_UPDATES = updates
-            process.env.AKKERIS_HELP_OLD = old_help
             console.log("Profile updated!")
-          });
         });
       });
     });
@@ -264,9 +256,6 @@ function load_config() {
   process.env.AKKERIS_AUTH_HOST = config.auth;
   process.env.AKKERIS_API_HOST = config.apps;
   process.env.AKKERIS_UPDATES = config.updates ? config.updates : 0;
-  if (!process.env.AKKERIS_HELP_OLD) {
-    process.env.AKKERIS_HELP_OLD = config.old_help ? config.old_help : 0;
-  }
 }
 
 function load_profile() {
@@ -484,7 +473,6 @@ function help(appkit, argv) {
   const invokedByHelp = argv._ && argv._.length > 0 && argv._[0] === 'help';
   const groupProvided = argv.group && argv.group.length > 0;
   const old_help = process.env.AKKERIS_HELP_OLD;
-
 
   if ((invokedByHelp && argv.a) || (
     old_help && (old_help === "1" || old_help.toLowerCase() === "true" || old_help.toLowerCase() === "t")
