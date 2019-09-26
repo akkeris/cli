@@ -12,6 +12,7 @@ const url = require('url');
 const zlib = require('zlib');
 const inquirer = require('inquirer');
 const fuzzy = require('fuzzy');
+const stringWidth = require('string-width');
 inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
 
 // Only check to updates when our last update check was this long ago (ms)
@@ -22,6 +23,8 @@ const AKA_UPDATE_INTERVAL = process.env.AKA_UPDATE_INTERVAL ? process.env.AKA_UP
 // Default - .aka_version
 const AKA_UPDATE_FILENAME = '.aka_version'
 
+const capitalize = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+
 process.on('uncaughtException', (e) => {
   if(process.env.DEBUG) {
     console.error(e.message)
@@ -31,9 +34,13 @@ process.on('uncaughtException', (e) => {
   }
 })
 
-function init_plugins(m, plugins_dir) {
+function init_plugins(m, plugins_dir, pluginName) {
+  let success;
   fs.readdirSync(plugins_dir).sort((a, b) => { return a < b ? -1 : 1 }).forEach((plugin => {
     if(path.basename(plugin).startsWith('.') || path.basename(plugin).startsWith("tmp")) {
+      return;
+    }
+    if (pluginName && plugin !== pluginName) {
       return;
     }
     try {
@@ -49,12 +56,14 @@ function init_plugins(m, plugins_dir) {
           } catch (err) {
             console.log(m.exports.terminal.markdown(`\n !!▸!! error initializing plugin "${plugin}": ${err}\n`));
           }
+          success = true;
         }
       }
     } catch (err) {
       console.log(m.exports.terminal.markdown(`\n !!▸!! error initializing plugin "${plugin}": ${err}\n`));
     }
   }));
+  return success || false;
 }
 
 function get_home() {
@@ -145,7 +154,7 @@ function squirrel_2() {
         Ol::clcoddddxkkOOOkxdolooooll:::ccclx    kc;''................',::odxk0      
           OxdoodkxxxkOOOkkxddolloollccc:cccccccd  x:'.................'.,:dokkx      
            kddddxxxxkOO0Oxxxdoloolcccc:ccccccccccdOc,..................,,;coxk       
-          oodxddkkxkO0 0Okxdoooollccc:;:ccc:ccccccc:,'..................,;;cdxO      
+          oodxddkkxkO000Okxdoooollccc:;:ccc:ccccccc:,'..................,;;cdxO      
          xlodxxxOOOOO00Okxdooodollllc::;::c::cccc:::,'.................''';;clO      
          olddkkkkkOO00Oxddolllolllcllc:::c::ccccc::;;'...................,,;:dO      
          llolkOkxkOOOkllolllolcllllllc::ccccccccc::;;,...................';cldkx     
@@ -181,47 +190,84 @@ function squirrel_2() {
   `.split('\n').forEach((i, idx) => setTimeout(() => console.log(i), 25 * idx));
 }
 
+
+function squirrel_3() {
+  console.log(`
+              ,;:;;,
+              ;;;;;
+      .=',    ;:;;:,
+    /_', "=. ';:;:;
+    @=:__,  \,;:;:'
+      _(\.=  ;:;;'
+      \`"_(  _/="\`
+       \`"'\`\`
+
+       baby squirrel
+  `);
+}
+
+function squirrel_selector() {
+  switch(Math.floor(Math.random() * 3)) {
+    case 0:
+      squirrel();
+      break;
+    case 1:
+      squirrel_2();
+      break;
+    case 2:
+      squirrel_3();
+      break;
+    default:
+      squirrel();
+  }
+}
+
 function set_profile(appkit, args, cb) {
   if(!args || !args.auth || !args.app) {
     appkit.terminal.question('Akkeris Auth Host (auth.example.com): ', (auth) => {
       appkit.terminal.question('Akkeris Apps Host (apps.example.com): ', (apps) => {
         appkit.terminal.question('Periodically check for updates? (y/n): ', (updates) => {
-          auth = auth.toLowerCase().trim()
-          apps = apps.toLowerCase().trim()
-          if (auth.startsWith('https://') || auth.startsWith('http://')) {
-            auth = (new url.URL(auth)).hostname
-          }
-          if (apps.startsWith('https://') || apps.startsWith('http://')) {
-            apps = (new url.URL(apps)).hostname
-          }
-          if (updates.toLowerCase().trim() === 'yes' || updates.toLowerCase().trim() === 'y') {
-            updates = "1"; 
-          } else {
-            updates = "0";
-          }
-          fs.writeFileSync(path.join(get_home(), '.akkeris', 'config.json'), JSON.stringify({auth, apps, updates}, null, 2));
-          process.env.AKKERIS_API_HOST = apps
-          process.env.AKKERIS_AUTH_HOST = auth
-          process.env.AKKERIS_UPDATES = updates
-          console.log("Profile updated!")
+            auth = auth.toLowerCase().trim()
+            apps = apps.toLowerCase().trim()
+            if (auth.startsWith('https://') || auth.startsWith('http://')) {
+              auth = (new url.URL(auth)).hostname
+            }
+            if (apps.startsWith('https://') || apps.startsWith('http://')) {
+              apps = (new url.URL(apps)).hostname
+            }
+            if (updates.toLowerCase().trim() === 'yes' || updates.toLowerCase().trim() === 'y') {
+              updates = "1"; 
+            } else {
+              updates = "0";
+            }
+            fs.writeFileSync(path.join(get_home(), '.akkeris', 'config.json'), JSON.stringify({auth, apps, updates}, null, 2));
+            process.env.AKKERIS_API_HOST = apps
+            process.env.AKKERIS_AUTH_HOST = auth
+            process.env.AKKERIS_UPDATES = updates
+            console.log("Profile updated!")
         });
       });
     });
   }
 }
 
+function load_config() {
+  let config = JSON.parse(fs.readFileSync(path.join(get_home(), '.akkeris', 'config.json')).toString('UTF8'))
+  process.env.AKKERIS_AUTH_HOST = config.auth;
+  process.env.AKKERIS_API_HOST = config.apps;
+  process.env.AKKERIS_UPDATES = config.updates ? config.updates : 0;
+}
+
 function load_profile() {
   if(!process.env.AKKERIS_API_HOST || !process.env.AKKERIS_AUTH_HOST) {
     try {
-      let config = JSON.parse(fs.readFileSync(path.join(get_home(), '.akkeris', 'config.json')).toString('UTF8'))
-      process.env.AKKERIS_AUTH_HOST = config.auth;
-      process.env.AKKERIS_API_HOST = config.apps;
-      process.env.AKKERIS_UPDATES = config.updates ? config.updates : 0;
+      load_config()
     } catch (e) {
       if(process.argv && (process.argv[1] === 'auth:profile' || process.argv[2] === 'auth:profile' || process.argv[3] === 'auth:profile')) {
         return;
       }
       welcome()
+      load_config()
     }
   }
   process.env.AKKERIS_AUTH_HOST = process.env.AKKERIS_AUTH_HOST.toLowerCase().trim()
@@ -322,6 +368,154 @@ function spawn_update_check(update_file_path) {
     detached: true, 
     stdio: [ 'ignore', output, 'ignore' ] 
   }).unref();
+}
+
+// Get random tips or update available statement (if applicable)
+function get_epilogue() {
+  const update_available = module.exports.update_available ? (Object.keys(module.exports.update_available).length !== 0) : false;
+  if (update_available) {
+    return module.exports.terminal.update_statement(module.exports.update_available.current, module.exports.update_available.latest);
+  } else {
+    return module.exports.random_tips[Math.floor(module.exports.random_tips.length * Math.random())]
+  }
+}
+
+// Print UI and any error messages
+function print_ui(cliui, errorMessage) {
+  if (errorMessage) {
+    cliui.span(`\n${errorMessage}`);
+  } else {
+    cliui.span(`\n${get_epilogue()}`);
+  }
+  console.log(cliui.toString());
+}
+
+// Print help for a specific command group
+function print_group_help(appkit, argv, group) {
+  // Initialize UI
+  let errorMessage = ''
+  const ui = require('cliui')({width: process.stdout.columns})
+  ui.div(appkit.terminal.bold('\nAkkeris CLI Help\n'))
+
+  // Reset yargs so we can initialize it with only the plugin that we want
+  const newYargs = require('yargs');
+
+  if (!init_plugins(module, module.exports.config.plugins_dir, group)) {
+    if (!init_plugins(module, module.exports.config.third_party_plugins_dir, group)) {
+      console.log(module.exports.terminal.markdown(`\n !!▸!! Bad bad error. You should never see this\n`));
+      return;
+    }
+  }
+
+  // A specific command was provided along with the group name
+  if (argv.group.length > 1) {
+    // Verify that the specific command is valid
+    const givenCommand = argv.group[1];
+    const foundCommand = newYargs.getUsageInstance().getCommands().filter(a => a[0].split(" ").find(b => b === givenCommand))
+
+    // Tell Yargs to run the specific command with the '--help' flag 
+    if (foundCommand && foundCommand.length > 0) {
+      newYargs.help(true).parse(`${foundCommand[0][0]} --help`)
+    } else {
+      errorMessage = `${appkit.terminal.italic(appkit.terminal.markdown("!!Invalid command:!!"))} ${givenCommand}`
+    }
+  }
+
+  // Render the name of the group
+  ui.div(appkit.terminal.italic(capitalize(group)))
+
+  // Render all of the group commands
+  const commands = newYargs.getUsageInstance().getCommands().sort((a, b) => a[0] < b[0] ? -1 : 1);
+  const width = commands.reduce((acc, curr) => Math.max(stringWidth(`${argv["$0"]} ${curr[0]}`), acc), 0) + 6;
+  commands.forEach((command) => {
+    ui.span(
+      { text: `• ${argv["$0"]} ${command[0]}`, padding: [0, 2, 0, 2], width },
+      { text: command[1] }
+    )
+  });
+  ui.div();
+
+  // Render helper text
+  ui.div(`\n${appkit.terminal.italic('Run')} ${appkit.terminal.italic(appkit.terminal.markdown(`~~${argv["$0"]} help <group> <command>~~`))} ${appkit.terminal.italic('to view help documentation for a specific command')}`);
+  
+  print_ui(ui, errorMessage);
+}
+
+// Print help for all command groups
+function print_all_help(appkit, argv, errorMessage) {
+  // Initialize UI
+  const ui = require('cliui')({width: process.stdout.columns});
+  ui.div(appkit.terminal.bold('\nAkkeris CLI Help\n'));
+  
+  // Render each command group
+  Object.keys(appkit.plugins).sort().filter(group => !appkit.plugins[group].hidden).forEach((group) => {
+    ui.div({ width: 20, text: `• ${group}` }, { text: capitalize(appkit.plugins[group].help) });
+  });
+  
+  // Render helper text
+  ui.div(`\n${appkit.terminal.italic('Run')} ${appkit.terminal.italic(appkit.terminal.markdown(`~~${argv["$0"]} help <group>~~`))} ${appkit.terminal.italic('to view help documentation for a specific command group')}`);
+  
+  print_ui(ui, errorMessage);
+}
+
+function print_old_help(appkit) {
+  // Have to initialize plugins again
+  init_plugins(module, module.exports.config.plugins_dir)
+  init_plugins(module, module.exports.config.third_party_plugins_dir)
+
+  appkit.args.epilog(get_epilogue())
+  appkit.args.showHelp()
+}
+
+// Override yargs' default help and show something a bit cleaner
+function help(appkit, argv) {
+  let errorMessage;
+  const invokedByHelp = argv._ && argv._.length > 0 && argv._[0] === 'help';
+  const groupProvided = argv.group && argv.group.length > 0;
+  const old_help = process.env.AKKERIS_HELP_OLD;
+
+  if ((invokedByHelp && argv.a) || (
+    old_help && (old_help === "1" || old_help.toLowerCase() === "true" || old_help.toLowerCase() === "t")
+  )) {
+    // Show old (full) help:
+    print_old_help(appkit);
+    return;
+  }
+
+  if (invokedByHelp && groupProvided) {
+    const validGroup = Object.keys(appkit.plugins).filter(group => !appkit.plugins[group].hidden).find(group => group === argv.group[0])
+    if (validGroup) {
+      print_group_help(appkit, argv, validGroup);      
+      return;
+    } else {
+      errorMessage = `${appkit.terminal.italic(appkit.terminal.markdown("!!Invalid command group:!!"))} ${argv.group[0]}`;
+    }
+  } else if (!invokedByHelp && argv.group) {
+    errorMessage = `${appkit.terminal.italic(appkit.terminal.markdown("!!Unrecognized command:!!"))} ${argv.group[0]}`;
+  }
+
+  print_all_help(appkit, argv, errorMessage);
+}
+
+// If the `help` command has the help flag, ignore it
+// If any other command has the --help flag, show normal Yargs help for that command
+function help_flag_middleware(appkit, argv, yargs) {
+  if (argv._ && argv.help) {
+    if (argv._.length === 0 || argv._.includes('help')) {
+      help(appkit, argv)
+      process.exit(0)
+    } else {
+      yargs.help(true).parse()
+    }
+  }
+}
+
+// Get rid of invalid options on the help command
+function help_options_middleware(argv) {
+  const validKeys = ['_', '$0', 'group', 'a', 'all'];
+  if (argv._ && (argv._.length === 0 || argv._.includes('help'))) {
+    Object.keys(argv).filter(key => !validKeys.includes(key)).forEach(badKey => { delete argv[badKey]; });
+  }
 }
 
 // This checks to see if -a (--app) is in the requested config set,
@@ -493,7 +687,6 @@ async function create_app_middleware(appkit, argv) {
 
 // Initialize, setup any items at runtime
 module.exports.init = function init() {
-
   // Set common dir paths
   let akkeris_home = path.join(get_home(), '.akkeris')
   let akkeris_plugins = path.join(get_home(), '.akkeris', 'plugins')
@@ -526,6 +719,7 @@ module.exports.init = function init() {
   
   module.exports.args
     .usage('Usage: akkeris COMMAND [--app APP] [command-specific-options]')
+    .command(['$0 [group..]', 'help'], 'Akkeris Help', {}, help.bind(null, module.exports)).alias('a', 'all')
     .command('update', 'Update the Akkeris client', {}, module.exports.update.bind(null, module.exports))
     .command('version', 'Display current version', {}, module.exports.version.bind(null, module.exports))
     .command('auth:profile', 'Set the authorization and apps endpoints', {
@@ -535,10 +729,10 @@ module.exports.init = function init() {
     .command('autocomplete', `Install bash/zsh shell autocompletion`, {}, install_auto_completions.bind(null, module.exports))
 
     // Secret Commands
-    .command('squirrel', false, {}, squirrel)
-    .command('squirrel_2.0', false, {}, squirrel_2)
+    .command('squirrel', false, {}, squirrel_selector)
 
     .recommendCommands()
+    .middleware([help_options_middleware, help_flag_middleware.bind(null, module.exports)], true)
     .middleware([create_app_prechecks, find_app_middleware.bind(null, module.exports)], true)
     .middleware([create_app_middleware.bind(null, module.exports), select_app_middleware.bind(null, module.exports)])
 
@@ -569,6 +763,7 @@ module.exports.init = function init() {
     module.exports.terminal.markdown('🚀  Did you know? When using repo:set if you don\'t specify a token it will use your organization\'s token.'),
     module.exports.terminal.markdown('🚀  Did you know? There\'s more out there! Run ##aka plugins## to explore optional akkeris features!'),
     module.exports.terminal.markdown('🚀  Did you know? You can use \'ak\' as a short cut for \'aka\'!'),
+    module.exports.terminal.markdown('🚀  You should try \'aka squirrel\'!'),
   ];
 }
 
@@ -721,17 +916,8 @@ module.exports.api = {
 if(require.main === module) {
   module.exports.init();
 
-  const update_available = module.exports.update_available ? (Object.keys(module.exports.update_available).length !== 0) : false;
-  let epilogue = '';
-  if (update_available) {
-    epilogue = module.exports.terminal.update_statement(module.exports.update_available.current, module.exports.update_available.latest);
-  } else {
-    epilogue = module.exports.random_tips[Math.floor(module.exports.random_tips.length * Math.random())]
-  }
-  
   module.exports.args
     .strict()
-    .demand(1)
-    .epilog(epilogue)
+    .help(false)
     .argv
 }

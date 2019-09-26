@@ -1,12 +1,15 @@
-
 ## Installing
-
-Add the following environment variables to your profile:
 
 ```bash
 npm -g install akkeris
 ak
-````
+```
+
+## Environment Variables
+
+```
+export AKKERIS_HELP_OLD=true   # Always show the old Akkeris help
+```
 
 ## Other env 
 
@@ -21,3 +24,7 @@ export AKA_UPDATE_INTERVAL # how often to check for updates (ms, default is 24 h
 ```
 
 Make sure you've added the entries to .netrc as well.
+
+## Documentation
+
+[https://docs.akkeris.io/](https://docs.akkeris.io/)

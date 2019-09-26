@@ -1,6 +1,6 @@
 {
   "name": "akkeris",
-  "version": "2.9.5",
+  "version": "2.9.6",
   "description": "Akkeris CLI",
   "main": "aka.js",
   "scripts": {
@@ -24,6 +24,7 @@
     "inquirer": "^6.2.2",
     "inquirer-autocomplete-prompt": "^1.0.1",
     "netrc": "^0.1.4",
-    "yargs": "^13.2.4"
+    "string-width": "^4.1.0",
+    "yargs": "^14.0.0"
   }
 }
