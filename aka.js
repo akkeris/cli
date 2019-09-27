@@ -783,15 +783,16 @@ module.exports.update = function update(appkit) {
       if(fs.statSync(path.join(appkit.config.third_party_plugins_dir, plugin, '.git')).isDirectory()) {
         console.log(appkit.terminal.markdown(`###===### updating ${plugin} plugin`));
         proc.spawnSync('git',['pull', '--quiet'], {cwd:path.join(appkit.config.third_party_plugins_dir, plugin), env:process.env, stdio:'inherit'});
-        // If `update.js` is available, run that instead of the `update` function
+        // If `update.js` file is available, run that before the `update` function
         if (fs.statSync(path.join(appkit.config.third_party_plugins_dir, plugin, 'update.js')).isFile()) {
           try {
             require(path.join(appkit.config.third_party_plugins_dir, plugin, 'update.js'));
           } catch (err) {
             console.log(appkit.terminal.markdown(` !!▸!! error updating plugin "${plugin}": ${err}`));
           }
-        } else if(fs.statSync(path.join(appkit.config.third_party_plugins_dir, plugin, 'index.js')).isFile()) {
-          if(module.exports.plugins[plugin].update) {
+        }
+        if (fs.statSync(path.join(appkit.config.third_party_plugins_dir, plugin, 'index.js')).isFile()) {
+          if (module.exports.plugins[plugin].update) {
             try {
               require(path.join(appkit.config.third_party_plugins_dir, plugin, 'index.js')).update(module.exports);
             } catch (err) {
