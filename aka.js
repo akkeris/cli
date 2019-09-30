@@ -370,6 +370,19 @@ function spawn_update_check(update_file_path) {
   }).unref();
 }
 
+function addMetaCommands(yargs) {
+  yargs
+    .command('update', 'Update the Akkeris client', {}, module.exports.update.bind(null, module.exports))
+    .command('version', 'Display current version', {}, module.exports.version.bind(null, module.exports))
+    .command('auth:profile', 'Set the authorization and apps endpoints', {
+        "apps":{ "description": "The URL for the Apps API end point" },
+        "auth":{ "description": "The URL for the Auth API end point" }
+      }, set_profile.bind(null, module.exports))
+    .command('autocomplete', `Install bash/zsh shell autocompletion`, {}, install_auto_completions.bind(null, module.exports))
+    // Secret Commands
+    .command('squirrel', false, {}, squirrel_selector);
+}
+
 // Get random tips or update available statement (if applicable)
 function get_epilogue() {
   const update_available = module.exports.update_available ? (Object.keys(module.exports.update_available).length !== 0) : false;
@@ -398,24 +411,26 @@ function print_group_help(appkit, argv, group) {
   ui.div(appkit.terminal.bold('\nAkkeris CLI Help\n'))
 
   // Reset yargs so we can initialize it with only the plugin that we want
-  const newYargs = require('yargs');
-
-  if (!init_plugins(module, module.exports.config.plugins_dir, group)) {
+  appkit.args.reset();
+  
+  if (group !== "plugins" && !init_plugins(module, module.exports.config.plugins_dir, group)) {
     if (!init_plugins(module, module.exports.config.third_party_plugins_dir, group)) {
       console.log(module.exports.terminal.markdown(`\n !!▸!! Bad bad error. You should never see this\n`));
       return;
     }
+  } else if (group === "plugins") { 
+    require('./lib/plugins.js').init(appkit.args, appkit); 
   }
 
   // A specific command was provided along with the group name
   if (argv.group.length > 1) {
     // Verify that the specific command is valid
     const givenCommand = argv.group[1];
-    const foundCommand = newYargs.getUsageInstance().getCommands().filter(a => a[0].split(" ").find(b => b === givenCommand))
+    const foundCommand = appkit.args.getUsageInstance().getCommands().filter(a => a[0].split(" ").find(b => b === givenCommand))
 
     // Tell Yargs to run the specific command with the '--help' flag 
     if (foundCommand && foundCommand.length > 0) {
-      newYargs.help(true).parse(`${foundCommand[0][0]} --help`)
+      appkit.args.help(true).parse(`${foundCommand[0][0]} --help`)
     } else {
       errorMessage = `${appkit.terminal.italic(appkit.terminal.markdown("!!Invalid command:!!"))} ${givenCommand}`
     }
@@ -423,9 +438,9 @@ function print_group_help(appkit, argv, group) {
 
   // Render the name of the group
   ui.div(appkit.terminal.italic(capitalize(group)))
-
+  
   // Render all of the group commands
-  const commands = newYargs.getUsageInstance().getCommands().sort((a, b) => a[0] < b[0] ? -1 : 1);
+  const commands = appkit.args.getUsageInstance().getCommands().sort((a, b) => a[0] < b[0] ? -1 : 1);
   const width = commands.reduce((acc, curr) => Math.max(stringWidth(`${argv["$0"]} ${curr[0]}`), acc), 0) + 6;
   commands.forEach((command) => {
     ui.span(
@@ -443,13 +458,32 @@ function print_group_help(appkit, argv, group) {
 
 // Print help for all command groups
 function print_all_help(appkit, argv, errorMessage) {
+  appkit.args.reset();
+
   // Initialize UI
   const ui = require('cliui')({width: process.stdout.columns});
   ui.div(appkit.terminal.bold('\nAkkeris CLI Help\n'));
-  
+
+  // Add "meta" commands (update, version, etc)
+  addMetaCommands(appkit.args);
+
+  // Add "plugins" command group (not technically a plugin)
+  appkit.plugins.plugins = { help: 'Manage Akkeris CLI plugins' }
+
+  // Print 'meta' commands (version, update, etc)
+  const metaCommands = appkit.args.getUsageInstance().getCommands().sort((a, b) => a[0] < b[0] ? -1 : 1);
+  const width = metaCommands.reduce((acc, curr) => Math.max(stringWidth(`${argv["$0"]} ${curr[0]}`), acc), 0) + 6;
+  metaCommands.forEach((command) => {
+    ui.div(
+      { text: `• ${argv["$0"]} ${command[0]}`, width },
+      { text: command[1] }
+    )
+  });
+
+  ui.div('\nCommand Groups\n')
   // Render each command group
   Object.keys(appkit.plugins).sort().filter(group => !appkit.plugins[group].hidden).forEach((group) => {
-    ui.div({ width: 20, text: `• ${group}` }, { text: capitalize(appkit.plugins[group].help) });
+    ui.div({ width, text: `• ${group}` }, { text: capitalize(appkit.plugins[group].help) });
   });
   
   // Render helper text
@@ -460,6 +494,8 @@ function print_all_help(appkit, argv, errorMessage) {
 
 function print_old_help(appkit) {
   // Have to initialize plugins again
+  addMetaCommands(appkit.args);
+  require('./lib/plugins.js').init(appkit.args, appkit); 
   init_plugins(module, module.exports.config.plugins_dir)
   init_plugins(module, module.exports.config.third_party_plugins_dir)
 
@@ -483,9 +519,20 @@ function help(appkit, argv) {
   }
 
   if (invokedByHelp && groupProvided) {
+    // Handle meta commands (update, version,etc)
+    addMetaCommands(appkit.args);
+    const metaCommand = appkit.args.getUsageInstance().getCommands().findIndex(command => command[0] === argv.group[0]);
+    if (metaCommand !== -1) {
+      appkit.args.help(true).parse(`${appkit.args.getUsageInstance().getCommands()[metaCommand][0]} --help`)
+      return;
+    }
+
+    // Add "plugins" command group (not technically a plugin)
+    appkit.plugins.plugins = { help: 'Manage Akkeris CLI plugins' }
+
     const validGroup = Object.keys(appkit.plugins).filter(group => !appkit.plugins[group].hidden).find(group => group === argv.group[0])
     if (validGroup) {
-      print_group_help(appkit, argv, validGroup);      
+      print_group_help(appkit, argv, validGroup);
       return;
     } else {
       errorMessage = `${appkit.terminal.italic(appkit.terminal.markdown("!!Invalid command group:!!"))} ${argv.group[0]}`;
@@ -719,18 +766,11 @@ module.exports.init = function init() {
   
   module.exports.args
     .usage('Usage: akkeris COMMAND [--app APP] [command-specific-options]')
-    .command(['$0 [group..]', 'help'], 'Akkeris Help', {}, help.bind(null, module.exports)).alias('a', 'all')
-    .command('update', 'Update the Akkeris client', {}, module.exports.update.bind(null, module.exports))
-    .command('version', 'Display current version', {}, module.exports.version.bind(null, module.exports))
-    .command('auth:profile', 'Set the authorization and apps endpoints', {
-        "apps":{ "description": "The URL for the Apps API end point" },
-        "auth":{ "description": "The URL for the Auth API end point" }
-      }, set_profile.bind(null, module.exports))
-    .command('autocomplete', `Install bash/zsh shell autocompletion`, {}, install_auto_completions.bind(null, module.exports))
+    .command(['$0 [group..]', 'help'], 'Akkeris Help', {}, help.bind(null, module.exports)).alias('a', 'all');
+  
+  addMetaCommands(module.exports.args);
 
-    // Secret Commands
-    .command('squirrel', false, {}, squirrel_selector)
-
+  module.exports.args
     .recommendCommands()
     .middleware([help_options_middleware, help_flag_middleware.bind(null, module.exports)], true)
     .middleware([create_app_prechecks, find_app_middleware.bind(null, module.exports)], true)
