@@ -400,5 +400,6 @@ module.exports = {
   },
   group:'builds',
   help:'manage builds (create, list, stop, output)',
-  primary:true
+  primary:true,
+  hidden: true,
 }
