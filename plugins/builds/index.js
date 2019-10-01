@@ -391,7 +391,7 @@ module.exports = {
       .command('build:auto', false, require_auto_build_option, auto.bind(null, appkit))
       .command('build:auto:info', false, require_app_option, info_auto.bind(null, appkit))
       .command('build:stop <ID>', false, require_app_build_option, stop.bind(null, appkit))
-      .command('rebuild ID', false, require_app_build_option, rebuild.bind(null, appkit))
+      // .command('rebuild ID', false, require_app_build_option, rebuild.bind(null, appkit))
 
       .help()
   },
