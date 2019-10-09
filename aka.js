@@ -766,7 +766,14 @@ module.exports.init = function init() {
   
   module.exports.args
     .usage('Usage: akkeris COMMAND [--app APP] [command-specific-options]')
-    .command(['$0 [group..]', 'help'], 'Akkeris Help', {}, help.bind(null, module.exports)).alias('a', 'all');
+    .command(['$0 [group..]', 'help'], 'Akkeris Help', {
+      all: {
+        alias: 'a',
+        boolean: true,
+        demand: false,
+        default: false,
+      },
+    }, help.bind(null, module.exports));
   
   addMetaCommands(module.exports.args);
 
