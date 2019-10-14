@@ -639,7 +639,7 @@ async function select_app_middleware(appkit, argv) {
 }
 
 // If options are missing during apps:create, provide the opportunity to select them
-function create_app_prechecks(argv, yargs) {
+function create_app_prechecks(argv) {
   if (argv._ && argv._[0] && (argv._[0] === 'apps:create' || argv._[0] === 'create')) {
     if (!argv.s && !argv.space) {
       argv.s = argv.space = "~$select_space$~";
@@ -649,6 +649,9 @@ function create_app_prechecks(argv, yargs) {
     }
     if (!argv.NAME) {
       argv.NAME = "~$select_name$~";
+    }
+    if (!argv.d && !argv.description) {
+      argv.d = argv.description = "~$select_description$~";
     }
   }
 }
@@ -708,6 +711,15 @@ async function create_app_middleware(appkit, argv) {
     });
   }
 
+  if (argv.description === "~$select_description$~") {
+    questions.push({
+      type: 'input',
+      name: 'description',
+      message: 'Enter a description for your app (optional)',
+      suffix: ':',
+    });
+  }
+
   if (questions.length !== 0) {
     console.log();
     console.log(appkit.terminal.markdown(`!!Missing parameters:!! ^^${missing.join(', ')}^^`));
@@ -728,6 +740,12 @@ async function create_app_middleware(appkit, argv) {
     }
     if (answers.org) {
       argv.org = argv.o = answers.org;
+    }
+    if (answers.description) {
+      argv.description = argv.d = answers.description;
+    } else if (argv.d === '~$select_description$~') {
+      argv.description = undefined;
+      argv.d = undefined;
     }
   }
 }

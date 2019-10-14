@@ -31,9 +31,10 @@ function create(appkit, args) {
   task.start();
 
   let payload = {
-    "space":args.space,
-    "name":args.NAME,
-    "org":args.org
+    "space": args.space,
+    "name": args.NAME,
+    "org": args.org,
+    description: args.description || undefined,
   }
 
   appkit.api.post(JSON.stringify(payload), '/apps', (err, app) => {
@@ -173,6 +174,7 @@ function info(appkit, args) {
           appkit.api.get('/apps/' + args.app + '/formation', function(err, dynos) {
             console.log(appkit.terminal.markdown(`###===### **⬢ ${app.name}** ${app.preview ? '- ^^preview^^' : ''}
   **ID:**\t\t${app.id}
+  **Description:**\t\t${app.description}
   **Addons:**\t${addons ? addons.map((x) => { return '\t' + x.name; }).join('\n\t\t') : ''}
   **Attached Addons:**\t${attachments ? attachments.map((x) => { return '\t' + x.name; }).join('\n\t\t') : ''}
   **Dynos:**\t${dynos ? dynos.map((x) => { return '\t' + x.type + ': ' + x.quantity}).join('\n\t\t') : ''}
@@ -265,6 +267,19 @@ function transfer(appkit, args) { console.log('transfer operation is not current
 
 function unlock(appkit, args) { console.log('unlock operation is not currently supported.'); }
 
+async function update(appkit, args) {
+  if (typeof args.d === 'undefined') {
+    console.log(appkit.terminal.markdown('!!Must provide a property to update!!'));
+  } else {
+    try {
+      await appkit.api.patch(JSON.stringify({ description: args.d }), '/apps/' + args.app, );
+      console.log(appkit.terminal.markdown(`###===### Successfully updated ~~${args.app}~~`));
+    } catch (err) {
+      return appkit.terminal.error(err)
+    }
+  }
+}
+
 module.exports = {
   init:function(appkit) {
 
@@ -279,6 +294,10 @@ module.exports = {
         "string":true,
         "demand":true,
         "description": "The organization to create the app under"
+      }).option('description', {
+        alias: "d",
+        string: true,
+        description: "A short description of the app",
       }).positional('NAME', {
         "string": true,
         "description": "Name of the new app - must be lowercase alphanumeric only"
@@ -364,6 +383,17 @@ module.exports = {
       }
     };
 
+    const update_app_options = {
+      ...require_app_option,
+      description: {
+        alias: 'd',
+        demand: false,
+        string: true,
+        description: 'Update the description for an app (leave blank to unset) (e.g. "My Description")',
+        group: 'Properties',
+      },
+    };
+
     let oneclick_app_option = Object.assign(blueprint_app_option, {
       'file':{
         'alias':'f',
@@ -392,6 +422,7 @@ module.exports = {
       .command('apps:favorites', 'List favorite apps', filter_app_option, favorites.bind(null, appkit))
       .command('apps:favorites:add', 'Favorites an app', require_app_option, favorite.bind(null, appkit))
       .command('apps:favorites:remove', 'Unfavorites an app', require_app_option, unfavorite.bind(null, appkit))
+      .command('apps:update', 'Update an app\'s properties', update_app_options, update.bind(null, appkit))
       .command('apps:fork NAME', 'Fork an existing app into a new one', fork_app_option, fork.bind(null, appkit))
       .command('apps:blueprint', 'Generates a blueprint (app.json definition) describing an app', blueprint_app_option, blueprint.bind(null, appkit))
       .command('apps:one-click', 'Generates a one-click url that will recreate an app', oneclick_app_option, oneclick.bind(null, appkit))
