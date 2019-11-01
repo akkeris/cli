@@ -1,7 +1,7 @@
 "use strict"
 
 const assert = require('assert');
-const proc = require('child_process');
+const spawn = require('cross-spawn');
 const fs = require('fs');
 const rand = require('./random.js');
 
@@ -253,7 +253,7 @@ function open(appkit, args) {
     if(err) {
       return appkit.terminal.error(err)
     }
-    proc.spawn('open', [data.web_url], {});
+    spawn('open', [data.web_url], {});
   });
 }
 
