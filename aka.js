@@ -851,7 +851,7 @@ module.exports.update = function update(appkit) {
         // If `update.js` file is available, run that before the `update` function
         if (fs.statSync(path.join(appkit.config.third_party_plugins_dir, plugin, 'update.js')).isFile()) {
           try {
-            require(path.join(appkit.config.third_party_plugins_dir, plugin, 'update.js'));
+            require(path.join(appkit.config.third_party_plugins_dir, plugin, 'update.js'))(spawn);
           } catch (err) {
             console.log(appkit.terminal.markdown(` !!▸!! error updating plugin "${plugin}": ${err}`));
           }
