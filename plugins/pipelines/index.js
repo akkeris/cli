@@ -136,7 +136,9 @@ async function promote(appkit, args) {
           }
           payload.targets = apps.map((x) => { return {app:x}; });
           if (!args.unsafe){
-            payload.safe = "true";
+            payload.safe = true;
+          } else if (args.unsafe === true) {
+            payload.safe = false;
           }
           appkit.api.post(JSON.stringify(payload), '/pipeline-promotions', (err, result) => {
             if(err) {
