@@ -3,7 +3,7 @@
 "use strict"
 
 const assert = require('assert')
-const spawn = require('cross-spawn');
+const proc = require('child_process');
 const http = require('http');
 const https = require('https');
 const fs = require('fs');
@@ -24,6 +24,8 @@ const AKA_UPDATE_INTERVAL = process.env.AKA_UPDATE_INTERVAL ? process.env.AKA_UP
 const AKA_UPDATE_FILENAME = '.aka_version'
 
 const capitalize = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+
+const isWindows = process.platform === 'win32';
 
 process.on('uncaughtException', (e) => {
   if(process.env.DEBUG) {
@@ -291,8 +293,8 @@ function welcome() {
   console.log("to get started, you'll need your akkeris auth and apps host")
   console.log("in addition to your login and password.")
   console.log("")
-  spawn.sync('ak',['auth:profile'], {env:process.env, stdio:'inherit'});
-  spawn.sync('ak',['auth:login'], {env:process.env, stdio:'inherit'});
+  proc.spawnSync('ak',['auth:profile'], {env:process.env, stdio:'inherit', shell: isWindows || undefined});
+  proc.spawnSync('ak',['auth:login'], {env:process.env, stdio:'inherit', shell: isWindows || undefined});
 }
  
 let zsh_shell = process.env.SHELL && process.env.SHELL.indexOf('zsh') !== -1;
@@ -363,7 +365,7 @@ function check_for_updates() {
 // Writes output to @param update_file_path
 function spawn_update_check(update_file_path) {
   var output = fs.openSync(update_file_path, 'w');
-  spawn('npm outdated akkeris --global --json', {
+  proc.spawn('npm outdated akkeris --global --json', {
     shell: true, 
     detached: true, 
     stdio: [ 'ignore', output, 'ignore' ] 
@@ -585,8 +587,8 @@ function find_app_middleware(appkit, argv, yargs) {
       argv.a = argv.app = process.env.AKKERIS_APP
       console.log(appkit.terminal.markdown(`###===### Using **⬢ ${argv.a}** from environment variable ##$AKKERIS_APP##`));
     } else if(!argv.a && !argv.app && !process.env.AKKERIS_APP) {
-      let branch_name = spawn.sync('git',['rev-parse','--abbrev-ref','HEAD'], {env:process.env}).stdout.toString('utf8').trim();
-      let apps = spawn.sync('git',['config','--get-regexp','branch.*.akkeris'], {env:process.env}).stdout.toString('utf8').trim();
+      let branch_name = proc.spawnSync('git',['rev-parse','--abbrev-ref','HEAD'], {env:process.env, shell: isWindows || undefined}).stdout.toString('utf8').trim();
+      let apps = proc.spawnSync('git',['config','--get-regexp','branch.*.akkeris'], {env:process.env, shell: isWindows || undefined}).stdout.toString('utf8').trim();
       if(branch_name === '' || !branch_name) {
         force_select_app();
         return
@@ -847,20 +849,11 @@ module.exports.update = function update(appkit) {
     try {
       if(fs.statSync(path.join(appkit.config.third_party_plugins_dir, plugin, '.git')).isDirectory()) {
         console.log(appkit.terminal.markdown(`###===### updating ${plugin} plugin`));
-        spawn.sync('git',['pull', '--quiet'], {cwd:path.join(appkit.config.third_party_plugins_dir, plugin), env:process.env, stdio:'inherit'});
+        proc.spawnSync('git',['pull', '--quiet'], {cwd:path.join(appkit.config.third_party_plugins_dir, plugin), env:process.env, stdio:'inherit', shell: isWindows || undefined});
         // If `update.js` file is available, run that before the `update` function
         if (fs.statSync(path.join(appkit.config.third_party_plugins_dir, plugin, 'update.js')).isFile()) {
           try {
-            try {
-              require(path.join(appkit.config.third_party_plugins_dir, plugin, 'update.js'))(spawn);
-            } catch (e) {
-              // If install.js > module.exports is not a function, use old plugin install method
-              if (e instanceof TypeError) {
-                require(path.join(appkit.config.third_party_plugins_dir, plugin, 'update.js'));
-              } else {
-                throw e;
-              }
-            }
+            require(path.join(appkit.config.third_party_plugins_dir, plugin, 'update.js'));
           } catch (err) {
             console.log(appkit.terminal.markdown(` !!▸!! error updating plugin "${plugin}": ${err}`));
           }
@@ -883,7 +876,7 @@ module.exports.update = function update(appkit) {
     }
   }));
   console.log(appkit.terminal.markdown(`###===### updating akkeris`));
-  spawn.sync('npm',['update', '-g', 'akkeris'], {cwd:__dirname, env:process.env, stdio:'inherit'});
+  proc.spawnSync('npm',['update', '-g', 'akkeris'], {cwd:__dirname, env:process.env, stdio:'inherit', shell: isWindows || undefined});
   
   // Clear 'update available' file
   let update_file = path.join(get_home(), '.akkeris', AKA_UPDATE_FILENAME).toString('utf8')

@@ -1,9 +1,11 @@
 "use strict"
 
 const assert = require('assert');
-const spawn = require('cross-spawn');
+const proc = require('child_process');
 const fs = require('fs');
 const rand = require('./random.js');
+
+const isWindows = process.platform === 'win32';
 
 function format_app(app) {
   let upname = app.simple_name.toUpperCase();
@@ -253,7 +255,7 @@ function open(appkit, args) {
     if(err) {
       return appkit.terminal.error(err)
     }
-    spawn('open', [data.web_url], {});
+    proc.spawnSync(isWindows ? 'start' : 'open', [data.web_url], {shell: isWindows || undefined});
   });
 }
 
