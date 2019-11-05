@@ -25,6 +25,8 @@ const AKA_UPDATE_FILENAME = '.aka_version'
 
 const capitalize = s => s ? s[0].toUpperCase() + s.slice(1) : s;
 
+const isWindows = process.platform === 'win32';
+
 process.on('uncaughtException', (e) => {
   if(process.env.DEBUG) {
     console.error(e.message)
@@ -67,7 +69,7 @@ function init_plugins(m, plugins_dir, pluginName) {
 }
 
 function get_home() {
-  return process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
+  return process.env[(process.platform === 'win32') ? 'USERPROFILE' : 'HOME'];
 }
 
 function create_dir(directory) {
@@ -291,8 +293,8 @@ function welcome() {
   console.log("to get started, you'll need your akkeris auth and apps host")
   console.log("in addition to your login and password.")
   console.log("")
-  proc.spawnSync('ak',['auth:profile'], {env:process.env, stdio:'inherit'});
-  proc.spawnSync('ak',['auth:login'], {env:process.env, stdio:'inherit'});
+  proc.spawnSync('ak',['auth:profile'], {env:process.env, stdio:'inherit', shell: isWindows || undefined});
+  proc.spawnSync('ak',['auth:login'], {env:process.env, stdio:'inherit', shell: isWindows || undefined});
 }
  
 let zsh_shell = process.env.SHELL && process.env.SHELL.indexOf('zsh') !== -1;
@@ -441,17 +443,17 @@ function print_group_help(appkit, argv, group) {
   
   // Render all of the group commands
   const commands = appkit.args.getUsageInstance().getCommands().sort((a, b) => a[0] < b[0] ? -1 : 1);
-  const width = commands.reduce((acc, curr) => Math.max(stringWidth(`${argv["$0"]} ${curr[0]}`), acc), 0) + 6;
+  const width = commands.reduce((acc, curr) => Math.max(stringWidth(`${path.basename(__filename)} ${curr[0]}`), acc), 0) + 6;
   commands.forEach((command) => {
     ui.span(
-      { text: `• ${argv["$0"]} ${command[0]}`, padding: [0, 2, 0, 2], width },
+      { text: `• ${path.basename(__filename)} ${command[0]}`, padding: [0, 2, 0, 2], width },
       { text: command[1] }
     )
   });
   ui.div();
 
   // Render helper text
-  ui.div(`\n${appkit.terminal.italic('Run')} ${appkit.terminal.italic(appkit.terminal.markdown(`~~${argv["$0"]} help <group> <command>~~`))} ${appkit.terminal.italic('to view help documentation for a specific command')}`);
+  ui.div(`\n${appkit.terminal.italic('Run')} ${appkit.terminal.italic(appkit.terminal.markdown(`~~${path.basename(__filename)} help <group> <command>~~`))} ${appkit.terminal.italic('to view help documentation for a specific command')}`);
   
   print_ui(ui, errorMessage);
 }
@@ -472,10 +474,10 @@ function print_all_help(appkit, argv, errorMessage) {
 
   // Print 'meta' commands (version, update, etc)
   const metaCommands = appkit.args.getUsageInstance().getCommands().sort((a, b) => a[0] < b[0] ? -1 : 1);
-  const width = metaCommands.reduce((acc, curr) => Math.max(stringWidth(`${argv["$0"]} ${curr[0]}`), acc), 0) + 6;
+  const width = metaCommands.reduce((acc, curr) => Math.max(stringWidth(`${path.basename(__filename)} ${curr[0]}`), acc), 0) + 6;
   metaCommands.forEach((command) => {
     ui.div(
-      { text: `• ${argv["$0"]} ${command[0]}`, width },
+      { text: `• ${path.basename(__filename)} ${command[0]}`, width },
       { text: command[1] }
     )
   });
@@ -487,7 +489,7 @@ function print_all_help(appkit, argv, errorMessage) {
   });
   
   // Render helper text
-  ui.div(`\n${appkit.terminal.italic('Run')} ${appkit.terminal.italic(appkit.terminal.markdown(`~~${argv["$0"]} help <group>~~`))} ${appkit.terminal.italic('to view help documentation for a specific command group')}`);
+  ui.div(`\n${appkit.terminal.italic('Run')} ${appkit.terminal.italic(appkit.terminal.markdown(`~~${path.basename(__filename)} help <group>~~`))} ${appkit.terminal.italic('to view help documentation for a specific command group')}`);
   
   print_ui(ui, errorMessage);
 }
@@ -585,8 +587,8 @@ function find_app_middleware(appkit, argv, yargs) {
       argv.a = argv.app = process.env.AKKERIS_APP
       console.log(appkit.terminal.markdown(`###===### Using **⬢ ${argv.a}** from environment variable ##$AKKERIS_APP##`));
     } else if(!argv.a && !argv.app && !process.env.AKKERIS_APP) {
-      let branch_name = proc.spawnSync('git',['rev-parse','--abbrev-ref','HEAD'], {env:process.env}).stdout.toString('utf8').trim();
-      let apps = proc.spawnSync('git',['config','--get-regexp','branch.*.akkeris'], {env:process.env}).stdout.toString('utf8').trim();
+      let branch_name = proc.spawnSync('git',['rev-parse','--abbrev-ref','HEAD'], {env:process.env, shell: isWindows || undefined}).stdout.toString('utf8').trim();
+      let apps = proc.spawnSync('git',['config','--get-regexp','branch.*.akkeris'], {env:process.env, shell: isWindows || undefined}).stdout.toString('utf8').trim();
       if(branch_name === '' || !branch_name) {
         force_select_app();
         return
@@ -847,7 +849,7 @@ module.exports.update = function update(appkit) {
     try {
       if(fs.statSync(path.join(appkit.config.third_party_plugins_dir, plugin, '.git')).isDirectory()) {
         console.log(appkit.terminal.markdown(`###===### updating ${plugin} plugin`));
-        proc.spawnSync('git',['pull', '--quiet'], {cwd:path.join(appkit.config.third_party_plugins_dir, plugin), env:process.env, stdio:'inherit'});
+        proc.spawnSync('git',['pull', '--quiet'], {cwd:path.join(appkit.config.third_party_plugins_dir, plugin), env:process.env, stdio:'inherit', shell: isWindows || undefined});
         // If `update.js` file is available, run that before the `update` function
         if (fs.statSync(path.join(appkit.config.third_party_plugins_dir, plugin, 'update.js')).isFile()) {
           try {
@@ -874,7 +876,7 @@ module.exports.update = function update(appkit) {
     }
   }));
   console.log(appkit.terminal.markdown(`###===### updating akkeris`));
-  proc.spawnSync('npm',['update', '-g', 'akkeris'], {cwd:__dirname, env:process.env, stdio:'inherit'});
+  proc.spawnSync('npm',['update', '-g', 'akkeris'], {cwd:__dirname, env:process.env, stdio:'inherit', shell: isWindows || undefined});
   
   // Clear 'update available' file
   let update_file = path.join(get_home(), '.akkeris', AKA_UPDATE_FILENAME).toString('utf8')

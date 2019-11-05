@@ -1,8 +1,6 @@
 "use strict"
 
 const assert = require ('assert')
-const proc = require('child_process');
-const fs = require('fs');
 const SHA256 = require('crypto-js/sha256');
 
 function get_repo(repo) {

@@ -1,7 +1,6 @@
 "use strict"
 
 const chart = require('chart');
-const child_process = require('child_process');
 
 let cpu_metrics = ['cpu_system_seconds_total', 'cpu_usage_seconds_total', 'cpu_user_seconds_total'];
 let memory_metrics = ['memory_usage_bytes', 'memory_cache', 'memory_rss', 'memory_working_set_bytes'];

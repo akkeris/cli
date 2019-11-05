@@ -5,6 +5,8 @@ npm -g install akkeris
 ak
 ```
 
+More information can be found in the [documentation](https://docs.akkeris.io/getting-started/prerequisites-and-installing)
+
 ## Environment Variables
 
 ```
