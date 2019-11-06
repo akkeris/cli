@@ -187,6 +187,7 @@ function rename(appkit, args) {
 
 async function update(appkit, args) {
   let task = appkit.terminal.task(`Updating pipeline coupling **${args.PIPELINE_COUPLING}**`);
+  args.checks = args.checks || [];
   task.start();
   try {
     await appkit.api.patch(JSON.stringify({"required_status_checks":{"contexts":args.checks}}), `/pipeline-couplings/${args.PIPELINE_COUPLING}`);
@@ -245,7 +246,7 @@ const require_checks_option = {
   "checks": {
     "alias":"c",
     "description": "Comma-separated list of release statuses to add as required checks on this app and stage.",
-    "demand": true,
+    "demand": false,
     "array": true,
   }
 };
