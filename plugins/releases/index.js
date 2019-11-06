@@ -4,6 +4,19 @@ const util = require('util')
 const assert = require('assert')
 
 function format_release(appkit, release) {
+  let state = '';
+  if(release.state === 'pending') {
+    state = ' ~~●~~ ';
+  }
+  if(release.state === 'failure') {
+    state = ' !!✕!! ';
+  }
+  if(release.state === 'error') {
+    state = ' !!⚠!! ';
+  }
+  if(release.state === 'success') {
+    state = ' ^^^✓^^^ ';
+  }
   if(release.build) {
     let info = [
       release.current ? "^^^current^^^" : "", 
@@ -12,7 +25,7 @@ function format_release(appkit, release) {
       release.build.source_blob.message ? `##${release.build.source_blob.message.replace(/#/g, '').replace(/\s+/g, ' ')}##` : '',
       release.build.source_blob.commit ? `${release.build.source_blob.commit.substring(0, 7)}` : '', 
     ].filter(x => x && x !== '').map((x) => x.toString().replace(/\n/g, ' '));
-    return `**• ${release.version ? 'v' + release.version : 'N/A'}**\t${appkit.terminal.friendly_date(new Date(release.created_at))}\t${info.join(' - ')}`
+    return `**• ${release.version ? 'v' + release.version : 'N/A'}**\t${appkit.terminal.friendly_date(new Date(release.created_at))}\t${info.join(' - ')}${state}`
   } else if (release.source_blob) {
     let info = [
       release.status === 'pending' ? '~~~pending~~~' : `!!${release.status}!!`,
@@ -21,7 +34,7 @@ function format_release(appkit, release) {
       release.source_blob.message ? `##${release.source_blob.message.replace(/#/g, '').replace(/\s+/g, ' ')}##` : '',
       release.source_blob.commit ? `${release.source_blob.commit.substring(0, 7)}` : '', 
     ].filter(x => x && x !== '').map((x) => x.toString().replace(/\n/g, ' '));
-    return `**• N/A**\t${appkit.terminal.friendly_date(new Date(release.created_at))}\t${info.join(' - ')}`
+    return `**• N/A**\t${appkit.terminal.friendly_date(new Date(release.created_at))}\t${info.join(' - ')}${state}`
   }
 }
 
@@ -156,8 +169,12 @@ async function info(appkit, args) {
     args.RELEASE = 'latest';
   }
   try {
-    appkit.terminal.print(null, 
-      await find_release(appkit, args.app, args.RELEASE))
+    console.log(appkit.terminal.markdown('##==## Release'));
+    let release = await find_release(appkit, args.app, args.RELEASE);
+    appkit.terminal.print(null, release);
+    console.log();
+    console.log(appkit.terminal.markdown('##==## Release Statuses'));
+    appkit.terminal.print(null, (await appkit.api.get(`/apps/${args.app}/releases/${release.id}/statuses`)).statuses);
   } catch (err) {
     return appkit.terminal.error(err)
   }
