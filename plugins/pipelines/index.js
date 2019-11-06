@@ -12,7 +12,12 @@ function format_pipeline(pipeline) {
 function format_pipeline_couplings(pipeline_couplings) {
   return `** ᱿ ${pipeline_couplings.stage}**
   ***Id:*** ${pipeline_couplings.id}
-  ***App:*** ${pipeline_couplings.app.name} (${pipeline_couplings.app.id})\n`; 
+  ***App:*** ${pipeline_couplings.app.name} (${pipeline_couplings.app.id})
+  ***Status Checks:*** ${pipeline_couplings.required_status_checks ? pipeline_couplings.required_status_checks.contexts.join(", ") : ''}\n`; 
+}
+
+function format_pipeline_statuses(status) {
+  return `** ✓ ${status.context}** (${status.name})`; 
 }
 
 function list(appkit, args) {
@@ -32,14 +37,15 @@ function list_apps_info(appkit, args) {
 function add(appkit, args) {
   assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   assert.ok(args.PIPELINE && args.PIPELINE !== '', 'A pipeline was not provided.');
-  let payload = {app:args.app, pipeline:args.PIPELINE, stage:args.stage};
+  args.checks = args.checks || [];
+  assert.ok(!args.checks || args.checks && Array.isArray(args.checks), 'Invalid value was passed in for checks.');
+  let payload = {app:args.app, pipeline:args.PIPELINE, stage:args.stage, required_status_checks:{contexts:args.checks}};
   appkit.api.post(JSON.stringify(payload),'/pipeline-couplings', appkit.terminal.print);
 }
 
 function diff(appkit, args) {
   console.log('this feature is not yet implemented.');
 }
-
 
 async function find_release(appkit, app, release_key) {
   let get = util.promisify(appkit.api.get)
@@ -126,9 +132,6 @@ async function promote(appkit, args) {
             }
             apps = filtered_apps;
           }
-
-
-
           // Promote the applications
           let payload = {pipeline:pipeline, source:{app:source_app}};
           if(args.release) {
@@ -182,22 +185,16 @@ function rename(appkit, args) {
   console.log('this feature is not yet implemented.')
 }
 
-function update(appkit, args) {
-  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
-  assert.ok(args.stage && args.stage !== '', 'A stage was not provided.');
-  // remove the app from pipeline coulings, recreate the pipeline coupling with the specified stage.
-  appkit.api.get('/apps/' + args.app + '/pipeline-couplings', (err, pipeline_coupling) => {
-    if(err) {
-      return appkit.terminal.error(err);
-    }
-    appkit.api.delete('/pipeline-couplings/' + pipeline_coupling.id, (err, result) => {
-      if(err) {
-        return appkit.terminal.error(err);
-      }
-      let payload = {app:args.app, pipeline:pipeline_coupling.pipeline.id, stage:args.stage};
-      appkit.api.post(JSON.stringify(payload),'/pipeline-couplings', appkit.terminal.print);
-    });
-  });
+async function update(appkit, args) {
+  let task = appkit.terminal.task(`Updating pipeline coupling **${args.PIPELINE_COUPLING}**`);
+  task.start();
+  try {
+    await appkit.api.patch(JSON.stringify({"required_status_checks":{"contexts":args.checks}}), `/pipeline-couplings/${args.PIPELINE_COUPLING}`);
+    task.end('ok');
+  } catch (e) {
+    task.end('error');
+    return appkit.terminal.error(e);
+  }
 }
 
 function create(appkit, args) {
@@ -208,6 +205,14 @@ function create(appkit, args) {
 function destroy(appkit, args) {
   assert.ok(args.PIPELINE && args.PIPELINE !== '', 'A pipeline was not provided.');
   appkit.api.delete('/pipelines/' + args.PIPELINE, appkit.terminal.print);
+}
+
+async function list_statuses(appkit, args) {
+  assert.ok(args.PIPELINE && args.PIPELINE !== '', 'A pipeline was not provided.');
+  await appkit.api.get(`/pipelines/${args.PIPELINE}/statuses`,
+      appkit.terminal.format_objects.bind(null, 
+        format_pipeline_statuses, 
+          appkit.terminal.markdown('###===### No available statuses were found.')));
 }
 
 const require_app_option = {
@@ -226,6 +231,22 @@ const require_app_stage_option = {
     "description": "Pipeline stage",
     "choices": ["review", "development", "staging", "production"],
     "demand": true
+  },
+  "checks": {
+    "alias":"c",
+    "description": "Comma-separated list of release statuses to add as required checks on this app and stage.",
+    "demand": false,
+    "array": true,
+  }
+};
+
+
+const require_checks_option = {
+  "checks": {
+    "alias":"c",
+    "description": "Comma-separated list of release statuses to add as required checks on this app and stage.",
+    "demand": true,
+    "array": true,
   }
 };
 
@@ -256,13 +277,14 @@ module.exports = {
   init:function(appkit) {
     appkit.args
       .command('pipelines', 'List all pipelines', {}, list.bind(null, appkit))
-      .command('pipelines:add PIPELINE', 'Add an app to a pipeline', require_app_stage_option, add.bind(null, appkit))
+      .command('pipelines:add PIPELINE', 'Add an app with checks to a pipeline', require_app_stage_option, add.bind(null, appkit))
       .command('pipelines:create NAME', 'Create a new pipeline', {}, create.bind(null, appkit))
       .command('pipelines:destroy PIPELINE', 'Permanently destroy a pipeline', {}, destroy.bind(null, appkit))
       .command('pipelines:info PIPELINE', 'Display the list of apps in a pipeline', {}, list_apps_info.bind(null, appkit))
       .command('pipelines:promote', 'Promote the latest release of an app to its downstream apps(s)', require_app_promote_option, promote.bind(null, appkit))
       .command('pipelines:remove', 'Remove an app from a pipeline', require_app_option, remove.bind(null, appkit))
-      .command('pipelines:update', 'Update an app\'s stage in a pipeline', require_app_stage_option, update.bind(null, appkit))
+      .command('pipelines:update PIPELINE_COUPLING', 'Update the status checks in a pipeline', require_checks_option, update.bind(null, appkit))
+      .command('pipelines:checks PIPELINE', 'Get a list of release statuses available to add as checks on this pipeline', {}, list_statuses.bind(null, appkit))
       // Aliases
       .command('pipelines:list', false, list.bind(null, appkit))
       .command('promote', false, require_app_promote_option, promote.bind(null, appkit))
