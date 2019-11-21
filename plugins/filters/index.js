@@ -105,7 +105,6 @@ async function attach(appkit, args) {
         options.excludes = args.excludes
       }
       await appkit.api.post(JSON.stringify({"filter":{"id":filter_info.id}, options}),`/apps/${args.app}/filters`);
-      await appkit.api.patch(JSON.stringify({"RESTART":Math.random()}),`/apps/${args.app}/config-vars`); // TODO: REMOVE
     } catch (e) {
       task.end('error');
       return appkit.terminal.error(e);
@@ -124,7 +123,6 @@ async function detach(appkit, args) {
   task.start();
   try {
     await appkit.api.delete(`/apps/${args.app}/filters/${args.FILTER_ATTACHMENT_ID}`);
-    await appkit.api.patch(JSON.stringify({"RESTART":Math.random()}),`/apps/${args.app}/config-vars`); // TODO: REMOVE
   } catch (e) {
     task.end('error');
     return appkit.terminal.error(e);
