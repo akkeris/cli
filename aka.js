@@ -961,7 +961,6 @@ function appkit_request(type, payload, rurl, callback) {
   headers['accept'] = '*/*';
   headers['accept-encoding'] = 'gzip';
   headers['user-agent'] = 'akkeris-cli';
-
   let full_url = rurl.startsWith("http") ? rurl : 
                 ( (module.exports.config.akkeris_api_host.startsWith("http") ? 
                     module.exports.config.akkeris_api_host : 
