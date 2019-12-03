@@ -33,6 +33,12 @@ function clean_forward_slash(url) {
 async function list_routes(appkit, args) {
   let get = util.promisify(appkit.api.get)
   let data = null;
+  let subpath = '';
+  if(args.site.startsWith("https://")) {
+    let parsed = new URL(args.site);
+    args.site = parsed.hostname;
+    subpath = parsed.pathname;
+  }
   if(!args.site && !args.app) {
     return appkit.terminal.error('Please specify either an app or a site (-a or -s).')
   }
@@ -52,7 +58,7 @@ async function list_routes(appkit, args) {
     if(!data || data.length === 0) {
       return console.log(appkit.terminal.markdown("**===** There were no routes found."))
     }
-    let routes = data.sort((x, y) => x.source_path.length < y.source_path.length ? -1 : 1)
+    let routes = data.sort((x, y) => x.source_path < y.source_path ? -1 : 1).filter((x) => x.source_path.startsWith(subpath));
     for (let route of routes) {
       let route_app = route.app.name
       let domain = route.site.domain
