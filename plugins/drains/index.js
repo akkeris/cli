@@ -45,9 +45,13 @@ function create_drains(appkit, args) {
   if(args.app && args.site) {
     return appkit.terminal.error(new Error("Both --site (-s) and --app (-a) were provided, logs can be viewed for a site or an app, not both."))
   }
-  assert.ok(args.URL && args.URL !== '', 'The url for the drain was not found.');
-  assert.ok(args.URL.startsWith("syslog://") || args.URL.startsWith("syslog+tls://") || args.URL.startsWith("syslog+udp://") || args.URL.startsWith("http://") || args.URL.startsWith("https://"), 
-    'The specified log drain did not have a http, https, syslog, syslog+tls, or syslog+udp scheme. Invalid URL.');
+  try {
+    assert.ok(args.URL && args.URL !== '', 'The url for the drain was not found.');
+    assert.ok(args.URL.startsWith("syslog://") || args.URL.startsWith("syslog+tls://") || args.URL.startsWith("syslog+udp://") || args.URL.startsWith("http://") || args.URL.startsWith("https://"), 
+      'The specified log drain did not have a http, https, syslog, syslog+tls, or syslog+udp scheme. Invalid URL.');
+  } catch (e) {
+    return appkit.terminal.error(e);
+  }
   let payload = {url:args.URL};
 
   let uri = `/apps/${args.app}/log-drains`
