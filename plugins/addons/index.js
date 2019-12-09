@@ -204,11 +204,16 @@ function format_addons(addon) {
   ***State:*** ${addon.state === 'provisioning' ? '^^provisioning^^' : addon.state}\n`;
 }
 
-function format_attached_addons(addon) {
-  return `**+ ${addon.app.name === addon.addon.app.name ? addon.addon.id : (addon.id + ' ^^attached^^' )} ${addon.name}**
+function format_attached_addons(appkit, addon) {
+  const md = (s) => appkit.terminal.markdown(s);
+  const ital = (s) => appkit.terminal.italic(s);
+  const owner = addon.app.name === addon.addon.app.name;
+
+  return md(`**+ ${owner ? addon.addon.id : addon.id} (${addon.name})** ${!owner && '🔗'}
   ***Plan:*** ${addon.addon.plan.name}
   ***Primary:*** ${addon.primary}
-  ***State:*** ${addon.state || 'provisioned'}\n`;
+  ***State:*** ${addon.state || 'provisioned'}
+  ${!owner && ital(`^^Attached From^^ ${it(addon.addon.app.name)}`)}\n`);
 }
 
 
@@ -230,23 +235,26 @@ function list_addons(appkit, args) {
       appkit.terminal.markdown('###===### No services were found.')));
 }
 
-function list_all_addons(appkit, args) {
-  appkit.api.get('/apps/' + args.app + '/addon-attachments', (err, attachments) => {
-    if(err) {
-      return appkit.terminal.error(err)
-    }
-    appkit.api.get('/apps/' + args.app + '/addons', (err, addons) => {
-      if(err) {
-        return appkit.terminal.error(err);
-      }
-      if(addons.length === 0 && attachments.length === 0) {
-        console.log(appkit.terminal.markdown('###===### No addons (attached or owned) were found.'));
-      } else {
-        if(addons.length > 0) console.log(addons.map(format_addons).map(appkit.terminal.markdown).join('\n'));
-        if(attachments.length > 0) console.log(attachments.map(format_attached_addons).map(appkit.terminal.markdown).join('\n'));
-      }
-    })
-  });
+async function list_all_addons(appkit, args) {
+  let addons, attachments;
+  try {
+    addons = await appkit.api.get(`/apps/${args.app}/addons`);
+    attachments = await appkit.api.get(`/apps/${args.app}/addon-attachments`);
+  } catch (err) {
+    return appkit.terminal.error(err)
+  }
+
+  if(addons.length === 0 && attachments.length === 0) {
+    console.log(appkit.terminal.markdown('###===### No addons (attached or owned) were found.'));
+    return;
+  } 
+
+  if(addons.length > 0) {
+    console.log(addons.map(format_addons).map(appkit.terminal.markdown).join('\n'));
+  }
+  if(attachments.length > 0) {
+    console.log(attachments.map(format_attached_addons.bind(null, appkit)).join('\n'));
+  }
 }
 
 function info_addons(appkit, args) {

@@ -164,36 +164,46 @@ function oneclick(appkit, args) {
   }
 }
 
-function info(appkit, args) {
+async function info(appkit, args) {
   assert.ok(args.app && args.app !== '', 'An application name was not provided.');
-  appkit.api.get('/apps/' + args.app, function(err, app) {
-    if (err){
+  try {
+      const app = await appkit.api.get('/apps/' + args.app);
+      const pipeline = await appkit.api.get('/apps/' + args.app + '/pipeline-couplings');
+
+      const ui = require('cliui')();
+
+      const md = (s) => appkit.terminal.markdown(s);
+      const bld = (s) => md(appkit.terminal.bold(s));
+      const ital = (s) => md(appkit.terminal.italic(s));
+
+      const label = (s) => ({text: md(`**${s}**`), width:20});
+      const shortLabel = (s) => ({text: md(`**${s}**`), width:10});
+
+      ui.div();
+      ui.div(bld(`###===### **⬢ ${app.name}** ${app.preview ? '- ^^preview^^' : ''} ###===###`));
+      ui.div(label(`ID:`), app.id)
+      ui.div(label(`Description:`), app.description)
+      ui.div(label(`Organization:`), app.organization.name)
+      ui.div(label(`Region:`), app.region.name)
+      ui.div(label(`Current Image:`), app.image)
+      ui.div(label(`Git:`), `${app.git_url}${app.git_branch ? ('#' + app.git_branch) : ''}`)
+      ui.div(label(`Service ENV:`), `${app.simple_name.toUpperCase()}_SERVICE_HOST, ${app.simple_name.toUpperCase()}_SERVICE_PORT`)
+      ui.div(label(`Pipeline:`), pipeline ? pipeline.pipeline.name + ' - ' + pipeline.stage : '')
+      ui.div(label(`Last Released:`), app.released_at ? new Date(app.released_at).toLocaleString() : 'Never')
+      ui.div(label(`URL:`), app.web_url)
+      ui.div();
+      ui.div(('Additional Commands'));
+      ui.div(shortLabel('Addons:'), ital(`aka addons -a ${app.name}`))
+      ui.div(shortLabel('Config:'), ital(`aka config -a ${app.name}`))
+      ui.div(shortLabel('Dynos:'), ital(`aka ps -a ${app.name}`))
+      ui.div(shortLabel('Logs:'), ital(`aka logs -a ${app.name}`))
+      ui.div(shortLabel('Metrics:'), ital(`aka metrics -a ${app.name}`))
+
+      console.log(ui.toString())
+    } catch (err) {
       return appkit.terminal.print(err);
     }
-    appkit.api.get('/apps/' + args.app + '/addons', function(err, addons) {
-      appkit.api.get('/apps/' + args.app + '/addon-attachments', function(err, attachments) {
-        appkit.api.get('/apps/' + args.app + '/pipeline-couplings', function(err, pipeline) {
-          appkit.api.get('/apps/' + args.app + '/formation', function(err, dynos) {
-            console.log(appkit.terminal.markdown(`###===### **⬢ ${app.name}** ${app.preview ? '- ^^preview^^' : ''}
-  **ID:**\t\t${app.id}
-  **Description:**\t\t${app.description}
-  **Addons:**\t${addons ? addons.map((x) => { return '\t' + x.name; }).join('\n\t\t') : ''}
-  **Attached Addons:**\t${attachments ? attachments.map((x) => { return '\t' + x.name; }).join('\n\t\t') : ''}
-  **Dynos:**\t${dynos ? dynos.map((x) => { return '\t' + x.type + ': ' + x.quantity}).join('\n\t\t') : ''}
-  **Pipeline:**\t\t${pipeline ? pipeline.pipeline.name + ' - ' + pipeline.stage : ''}
-  **Git:**\t\t\t${app.git_url}${app.git_branch ? ('#' + app.git_branch) : ''}
-  **Last Released:**\t${app.released_at ? new Date(app.released_at).toLocaleString() : 'Never'}
-  **Slug:**\t\t\t${app.image}
-  **Owner:**\t\t${app.organization.name}
-  **Region:**\t\t${app.region.name}
-  **Service ENV:**\t\t${app.simple_name.toUpperCase() + '_SERVICE_HOST'}, ${app.simple_name.toUpperCase() + '_SERVICE_PORT'}
-  **URL:**\t\t\t${app.web_url}`));
-          });
-        });
-      });
-    });
-  });
-}
+  }
 
 function destroy(appkit, args) {
   assert.ok(args.app && args.app !== '', 'An application name was not provided.');
