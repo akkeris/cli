@@ -4,18 +4,23 @@ const util = require('util')
 const assert = require('assert')
 
 function format_release(appkit, release) {
-  let state = '';
-  if(release.state === 'pending') {
+  let state = ' ~~●~~ ';
+  if(release.status === 'succeeded') {
+    if(release.state === 'pending') {
+      state = ' ~~●~~ ';
+    } else if(release.state === 'failure') {
+      state = ' !!✕!! ';
+    } else if(release.state === 'error') {
+      state = ' !!⚠!! ';
+    } else {
+      state = ' ^^^✓^^^ ';
+    }
+  } else if (release.status === 'pending' || release.status === 'queued') {
     state = ' ~~●~~ ';
-  }
-  if(release.state === 'failure') {
-    state = ' !!✕!! ';
-  }
-  if(release.state === 'error') {
+  } else if(release.status === 'failed') {
     state = ' !!⚠!! ';
-  }
-  if(release.state === 'success') {
-    state = ' ^^^✓^^^ ';
+  } else {
+    state = ` ###●### `;
   }
   if(release.build) {
     let info = [
