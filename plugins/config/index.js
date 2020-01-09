@@ -2,6 +2,7 @@
 
 const https = require('https');
 const url = require('url');
+const assert = require('assert');
 
 function get_config_vars(appkit, args) {
   appkit.api.get('/apps/' + args.app + '/config-vars', (err, config_vars) => {
@@ -100,8 +101,66 @@ function print_vars(appkit, args, config_vars) {
     }
 }
 
+async function get_config_notes(appkit, args) {
+  try {
+    let config_vars = await appkit.api.get(`/apps/${args.app}/config-vars/notes`);
+    Object.keys(config_vars).map((x) => {
+      console.log(appkit.terminal.markdown(`###===### Config Var ##${x}##`))
+      appkit.terminal.vtable(config_vars[x]);
+      console.log();
+    });
+  } catch (e) {
+    appkit.terminal.error(e.message);
+  }
+}
+
+async function set_config_notes(appkit, args) {
+  try {
+    assert.ok(args.KEY, 'No config var key was specified.');
+    assert.ok(args.required === false || args.required === true || args.description || args.description === "", 'Either the option required or description must be specified.')
+    let payload = {}
+    payload[args.KEY] = {"description":args.description, "required":args.required};
+    let config_vars = await appkit.api.patch(JSON.stringify(payload), `/apps/${args.app}/config-vars/notes`);
+    Object.keys(config_vars).map((x) => {
+      console.log(appkit.terminal.markdown(`###===### Config Var ##${x}##`))
+      appkit.terminal.vtable(config_vars[x]);
+      console.log();
+    });
+  } catch (e) {
+    appkit.terminal.error(e.message);
+  }
+}
+
 module.exports = {
   init:function(appkit) {
+    let app_option = {
+      'app':{
+        'alias':'a',
+        'demand':true,
+        'string':true,
+        'description':'The app to act on'
+      },
+    }
+    let set_notes_option = {
+      'app':{
+        'alias':'a',
+        'demand':true,
+        'string':true,
+        'description':'The app to act on'
+      },
+      'description':{
+        'alias':'d',
+        'demand':false,
+        'string':true,
+        'description':'The description to set for the notes'
+      },
+      'required':{
+        'alias':'r',
+        'demand':false,
+        'boolean':true,
+        'description':'Whether to protect this config var and require it.'
+      },
+    }
     let config_option = {
       'app':{
         'alias':'a',
@@ -146,6 +205,9 @@ module.exports = {
       .command('apps:config:set [KEY_VALUE_PAIR..]', false, config_option, set_config_vars.bind(null, appkit))
       .command('apps:env:set [KEY_VALUE_PAIR..]', false, config_option, set_config_vars.bind(null, appkit))
       .command('env:set [KEY_VALUE_PAIR..]', false, config_option, set_config_vars.bind(null, appkit))
+
+      .command('config:notes', 'View notes on config vars', app_option, get_config_notes.bind(null, appkit))
+      .command('config:notes:set KEY', 'Add notes to a config var', set_notes_option, set_config_notes.bind(null, appkit))
 
       .command('config:unset [KEY..]', 'Remove one or more environment variables', config_option, unset_config_vars.bind(null, appkit))
       .command('apps:config:unset [KEY..]', false, config_option, unset_config_vars.bind(null, appkit))
