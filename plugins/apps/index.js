@@ -168,7 +168,15 @@ async function info(appkit, args) {
   assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   try {
       const app = await appkit.api.get('/apps/' + args.app);
-      const pipeline = await appkit.api.get('/apps/' + args.app + '/pipeline-couplings');
+      
+      let pipeline;
+      try {
+        pipeline = await appkit.api.get('/apps/' + args.app + '/pipeline-couplings');
+      } catch (err) {
+        if (err.code !== 404) {
+          throw err
+        }
+      }
 
       const ui = require('cliui')();
 
