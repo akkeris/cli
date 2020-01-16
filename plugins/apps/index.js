@@ -24,7 +24,7 @@ function app_or_error(appkit, name, cb) {
   });
 }
 
-function create(appkit, args) {
+async function create(appkit, args) {
   if(!args.NAME) {
     args.NAME = rand.name() + Math.floor(Math.random() * 10000);
   }
@@ -39,15 +39,15 @@ function create(appkit, args) {
     description: args.description || undefined,
   }
 
-  appkit.api.post(JSON.stringify(payload), '/apps', (err, app) => {
-    if(err) {
-      task.end('error');
-      return appkit.terminal.error(err);
-    } else {
-      task.end('ok');
-      console.log(appkit.terminal.markdown('##' + app.web_url + '##'));
-    }
-  });
+  try {
+    const app = await appkit.api.post(JSON.stringify(payload), '/apps');
+    await appkit.api.post(JSON.stringify({app: `${args.NAME}-${args.space}`}), '/favorites')
+    task.end('ok');
+    console.log(appkit.terminal.markdown('##' + app.web_url + '##'));
+  } catch (err) {
+    task.end('error');
+    return appkit.terminal.error(err);
+  }
 }
 
 function favorites(appkit, args) {
