@@ -34,38 +34,39 @@ async function list_routes(appkit, args) {
   let get = util.promisify(appkit.api.get)
   let data = null;
   let subpath = '';
-  if(args.site.startsWith("https://")) {
-    let parsed = new URL(args.site);
-    args.site = parsed.hostname;
-    subpath = parsed.pathname;
+  
+  if (
+    (args.app && args.site) || (!args.site && !args.app) ||
+    (args.app && args.app === '') ||
+    (args.site && args.site === '') 
+  ) {
+    return appkit.terminal.error('Please specify either an app OR site (-a or -s).')
   }
-  if(!args.site && !args.app) {
-    return appkit.terminal.error('Please specify either an app or a site (-a or -s).')
-  }
+
   try {
-    if (args.site && args.site !== ''){
-      if(args.app) {
-        return appkit.terminal.error('Please specify either an app or a site (-a or -s).')
+    if (args.site) {
+      if (!(/http(s)?:\/\//.test(args.site))) {
+        args.site = `https://${args.site}`;
       }
+      ({ hostname: args.site, pathname: subpath} = new URL(args.site));
       args.site = clean_site(args.site);
       data = await get(`/sites/${args.site}/routes`);
     } else {
-      if(args.site) {
-        return appkit.terminal.error('Please specify either an app or a site (-a or -s).')
-      }
       data = await get(`/apps/${args.app}/routes`);
     }
+
     if(!data || data.length === 0) {
       return console.log(appkit.terminal.markdown("**===** There were no routes found."))
     }
+
     let routes = data.sort((x, y) => x.source_path < y.source_path ? -1 : 1).filter((x) => x.source_path.startsWith(subpath));
-    for (let route of routes) {
-      let route_app = route.app.name
-      let domain = route.site.domain
-      let app = await app_or_error(appkit, route_app)
-      console.log(appkit.terminal.markdown(`**→ Route (${route.id})** ${appkit.terminal.friendly_date(new Date(route.created_at))}
-  ##https://${clean_forward_slash(domain)}${route.source_path} ➝ ${clean_forward_slash(app.web_url)}${route.target_path}##
-  `))
+
+    for (let i = 0; i < routes.length; i++) {
+      const route = routes[i];
+      const app = await app_or_error(appkit, route.app.name)
+      console.log(appkit.terminal.markdown(`**→ Route (${route.id})** ${appkit.terminal.friendly_date(new Date(route.created_at))}`));
+      console.log(appkit.terminal.markdown(`  ##https://${clean_forward_slash(route.site.domain)}${route.source_path} ➝ ${clean_forward_slash(app.web_url)}${route.target_path}##`));
+      (i !== routes.length - 1) && console.log(); // don't add newline on last route
     }
   } catch(e) {
     appkit.terminal.error(e)
