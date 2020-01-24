@@ -86,6 +86,15 @@ function result(appkit, args) {
     })
 }
 
+async function fetch_hooks(appkit, args) {
+  try {
+    const availableHooks = (await appkit.api.get('/docs/hooks')).map(x => ({event: x.type, description: x.description}));
+    appkit.terminal.table(availableHooks, { colWidths: [20, 100], wordWrap: true})
+  } catch (err) {
+    appkit.terminal.print(err);
+  }
+}
+
 module.exports = {
   
   init:function(appkit) {
@@ -116,7 +125,7 @@ module.exports = {
       array:true,
       demand:true,
       alias:'e',
-      description:'A space separated list of one or more events [build release formation_change logdrain_change addon_change config_change destory preview released crashed preview-released]'
+      description:'A space separated list of one or more events (for a list of available events, use aka hooks:fetch)'
     };
     hooks_create_options.secret = {
       string:true,
@@ -137,6 +146,7 @@ module.exports = {
       .command('hooks:destroy ID', 'Remove the specified webhook', hooks_options, delete_hooks.bind(null, appkit))
       .command('hooks:create URL', 'Configure a new webhook', hooks_create_options, create_hooks.bind(null, appkit))
       .command('hooks:deliveries ID', 'Get information on the delivery of a webhook', hook_results_options, result.bind(null, appkit))
+      .command('hooks:fetch', 'Get a list of available Akkeris hooks', {}, fetch_hooks.bind(null, appkit))
       // Aliases
       .command('hooks:remove ID', false, hooks_options, delete_hooks.bind(null, appkit))
       .command('hooks:delete ID', false, hooks_options, delete_hooks.bind(null, appkit))
