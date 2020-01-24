@@ -643,6 +643,12 @@ async function select_app_middleware(appkit, argv) {
 // If options are missing during apps:create, provide the opportunity to select them
 function create_app_prechecks(argv) {
   if (argv._ && argv._[0] && (argv._[0] === 'apps:create' || argv._[0] === 'create')) {
+    // Support situations where a user may not specify a space but include it in the name of the app.
+    if((typeof(argv.space) === "undefined" || argv.space === null) && argv.NAME && argv.NAME.includes("-")) {
+      let parts = argv.NAME.split("-");
+      argv.NAME = parts[0];
+      argv.space = parts.slice(1).join("-");
+    }
     if (!argv.s && !argv.space) {
       argv.s = argv.space = "~$select_space$~";
     }
