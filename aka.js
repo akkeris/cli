@@ -652,9 +652,6 @@ function create_app_prechecks(argv) {
     if (!argv.NAME) {
       argv.NAME = "~$select_name$~";
     }
-    if (!argv.d && !argv.description) {
-      argv.d = argv.description = "~$select_description$~";
-    }
   }
 }
 
@@ -713,15 +710,6 @@ async function create_app_middleware(appkit, argv) {
     });
   }
 
-  if (argv.description === "~$select_description$~") {
-    questions.push({
-      type: 'input',
-      name: 'description',
-      message: 'Enter a description for your app (optional)',
-      suffix: ':',
-    });
-  }
-
   if (questions.length !== 0) {
     console.log();
     console.log(appkit.terminal.markdown(`!!Missing parameters:!! ^^${missing.join(', ')}^^`));
@@ -743,12 +731,7 @@ async function create_app_middleware(appkit, argv) {
     if (answers.org) {
       argv.org = argv.o = answers.org;
     }
-    if (answers.description) {
-      argv.description = argv.d = answers.description;
-    } else if (argv.d === '~$select_description$~') {
-      argv.description = undefined;
-      argv.d = undefined;
-    }
+    argv.description = argv.d = answers.description;
   }
 }
 
