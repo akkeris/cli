@@ -865,7 +865,7 @@ module.exports.update = function update(appkit) {
     }
   }));
   console.log(appkit.terminal.markdown(`###===### updating akkeris`));
-  proc.spawnSync('npm',['update', '-g', 'akkeris'], {cwd:__dirname, env:process.env, stdio:'inherit', shell: isWindows || undefined});
+  proc.spawnSync('npm',['install', '-g', 'akkeris@latest'], {cwd:__dirname, env:process.env, stdio:'inherit', shell: isWindows || undefined});
   
   // Clear 'update available' file
   let update_file = path.join(get_home(), '.akkeris', AKA_UPDATE_FILENAME).toString('utf8')
