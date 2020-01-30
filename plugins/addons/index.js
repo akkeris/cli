@@ -213,7 +213,7 @@ function format_attached_addons(appkit, addon) {
   ***Plan:*** ${addon.addon.plan.name}
   ***Primary:*** ${addon.primary}
   ***State:*** ${addon.state || 'provisioned'}
-  ${!owner && ital(`^^Attached From^^ ${it(addon.addon.app.name)}`)}\n`);
+  ${!owner && ital(`^^Attached From^^ ${addon.addon.app.name}`)}\n`);
 }
 
 
