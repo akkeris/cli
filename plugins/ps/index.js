@@ -377,7 +377,7 @@ async function kill(appkit, args) {
   let signal_name = null;
   try {
     assert.ok(args.app && args.app !== '', 'An application name was not provided.');
-    assert.ok(args.DYNO && args.DYNO !== '', 'No dyno was specified, use ak ps -a [app] to get a list of running dynos.');
+    assert.ok(args.DYNO && args.DYNO !== '' && typeof args.DYNO === 'string', 'No dyno was specified, use ak ps -a [app] to get a list of running dynos.');
     assert.ok(args.DYNO.indexOf(".") !== -1, 'No dyno was specified, use ak ps -a [app] to get a list of running dynos.');
     if(args.HUP) {
       signal = 1;
@@ -401,7 +401,7 @@ async function kill(appkit, args) {
       signal = 15;
       signal_name = "TERM (termination)";
     } else {
-      assert.ok(false, 'No valid signal was specified')
+      assert.ok(false, 'No signal was specified, see available signals with aka ps:kill --help')
     }
   } catch (e) {
     return appkit.terminal.error(e);
@@ -413,8 +413,7 @@ async function kill(appkit, args) {
     let dynos = await appkit.api.get(`/apps/${args.app}/dynos`);
     let found = dynos.filter((x) => x.type.toLowerCase() === type.toLowerCase() && x.name.toLowerCase() === dyno.toLowerCase()).length
     assert.ok(found === 1, `The specified dyno ${type}.${dyno} was not found.`)
-    console.log(`/apps/${args.app}/dynos/${type.toLowerCase()}.${dyno.toLowerCase()}/actions/attach`)
-    await appkit.api.post(JSON.stringify({"command":["kill",`-${signal}`,"-1"], "stdin":""}), `/apps/${args.app}/dynos/${type.toLowerCase()}.${dyno.toLowerCase()}/actions/attach`)
+    await appkit.api.post(JSON.stringify({"command":["sh","-c",`kill -${signal} -1`], "stdin":""}), `/apps/${args.app}/dynos/${type.toLowerCase()}.${dyno.toLowerCase()}/actions/attach`)
     task.end('ok');
   } catch (e) {
     task.end('error');
@@ -482,42 +481,50 @@ module.exports = {
       ...require_app_option,
       'HUP':{
         'alias':'SIGHUP',
+        'boolean':true,
         'demand':false,
         'description':'Send hangup signal (HUP) to process group.',
       },
       'INT':{
         'alias':'SIGINT',
+        'boolean':true,
         'demand':false,
         'description':'Send interrupt signal to process group (typically CNTL+Z).',
       },
       'QUIT':{
         'alias':'SIGQUIT',
+        'boolean':true,
         'demand':false,
         'description':'Send a quit signal to the process group (typically CNTL+C).',
       },
       'ABRT':{
         'alias':'SIGABRT',
+        'boolean':true,
         'demand':false,
         'description':'Send a cancel signal (signal abort) to the process group.',
       },
       'KILL':{
         'alias':'SIGKILL',
+        'boolean':true,
         'demand':false,
         'description':'Forcably kill the process group with an uncatchable kill signal.',
       },
       'USR1':{
         'alias':'SIGUSR1',
+        'boolean':true,
         'demand':false,
         'description':'Send a USR1 signal to the process group.',
       },
       'TERM':{
         'alias':'SIGTERM',
+        'boolean':true,
         'demand':false,
         'description':'Send a termination signal to the process group.',
       },
       'STOP':{
         'alias':'SIGSTOP',
         'demand':false,
+        'boolean':true,
         'description':'Send a stop signal to process group.',
       }
     }
