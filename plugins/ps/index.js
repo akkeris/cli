@@ -546,6 +546,7 @@ module.exports = {
       .command('ps:forward PORT', 'Forward web traffic to specific port', require_app_option, forward.bind(null, appkit))
       .command('ps:destroy TYPE', 'Permanently delete a dyno', require_confirm_app_option, destroy.bind(null, appkit))
       .command('ps:kill DYNO', 'Send a posix signal to a dyno', require_kill_option, kill.bind(null, appkit))
+      .command('kill DYNO', false, require_kill_option, kill.bind(null, appkit))
       .command('ps:restart [TYPE]', 'Restart a dyno', require_app_option, restart.bind(null, appkit))
       .command('ps:scale [KEY_VALUE_PAIR..]', 'Scale dyno quantity up or down (dyno=quantity, e.g, web=2)', require_app_option, scale.bind(null, appkit))
       .command('ps:sizes', 'List available dyno sizes',{}, list_plans.bind(null,appkit))
