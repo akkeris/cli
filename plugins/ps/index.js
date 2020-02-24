@@ -372,6 +372,55 @@ async function stop(appkit, args) {
   }
 }
 
+async function kill(appkit, args) {
+  let signal = null;
+  let signal_name = null;
+  try {
+    assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+    assert.ok(args.DYNO && args.DYNO !== '' && typeof args.DYNO === 'string', 'No dyno was specified, use ak ps -a [app] to get a list of running dynos.');
+    assert.ok(args.DYNO.indexOf(".") !== -1, 'No dyno was specified, use ak ps -a [app] to get a list of running dynos.');
+    if(args.HUP) {
+      signal = 1;
+      signal_name = "HUP (hang-up)";
+    } else if (args.INT) {
+      signal = 2;
+      signal_name = "INT (interrupt)";
+    } else if (args.QUIT) {
+      signal = 3;
+      signal_name = "QUIT (quit)";
+    } else if (args.ABRT) {
+      signal = 6;
+      signal_name = "ABRT (abort)";
+    } else if (args.KILL) {
+      signal = 9;
+      signal_name = "KILL (kill)";
+    } else if (args.USR1) {
+      signal = 10;
+      signal_name = "USR1 (user 1)";
+    } else if (args.TERM) {
+      signal = 15;
+      signal_name = "TERM (termination)";
+    } else {
+      assert.ok(false, 'No signal was specified, see available signals with aka ps:kill --help')
+    }
+  } catch (e) {
+    return appkit.terminal.error(e);
+  }
+  let [type, dyno] = args.DYNO.split('.')
+  let task = appkit.terminal.task(`Sending signal ##${signal_name}## to dyno **⬢ ${args.app}** ^^^${args.DYNO}^^^`);
+  task.start();
+  try {
+    let dynos = await appkit.api.get(`/apps/${args.app}/dynos`);
+    let found = dynos.filter((x) => x.type.toLowerCase() === type.toLowerCase() && x.name.toLowerCase() === dyno.toLowerCase()).length
+    assert.ok(found === 1, `The specified dyno ${type}.${dyno} was not found.`)
+    await appkit.api.post(JSON.stringify({"command":["sh","-c",`kill -${signal} -1`], "stdin":""}), `/apps/${args.app}/dynos/${type.toLowerCase()}.${dyno.toLowerCase()}/actions/attach`)
+    task.end('ok');
+  } catch (e) {
+    task.end('error');
+    return appkit.terminal.error(e);
+  }
+}
+
 module.exports = {
   init:function(appkit) {
     const require_app_option = {
@@ -428,6 +477,58 @@ module.exports = {
       }
     };
 
+    const require_kill_option = {
+      ...require_app_option,
+      'HUP':{
+        'alias':'SIGHUP',
+        'boolean':true,
+        'demand':false,
+        'description':'Send hangup signal (HUP) to process group.',
+      },
+      'INT':{
+        'alias':'SIGINT',
+        'boolean':true,
+        'demand':false,
+        'description':'Send interrupt signal to process group (typically CNTL+Z).',
+      },
+      'QUIT':{
+        'alias':'SIGQUIT',
+        'boolean':true,
+        'demand':false,
+        'description':'Send a quit signal to the process group (typically CNTL+C).',
+      },
+      'ABRT':{
+        'alias':'SIGABRT',
+        'boolean':true,
+        'demand':false,
+        'description':'Send a cancel signal (signal abort) to the process group.',
+      },
+      'KILL':{
+        'alias':'SIGKILL',
+        'boolean':true,
+        'demand':false,
+        'description':'Forcably kill the process group with an uncatchable kill signal.',
+      },
+      'USR1':{
+        'alias':'SIGUSR1',
+        'boolean':true,
+        'demand':false,
+        'description':'Send a USR1 signal to the process group.',
+      },
+      'TERM':{
+        'alias':'SIGTERM',
+        'boolean':true,
+        'demand':false,
+        'description':'Send a termination signal to the process group.',
+      },
+      'STOP':{
+        'alias':'SIGSTOP',
+        'demand':false,
+        'boolean':true,
+        'description':'Send a stop signal to process group.',
+      }
+    }
+
     const require_confirm_app_option = {
       ...require_app_option,
       'confirm':{
@@ -444,7 +545,8 @@ module.exports = {
       .command('ps:update TYPE', 'Update dyno settings', require_formation_create_option, update.bind(null, appkit))
       .command('ps:forward PORT', 'Forward web traffic to specific port', require_app_option, forward.bind(null, appkit))
       .command('ps:destroy TYPE', 'Permanently delete a dyno', require_confirm_app_option, destroy.bind(null, appkit))
-      .command('ps:kill DYNO', 'Stop a dyno', require_app_option, stop.bind(null, appkit))
+      .command('ps:kill DYNO', 'Send a posix signal to a dyno', require_kill_option, kill.bind(null, appkit))
+      .command('kill DYNO', false, require_kill_option, kill.bind(null, appkit))
       .command('ps:restart [TYPE]', 'Restart a dyno', require_app_option, restart.bind(null, appkit))
       .command('ps:scale [KEY_VALUE_PAIR..]', 'Scale dyno quantity up or down (dyno=quantity, e.g, web=2)', require_app_option, scale.bind(null, appkit))
       .command('ps:sizes', 'List available dyno sizes',{}, list_plans.bind(null,appkit))
