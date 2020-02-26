@@ -81,7 +81,7 @@ async function create(appkit, args) {
       }
     } else {
       task.end('error');
-      return appkit.terminal.error(new Error('The specified filter type was invalid, the supported options are: jwt'))
+      return appkit.terminal.error(new Error('The specified filter type was invalid, the supported options are: jwt, cors'))
     }
     await appkit.api.post(JSON.stringify({"type":args.type, "name":args.FILTER_NAME, options, description:args.description, organization:args.org}),`/filters`)
   } catch (e) {
@@ -117,7 +117,7 @@ async function update(appkit, args) {
       }
     } else {
       task.end('error');
-      return appkit.terminal.error(new Error('The specified filter type was invalid, the supported options are: jwt'))
+      return appkit.terminal.error(new Error('The specified filter type was invalid, the supported options are: jwt, cors'))
     }
     await appkit.api.put(JSON.stringify({"type":args.type, "name":args.FILTER_NAME, options, description:args.description, organization:args.org}),`/filters/${args.FILTER_NAME}`)
   } catch (e) {
@@ -303,19 +303,19 @@ module.exports = {
       'description':{
         'alias':'d',
         'string':true,
-        'demand':true,
+        'demand':false,
         'description':'The description used for the http filter.'
       },
       'org':{
         'alias':'o',
         'string':true,
-        'demand':true,
+        'demand':false,
         'description':'The name of the organization who owns this filter.'
       },
       'type':{
         'alias':'t',
         'choices':['jwt','cors'],
-        'demand':true,
+        'demand':false,
         'description':'The type of http filter.'
       },
       'jwt-issuer':{
