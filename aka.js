@@ -458,6 +458,27 @@ function print_ui(cliui, errorMessage) {
   console.log(cliui.toString());
 }
 
+// Yargs caches help messages now apparently
+// Need this to clear cached help message when we call yargs.parse
+function clearCachedHelp(appkit) {
+  if (typeof appkit.args.getUsageInstance().clearCachedHelpMessage === 'function') {
+    appkit.args.getUsageInstance().clearCachedHelpMessage();
+  }
+}
+
+function initPluginGroup(appkit, group) {
+  // Reset yargs so we can initialize it with only the plugin that we want
+  appkit.args.reset();
+
+  if (group !== 'plugins' && !init_plugins(module, module.exports.config.plugins_dir, group)) {
+    if (!init_plugins(module, module.exports.config.third_party_plugins_dir, group)) {
+      throw new Error('Could not initialize plugin');
+    }
+  } else if (group === 'plugins') {
+    require('./lib/plugins.js').init(appkit.args, appkit);
+  }
+}
+
 // Print help for a specific command group
 function print_group_help(appkit, argv, group) {
   // Initialize UI
@@ -465,26 +486,25 @@ function print_group_help(appkit, argv, group) {
   const ui = require('cliui')({ width: process.stdout.columns });
   ui.div(appkit.terminal.bold('\nAkkeris CLI Help\n'));
 
-  // Reset yargs so we can initialize it with only the plugin that we want
-  appkit.args.reset();
-
-  if (group !== 'plugins' && !init_plugins(module, module.exports.config.plugins_dir, group)) {
-    if (!init_plugins(module, module.exports.config.third_party_plugins_dir, group)) {
-      console.log(module.exports.terminal.markdown('\n !!▸!! Bad bad error. You should never see this\n'));
-      return;
-    }
-  } else if (group === 'plugins') {
-    require('./lib/plugins.js').init(appkit.args, appkit);
+  try {
+    initPluginGroup(appkit, group);
+  } catch (err) {
+    console.log(module.exports.terminal.markdown('\n !!▸!! Bad bad error. You should never see this\n'));
+    return;
   }
 
   // A specific command was provided along with the group name
   if (argv.group.length > 1) {
+    const { getCommands } = appkit.args.getUsageInstance();
     // Verify that the specific command is valid
+
     const givenCommand = argv.group[1];
-    const foundCommand = appkit.args
-      .getUsageInstance()
-      .getCommands()
-      .filter((a) => a[0].split(' ').find((b) => b === givenCommand));
+    let foundCommand = getCommands().filter((a) => a[0].split(' ').find((b) => b === givenCommand));
+
+    if (!foundCommand || foundCommand.length < 1) {
+      const fullCommand = `${argv.group[0]}:${givenCommand}`;
+      foundCommand = getCommands().filter((a) => a[0].split(' ').find((b) => b === fullCommand));
+    }
 
     // Tell Yargs to run the specific command with the '--help' flag
     if (foundCommand && foundCommand.length > 0) {
@@ -563,32 +583,42 @@ function print_old_help(appkit) {
   require('./lib/plugins.js').init(appkit.args, appkit);
   init_plugins(module, module.exports.config.plugins_dir);
   init_plugins(module, module.exports.config.third_party_plugins_dir);
-
   appkit.args.epilog(get_epilogue());
   appkit.args.showHelp();
 }
 
 // Override yargs' default help and show something a bit cleaner
 function help(appkit, argv) {
+  clearCachedHelp(appkit);
   let errorMessage;
   const invokedByHelp = argv._ && argv._.length > 0 && argv._[0] === 'help';
   const groupProvided = argv.group && argv.group.length > 0;
-  const old_help = process.env.AKKERIS_HELP_OLD;
 
-  if ((invokedByHelp && argv.a) || (
-    old_help && (old_help === '1' || old_help.toLowerCase() === 'true' || old_help.toLowerCase() === 't')
-  )) {
-    // Show old (full) help:
+  // Ways to show old (default yargs) help:
+  //    --a flag
+  //    AKKERIS_HELP_OLD env var
+  let old_help = process.env.AKKERIS_HELP_OLD;
+  old_help = old_help && (old_help === '1' || old_help.toLowerCase() === 'true' || old_help.toLowerCase() === 't');
+  if ((invokedByHelp && argv.a) || old_help) {
     print_old_help(appkit);
     return;
   }
 
+  // We got here through an unrecognized command
+  if (!invokedByHelp && argv.group) {
+    // Display all command groups + "unrecognized command" error
+    errorMessage = `${appkit.terminal.italic(appkit.terminal.markdown('!!Unrecognized command:!!'))} ${argv.group[0]}`;
+  }
+
+  // We got here by the command `aka help [group | command]`
   if (invokedByHelp && groupProvided) {
+    const { getCommands } = appkit.args.getUsageInstance();
+
     // Handle meta commands (update, version,etc)
     addMetaCommands(appkit.args);
-    const metaCommand = appkit.args.getUsageInstance().getCommands().findIndex((command) => command[0] === argv.group[0]);
+    const metaCommand = getCommands().findIndex((command) => command[0] === argv.group[0]);
     if (metaCommand !== -1) {
-      appkit.args.help(true).parse(`${appkit.args.getUsageInstance().getCommands()[metaCommand][0]} --help`);
+      appkit.args.help(true).parse(`${getCommands()[metaCommand][0]} --help`);
       return;
     }
 
@@ -601,9 +631,23 @@ function help(appkit, argv) {
       print_group_help(appkit, argv, validGroup);
       return;
     }
-    errorMessage = `${appkit.terminal.italic(appkit.terminal.markdown('!!Invalid command group:!!'))} ${argv.group[0]}`;
-  } else if (!invokedByHelp && argv.group) {
-    errorMessage = `${appkit.terminal.italic(appkit.terminal.markdown('!!Unrecognized command:!!'))} ${argv.group[0]}`;
+
+    if (argv.group[0].includes(':') && argv.group[0].split(':')[1] !== '') {
+      try {
+        initPluginGroup(appkit, argv.group[0].split(':')[0]);
+      } catch (err) {
+        console.log(module.exports.terminal.markdown('\n !!▸!! Bad bad error. You should never see this\n'));
+        return;
+      }
+      const foundCommand = getCommands()
+        .filter((a) => a[0].split(' ').find((b) => b === argv.group[0]));
+      if (foundCommand.length > 0) {
+        appkit.args.help(true).parse(`${foundCommand[0][0]} --help`);
+        return;
+      }
+    }
+    // Display all command groups + "unrecognized command or group" error
+    errorMessage = `${appkit.terminal.italic(appkit.terminal.markdown('!!Invalid command or group:!!'))} ${argv.group[0]}`;
   }
 
   print_all_help(appkit, argv, errorMessage);
@@ -624,7 +668,10 @@ function help_flag_middleware(appkit, argv, yargs) {
 
 // Get rid of invalid options on the help command
 function help_options_middleware(argv) {
-  const validKeys = ['_', '$0', 'group', 'a', 'all'];
+  let validKeys = ['_', '$0', 'group'];
+  if (!argv.group) {
+    validKeys = [...validKeys, 'a', 'all'];
+  }
   if (argv._ && (argv._.length === 0 || argv._.includes('help'))) {
     Object.keys(argv).filter((key) => !validKeys.includes(key)).forEach((badKey) => { delete argv[badKey]; });
   }
@@ -866,6 +913,7 @@ module.exports.init = function init() {
         boolean: true,
         demand: false,
         default: false,
+        hidden: true,
       },
     }, help.bind(null, module.exports));
 
@@ -1075,6 +1123,7 @@ if (require.main === module) {
 
   module.exports.args // eslint-disable-line
     .strict()
+    .version(false)
     .help(false)
     .argv;
 }
