@@ -1,31 +1,29 @@
-"use strict"
-
-const assert = require('assert')
-
+/* eslint-disable no-await-in-loop */
+const assert = require('assert');
 
 function destroy(appkit, args) {
   assert.ok(args.ADDON, 'An addon wasnt provided.');
   assert.ok(args.app && args.app !== '', 'An application name was not provided.');
-  let del = (input) => {
-    if(input === args.ADDON) {
-      appkit.api.get('/apps/' + args.app + '/addons', (err, existing_addons) => {
+  const del = (input) => {
+    if (input === args.ADDON) {
+      appkit.api.get(`/apps/${args.app}/addons`, (err, existing_addons) => {
         // If the user has provided a service:plan lets see if any of those happen to match
         // an existing addon on the app, if there's only one match we have a strong reason
         // to try and delete this addon rather than something else. We first check with ':'
         // character becuase all addons+plans must have a :
-        if(args.ADDON.indexOf(':') > -1 && existing_addons && 
-          existing_addons.filter((a) => { return a.addon.plan.name === args.ADDON }).length === 1) 
-        {
-          let a = existing_addons.filter((a) => { return a.addon.plan.name === args.ADDON });
+        if (args.ADDON.indexOf(':') > -1 && existing_addons
+          && existing_addons.filter((a) => a.addon.plan.name === args.ADDON).length === 1) {
+          const a = existing_addons.filter((x) => x.addon.plan.name === args.ADDON);
           args.ADDON = a[0].name;
         }
 
-        let task = appkit.terminal.task(`Destroying addon **+ ${args.ADDON}** `);
+        const task = appkit.terminal.task(`Destroying addon **+ ${args.ADDON}** `);
         task.start();
-        appkit.api.delete('/apps/' + args.app + '/addons/' + args.ADDON, (err, addon) => {
-          if(err) {
+        appkit.api.delete(`/apps/${args.app}/addons/${args.ADDON}`, (error, addon) => {
+          if (error) {
             task.end('error');
-            return appkit.terminal.error(err);
+            appkit.terminal.error(error);
+            return;
           }
           task.end('ok');
           console.log(appkit.terminal.markdown(`###===### Successfully removed ~~${addon.name}~~ from ~~${args.app}~~`));
@@ -35,7 +33,7 @@ function destroy(appkit, args) {
       appkit.terminal.soft_error(`Confirmation did not match !!${args.ADDON}!!. Aborted.`);
     }
   };
-  if(args.confirm) {
+  if (args.confirm) {
     del(args.confirm);
   } else {
     appkit.terminal.confirm(` ~~▸~~    WARNING: This will remove **+ ${args.ADDON}** from ${args.app} including all/any backups or data.\n ~~▸~~    To proceed, type !!${args.ADDON}!! or re-run this command with !!--confirm ${args.ADDON}!!\n`, del);
@@ -44,22 +42,24 @@ function destroy(appkit, args) {
 
 function promote(appkit, args) {
   assert.ok(args.ADDON_ID, 'No addon name was provided.');
-  let loader = appkit.terminal.loading(`Promoting addon ${args.ADDON_ID} to the primary addon service on ${args.app}`);
+  const loader = appkit.terminal.loading(`Promoting addon ${args.ADDON_ID} to the primary addon service on ${args.app}`);
   loader.start();
 
-  let payload = {primary:true};
-  appkit.api.patch(JSON.stringify(payload), `/apps/${args.app}/addons/${args.ADDON_ID}`, function(err, addon) {
-    if(err && err.code !== 404) {
+  const payload = { primary: true };
+  appkit.api.patch(JSON.stringify(payload), `/apps/${args.app}/addons/${args.ADDON_ID}`, (err, addon) => {
+    if (err && err.code !== 404) {
       loader.end();
-      return appkit.terminal.error(err);
-    } else if (err && err.code === 404) {
-      appkit.api.patch(JSON.stringify(payload), `/apps/${args.app}/addon-attachments/${args.ADDON_ID}`, function(err, addon) {
-        loader.end()
-        if(err) {
-          return appkit.terminal.error(err);
+      appkit.terminal.error(err);
+      return;
+    } if (err && err.code === 404) {
+      appkit.api.patch(JSON.stringify(payload), `/apps/${args.app}/addon-attachments/${args.ADDON_ID}`, (error, addon2) => {
+        loader.end();
+        if (error) {
+          appkit.terminal.error(error);
+          return;
         }
-        console.log(appkit.terminal.markdown(`\n###===### Addon attachment ~~${addon.name}~~ promoted\n`));
-        appkit.terminal.print(err, addon);
+        console.log(appkit.terminal.markdown(`\n###===### Addon attachment ~~${addon2.name}~~ promoted\n`));
+        appkit.terminal.print(error, addon2);
       });
     } else {
       loader.end();
@@ -70,71 +70,87 @@ function promote(appkit, args) {
 }
 
 async function wait(timeInMills) {
-  return new Promise((resolve, reject) => setTimeout(resolve, timeInMills))
+  return new Promise((resolve) => setTimeout(resolve, timeInMills));
 }
 
 async function wait_on_addon(appkit, args, addon, loading_message) {
-  let loader = appkit.terminal.loading(loading_message)
+  let loader = appkit.terminal.loading(loading_message);
   try {
-    loader.start()
-    let state = ''
-    for(let i=0; i < 1000; i++) {
-      if(i === 999) {
-        throw new Error('It seems this addon is taking too long to complete its task, you should contact your system administrator to see if everything is alright.')
+    loader.start();
+    let state = '';
+    for (let i = 0; i < 1000; i++) {
+      if (i === 999) {
+        throw new Error('It seems this addon is taking too long to complete its task, you should contact your system administrator to see if everything is alright.');
       }
-      addon = await appkit.api.get(`/apps/${args.app}/addons/${addon.id}`)
-      if(addon.state !== 'provisioning') {
-        loader.end()
+      addon = await appkit.api.get(`/apps/${args.app}/addons/${addon.id}`);
+      if (addon.state !== 'provisioning') {
+        loader.end();
         return addon;
-      } else if (addon.state_description && addon.state_description !== '' && addon.state_description !== state) {
-        state = addon.state_description
-        loader.end()
-        loader = appkit.terminal.loading(`${loading_message} (${addon.state_description})`)
-        loader.start()
+      } if (addon.state_description && addon.state_description !== '' && addon.state_description !== state) {
+        state = addon.state_description;
+        loader.end();
+        loader = appkit.terminal.loading(`${loading_message} (${addon.state_description})`);
+        loader.start();
       }
-      await wait(5000)
+      await wait(5000);
     }
   } catch (e) {
-    loader.end()
-    throw e
+    loader.end();
+    throw e;
   }
+  return null;
 }
 
 async function wait_for_addon(appkit, args) {
   try {
-    assert.ok(args.ADDON, 'No addon was provided.')
-    let addon = await appkit.api.get(`/apps/${args.app}/addons/${args.ADDON}`)
+    assert.ok(args.ADDON, 'No addon was provided.');
+    const addon = await appkit.api.get(`/apps/${args.app}/addons/${args.ADDON}`);
     if (addon.state === 'provisioning') {
-      await wait_on_addon(appkit, args, addon, appkit.terminal.markdown(`###===### Waiting for addon ~~${addon.name}~~ to become available`))
+      await wait_on_addon(
+        appkit,
+        args,
+        addon,
+        appkit.terminal.markdown(`###===### Waiting for addon ~~${addon.name}~~ to become available`),
+      );
     }
     console.log(appkit.terminal.markdown(`###===### Addon ~~${addon.name} available~~\n`));
     appkit.terminal.print(null, addon);
   } catch (e) {
-    appkit.terminal.error(e)
+    appkit.terminal.error(e);
   }
 }
 
 async function create(appkit, args) {
-  let addon = null
+  let addon = null;
   try {
     assert.ok(args.SERVICE_PLAN, 'No service plan was provided.');
   } catch (e) {
-    return appkit.terminal.error(e);
+    appkit.terminal.error(e);
+    return;
   }
-  let loader = appkit.terminal.loading(`Provisioning addon ${args.SERVICE_PLAN} and attaching it to ${args.app}`);
+  const loader = appkit.terminal.loading(`Provisioning addon ${args.SERVICE_PLAN} and attaching it to ${args.app}`);
   try {
     loader.start();
-    addon = await appkit.api.post(JSON.stringify({"plan":args.SERVICE_PLAN, "attachment":{"name":args.as}, "name":args.name}), `/apps/${args.app}/addons`)
+    addon = await appkit.api.post(
+      JSON.stringify({ plan: args.SERVICE_PLAN, attachment: { name: args.as }, name: args.name }),
+      `/apps/${args.app}/addons`,
+    );
     loader.end();
   } catch (e) {
     loader.end();
-    return appkit.terminal.error(e);
+    appkit.terminal.error(e);
+    return;
   }
 
   try {
-    assert.ok(addon, 'The addon to create was null, unsure how this happened')
+    assert.ok(addon, 'The addon to create was null, unsure how this happened');
     if (addon.state === 'provisioning' && args.wait) {
-      addon = await wait_on_addon(appkit, args, addon, appkit.terminal.markdown(`###===### Waiting for addon ~~${addon.name}~~ to be provisioned (this may take 10 minutes)`))
+      addon = await wait_on_addon(
+        appkit,
+        args,
+        addon,
+        appkit.terminal.markdown(`###===### Waiting for addon ~~${addon.name}~~ to be provisioned (this may take 10 minutes)`),
+      );
       console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ provisioned\n`));
       appkit.terminal.print(null, addon);
     } else if (addon.state === 'provisioning') {
@@ -144,50 +160,56 @@ async function create(appkit, args) {
       appkit.terminal.print(null, addon);
     }
   } catch (e) {
-    return appkit.terminal.error(e);
+    appkit.terminal.error(e);
   }
 }
 
+
 function format_plans(addon_service) {
-  return `**+ ${addon_service.human_name} ${addon_service.name} \$${addon_service.price.cents/100}/${addon_service.price.unit}**
+  return `**+ ${addon_service.human_name} ${addon_service.name} $${addon_service.price.cents / 100}/${addon_service.price.unit}**
   ***Id:*** ${addon_service.id} 
   ***Description:*** ${addon_service.description}
-${addon_service.attributes ? Object.keys(addon_service.attributes).map((key) => "  ***" + key.replace(/_/g, ' ').replace(/^(\w)|\s(\w)/g, c => c.toUpperCase()) + ":*** " + addon_service.attributes[key]).join('\n') : ''}\n`;
+${addon_service.attributes ? Object.keys(addon_service.attributes).map((key) => `  ***${key.replace(/_/g, ' ').replace(/^(\w)|\s(\w)/g, (c) => c.toUpperCase())}:*** ${addon_service.attributes[key]}`).join('\n') : ''}\n`;
 }
 
 function list_addons_plans(appkit, args) {
   assert.ok(args.SERVICE, 'There was no service provided.');
-  appkit.api.get('/addon-services/' + args.SERVICE + '/plans', 
-    (err, plans) => { 
+  appkit.api.get(`/addon-services/${args.SERVICE}/plans`,
+    (err, plans) => {
       if (plans) {
-        plans = plans.filter((plan) => plan.state === 'ga' || plan.state === 'public')
+        plans = plans.filter((plan) => plan.state === 'ga' || plan.state === 'public');
       }
-      return appkit.terminal.format_objects(format_plans, appkit.terminal.markdown('###===### No plans were found.'), err, plans)
+      return appkit.terminal.format_objects(
+        format_plans,
+        appkit.terminal.markdown('###===### No plans were found.'),
+        err,
+        plans,
+      );
     });
 }
 
-function list_addon_plan_info(appkit, args){
+function format_plan_info(addon_service) {
+  const apps = [];
+  addon_service.provisioned_by.map((app) => (apps.push(`   • Name: ${app.name}\n     ID: ${app.id}`)));
+  return `**+ ${addon_service.human_name} (${addon_service.name}) $${addon_service.price.cents / 100}/${addon_service.price.unit}**
+  ***Id:*** ${addon_service.id}
+  ***State:*** ${addon_service.state}
+  ***Description:*** ${addon_service.description}
+  ***Provisioned By (${apps.length}):*** \n${apps.length !== 0 ? `${apps.join('\n\n')}\n` : ''}`;
+}
+
+function list_addon_plan_info(appkit, args) {
   assert.ok(args.SERVICE, 'There was no service provided.');
   assert.ok(args.SERVICE_PLAN, 'There was no plan provided.');
   appkit.api.get(`/addon-services/${args.SERVICE}/plans/${args.SERVICE_PLAN}`,
     (err, plan) => {
       if (err) {
         console.log(appkit.terminal.markdown('###===### Inavlid service or plan.'));
-      } else { 
-      console.log(appkit.terminal.markdown(format_plan_info(plan)));
+      } else {
+        console.log(appkit.terminal.markdown(format_plan_info(plan)));
       }
     },
     appkit.terminal.markdown('###===### Invalid ID.'));
-}
-
-function format_plan_info(addon_service) {
-  let apps = [];
-  addon_service.provisioned_by.map((app) => ( apps.push(`   • Name: ${app.name}\n     ID: ${app.id}`) ));
-  return `**+ ${addon_service.human_name} (${addon_service.name}) \$${addon_service.price.cents/100}/${addon_service.price.unit}**
-  ***Id:*** ${addon_service.id}
-  ***State:*** ${addon_service.state}
-  ***Description:*** ${addon_service.description}
-  ***Provisioned By (${apps.length}):*** \n${ apps.length != 0 ? `${apps.join('\n\n')}\n` : '' }`;
 }
 
 function format_services(addon_service) {
@@ -218,65 +240,73 @@ function format_attached_addons(appkit, addon) {
 
 
 function list_attached_addons(appkit, args) {
-  appkit.api.get('/apps/' + args.app + '/addon-attachments', 
-    appkit.terminal.format_objects.bind(null, format_attached_addons, 
+  appkit.api.get(`/apps/${args.app}/addon-attachments`,
+    appkit.terminal.format_objects.bind(null, format_attached_addons,
       appkit.terminal.markdown('###===### No attached addons were found.')));
 }
 
-function list_owned_addons(appkit, args) {
-  appkit.api.get('/apps/' + args.app + '/addon-attachments', 
-    appkit.terminal.format_objects.bind(null, format_addons, 
-      appkit.terminal.markdown('###===### No addons were found.')));
-}
+// function list_owned_addons(appkit, args) {
+//   appkit.api.get(`/apps/${args.app}/addon-attachments`,
+//     appkit.terminal.format_objects.bind(null, format_addons,
+//       appkit.terminal.markdown('###===### No addons were found.')));
+// }
 
-function list_addons(appkit, args) {
-  appkit.api.get('/addon-services', 
-    appkit.terminal.format_objects.bind(null, format_services, 
+function list_addons(appkit) {
+  appkit.api.get('/addon-services',
+    appkit.terminal.format_objects.bind(null, format_services,
       appkit.terminal.markdown('###===### No services were found.')));
 }
 
 async function list_all_addons(appkit, args) {
-  let addons, attachments;
+  let addons; let
+    attachments;
   try {
     addons = await appkit.api.get(`/apps/${args.app}/addons`);
     attachments = await appkit.api.get(`/apps/${args.app}/addon-attachments`);
   } catch (err) {
-    return appkit.terminal.error(err)
+    appkit.terminal.error(err);
+    return;
   }
 
-  if(addons.length === 0 && attachments.length === 0) {
+  if (addons.length === 0 && attachments.length === 0) {
     console.log(appkit.terminal.markdown('###===### No addons (attached or owned) were found.'));
     return;
-  } 
+  }
 
-  if(addons.length > 0) {
+  if (addons.length > 0) {
     console.log(addons.map(format_addons).map(appkit.terminal.markdown).join('\n'));
   }
-  if(attachments.length > 0) {
+  if (attachments.length > 0) {
     console.log(attachments.map(format_attached_addons.bind(null, appkit)).join('\n'));
   }
 }
 
 function info_addons(appkit, args) {
   assert.ok(args.ADDON && args.ADDON !== '', 'No addon id was specified.');
-  appkit.api.get('/apps/' + args.app + '/addons/' + args.ADDON, appkit.terminal.print);
+  appkit.api.get(`/apps/${args.app}/addons/${args.ADDON}`, appkit.terminal.print);
 }
 
 function attach(appkit, args) {
   assert.ok(args.app && args.app !== '', 'No application was specified.');
   assert.ok(args.ADDON_ID && args.ADDON_ID !== '', 'No addon id was specified.');
-  let loader = appkit.terminal.loading('Attaching addon ' + args.ADDON_ID + ' to ' + args.app);
+  const loader = appkit.terminal.loading(`Attaching addon ${args.ADDON_ID} to ${args.app}`);
   loader.start();
-  appkit.api.get('/apps/' + args.app, (err, data) => {
-    if(err) {
+  appkit.api.get(`/apps/${args.app}`, (err, data) => {
+    if (err) {
       loader.end();
-      return appkit.terminal.error(err);
+      appkit.terminal.error(err);
+      return;
     }
     assert.ok(data.id, 'Ensure the app id is defined.');
-    let payload = {"app":data.id, "addon":args.ADDON_ID, force:(args.confirm && args.confirm === args.ADDON_ID ? true : false), name:(args.as ? args.as : null)};
-    appkit.api.post(JSON.stringify(payload), '/apps/' + args.app + '/addon-attachments',  (err, data) => {
+    const payload = {
+      app: data.id,
+      addon: args.ADDON_ID,
+      force: (!!(args.confirm && args.confirm === args.ADDON_ID)),
+      name: (args.as ? args.as : null),
+    };
+    appkit.api.post(JSON.stringify(payload), `/apps/${args.app}/addon-attachments`, (error, data2) => {
       loader.end();
-      appkit.terminal.print(err, data);
+      appkit.terminal.print(error, data2);
     });
   });
 }
@@ -284,189 +314,207 @@ function attach(appkit, args) {
 function detach(appkit, args) {
   assert.ok(args.app && args.app !== '', 'No application was specified.');
   assert.ok(args.ADDON_ID && args.ADDON_ID !== '', 'No attachment name or id was specified.');
-  let loader = appkit.terminal.loading('Detaching addon ' + args.ADDON_ID + ' from ' + args.app);
+  const loader = appkit.terminal.loading(`Detaching addon ${args.ADDON_ID} from ${args.app}`);
   loader.start();
-  appkit.api.get('/apps/' + args.app, (err, app) => {
-    if(err) {
+  appkit.api.get(`/apps/${args.app}`, (err, app) => {
+    if (err) {
       loader.end();
-      return appkit.terminal.error(err);
+      appkit.terminal.error(err);
+      return;
     }
     assert.ok(app.id, 'Ensure the app id is defined.');
-    appkit.api.delete('/apps/' + args.app + '/addon-attachments/' + args.ADDON_ID,  (err, data) => {
+    appkit.api.delete(`/apps/${args.app}/addon-attachments/${args.ADDON_ID}`, (error) => {
       loader.end();
-      if(err) {
-        return appkit.terminal.error(err);
+      if (error) {
+        appkit.terminal.error(error);
+        return;
       }
-      console.log(appkit.terminal.markdown(`###===### **${args.ADDON_ID}** has been succesfully detached from ##${app.name}##`))
+      console.log(appkit.terminal.markdown(`###===### **${args.ADDON_ID}** has been succesfully detached from ##${app.name}##`));
     });
   });
 }
 
 async function rename(appkit, args) {
-  let name = args.attachment || args.addon
-  let type = args.attachment ? "attachment" : "addon"
-  if(!args.attachment && !args.addon) {
-    return appkit.terminal.error(new Error("You must either specify an attachment or addon to rename."))
+  const name = args.attachment || args.addon;
+  const type = args.attachment ? 'attachment' : 'addon';
+  if (!args.attachment && !args.addon) {
+    appkit.terminal.error(new Error('You must either specify an attachment or addon to rename.'));
+    return;
   }
-  let loader = appkit.terminal.loading(`Renaming ${type} ${name} to ${args.NEW_NAME}`);
+  const loader = appkit.terminal.loading(`Renaming ${type} ${name} to ${args.NEW_NAME}`);
   loader.start();
   try {
-    assert.ok(name, 'No name was specified')
-    assert.ok(args.NEW_NAME, 'No new name was specified')
-    if(type === 'addon') {
-      await appkit.api.patch(JSON.stringify({"attachment":{"name":args.NEW_NAME}}), `/apps/${args.app}/addons/${name}`)
+    assert.ok(name, 'No name was specified');
+    assert.ok(args.NEW_NAME, 'No new name was specified');
+    if (type === 'addon') {
+      await appkit.api.patch(JSON.stringify({ attachment: { name: args.NEW_NAME } }), `/apps/${args.app}/addons/${name}`);
     } else {
-      await appkit.api.patch(JSON.stringify({"name":args.NEW_NAME}, `/apps/${args.app}/addon-attachments/${name}`))
+      await appkit.api.patch(JSON.stringify({ name: args.NEW_NAME }, `/apps/${args.app}/addon-attachments/${name}`));
     }
     loader.end();
-    console.log(appkit.terminal.markdown(`###===### **${name}** has been succesfully renamed to ##${args.NEW_NAME}##`))
+    console.log(appkit.terminal.markdown(`###===### **${name}** has been succesfully renamed to ##${args.NEW_NAME}##`));
   } catch (e) {
-    loader.end()
-    appkit.terminal.error(e)
+    loader.end();
+    appkit.terminal.error(e);
   }
 }
 
 async function upgrade(appkit, args) {
   let maintenance_ran = false;
-  let loader = null
+  let loader = null;
   try {
-    if(args.ADDON.indexOf(':') !== -1) {
-      return appkit.terminal.error(new Error(`The addon ${args.ADDON} could not be found.`))
+    if (args.ADDON.indexOf(':') !== -1) {
+      appkit.terminal.error(new Error(`The addon ${args.ADDON} could not be found.`));
+      return;
     }
-    assert.ok(args.PLAN, 'No plan was specified')
-    assert.ok(args.ADDON, 'No addon was specified')
-    let addon = await appkit.api.get(`/apps/${args.app}/addons/${args.ADDON}`)
-    let addon_service = await appkit.api.get(`/addon-services/${addon.addon_service.id}`)
-    let addon_plan = await appkit.api.get(`/addon-services/${addon_service.id}/plans/${args.PLAN}`)
-    if(addon_service.supports_upgrading) {
-      loader = appkit.terminal.loading(appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be upgraded`));
-      loader.start()
-      await appkit.api.patch(JSON.stringify({"maintenance":true}), `/apps/${args.app}`)
-      maintenance_ran = true
-      let result = await appkit.api.patch(JSON.stringify({"plan":addon_plan.id}),`/apps/${args.app}/addons/${args.ADDON}`)
-      addon.state = "provisioning"
-      loader.end()
-      addon = await wait_on_addon(appkit, args, addon, appkit.terminal.markdown(`###===### Waiting for addon ~~${addon.name}~~ to be upgraded`))
+    assert.ok(args.PLAN, 'No plan was specified');
+    assert.ok(args.ADDON, 'No addon was specified');
+    let addon = await appkit.api.get(`/apps/${args.app}/addons/${args.ADDON}`);
+    const addon_service = await appkit.api.get(`/addon-services/${addon.addon_service.id}`);
+    const addon_plan = await appkit.api.get(`/addon-services/${addon_service.id}/plans/${args.PLAN}`);
+    if (addon_service.supports_upgrading) {
+      loader = appkit.terminal.loading(
+        appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be upgraded`),
+      );
+      loader.start();
+      await appkit.api.patch(JSON.stringify({ maintenance: true }), `/apps/${args.app}`);
+      maintenance_ran = true;
+      await appkit.api.patch(JSON.stringify({ plan: addon_plan.id }), `/apps/${args.app}/addons/${args.ADDON}`);
+      addon.state = 'provisioning';
+      loader.end();
+      addon = await wait_on_addon(
+        appkit,
+        args,
+        addon,
+        appkit.terminal.markdown(`###===### Waiting for addon ~~${addon.name}~~ to be upgraded`),
+      );
       console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ provisioned\n`));
       appkit.terminal.print(null, addon);
     } else {
-      throw new Error(`The service ${addon_service.name} does not support upgrades.`)
+      throw new Error(`The service ${addon_service.name} does not support upgrades.`);
     }
   } catch (e) {
-    if (loader) { 
-      loader.end()
+    if (loader) {
+      loader.end();
     }
-    appkit.terminal.error(e)
+    appkit.terminal.error(e);
   } finally {
-    if(maintenance_ran) {
-      await appkit.api.patch(JSON.stringify({"maintenance":false}), `/apps/${args.app}`)
+    if (maintenance_ran) {
+      await appkit.api.patch(JSON.stringify({ maintenance: false }), `/apps/${args.app}`);
     }
   }
 }
 
 async function downgrade(appkit, args) {
   let maintenance_ran = false;
-  let loader = null
+  let loader = null;
   try {
-    assert.ok(args.PLAN, 'No plan was specified')
-    assert.ok(args.ADDON, 'No addon was specified')
-    let addon = await appkit.api.get(`/apps/${args.app}/addons/${args.ADDON}`)
-    let addon_service = await appkit.api.get(`/addon-services/${addon.addon_service.id}`)
-    let addon_plan = await appkit.api.get(`/addon-services/${addon_service.id}/plans/${args.PLAN}`)
-    if(addon_service.supports_upgrading) {
-      loader = appkit.terminal.loading(appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be downgraded`));
-      loader.start()
-      await appkit.api.patch(JSON.stringify({"maintenance":true}), `/apps/${args.app}`)
-      maintenance_ran = true
-      let result = await appkit.api.patch(JSON.stringify({"plan":addon_plan.id}),`/apps/${args.app}/addons/${args.ADDON}`)
-      addon.state = "provisioning"
-      loader.end()
-      addon = await wait_on_addon(appkit, args, addon, appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be downgraded`))
+    assert.ok(args.PLAN, 'No plan was specified');
+    assert.ok(args.ADDON, 'No addon was specified');
+    let addon = await appkit.api.get(`/apps/${args.app}/addons/${args.ADDON}`);
+    const addon_service = await appkit.api.get(`/addon-services/${addon.addon_service.id}`);
+    const addon_plan = await appkit.api.get(`/addon-services/${addon_service.id}/plans/${args.PLAN}`);
+    if (addon_service.supports_upgrading) {
+      loader = appkit.terminal.loading(
+        appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be downgraded`),
+      );
+      loader.start();
+      await appkit.api.patch(JSON.stringify({ maintenance: true }), `/apps/${args.app}`);
+      maintenance_ran = true;
+      await appkit.api.patch(JSON.stringify({ plan: addon_plan.id }), `/apps/${args.app}/addons/${args.ADDON}`);
+      addon.state = 'provisioning';
+      loader.end();
+      addon = await wait_on_addon(
+        appkit,
+        args,
+        addon,
+        appkit.terminal.markdown(`\n###===### Waiting for addon ~~${addon.name}~~ to be downgraded`),
+      );
       console.log(appkit.terminal.markdown(`\n###===### Addon ~~${addon.name}~~ provisioned\n`));
       appkit.terminal.print(null, addon);
     } else {
-      throw new Error(`The service ${addon_service.name} does not support downgrades.`)
+      throw new Error(`The service ${addon_service.name} does not support downgrades.`);
     }
   } catch (e) {
-    if(loader) {
-      loader.end()
+    if (loader) {
+      loader.end();
     }
-    appkit.terminal.error(e)
+    appkit.terminal.error(e);
   } finally {
-    if(maintenance_ran) {
-      await appkit.api.patch(JSON.stringify({"maintenance":false}), `/apps/${args.app}`)
+    if (maintenance_ran) {
+      await appkit.api.patch(JSON.stringify({ maintenance: false }), `/apps/${args.app}`);
     }
   }
 }
 
 module.exports = {
-  init:function(appkit) {
-    let require_app_option = {
-      'app':{
-        'alias':'a',
-        'demand':true,
-        'string':true,
-        'description':'The app to act on.'
-      }
-    };
-    let require_app_wait_option = {
-      'app':{
-        'alias':'a',
-        'demand':true,
-        'string':true,
-        'description':'The app to act on.'
+  init(appkit) {
+    const require_app_option = {
+      app: {
+        alias: 'a',
+        demand: true,
+        string: true,
+        description: 'The app to act on.',
       },
-      'wait':{
-        'alias':'w',
-        'demand':false,
-        'default':true,
-        'boolean':true,
-        'description':'Whether to wait for the addon to be provisioned.'
-      }
+    };
+    const require_app_wait_option = {
+      app: {
+        alias: 'a',
+        demand: true,
+        string: true,
+        description: 'The app to act on.',
+      },
+      wait: {
+        alias: 'w',
+        demand: false,
+        default: true,
+        boolean: true,
+        description: 'Whether to wait for the addon to be provisioned.',
+      },
     };
 
-    let attach_create_option = JSON.parse(JSON.stringify(require_app_option));
+    const attach_create_option = JSON.parse(JSON.stringify(require_app_option));
     attach_create_option.confirm = {
-      'demand':false,
-      'string':true,
-      'description':'override existing add-on attachment with the same name (pass the name as the value).'
+      demand: false,
+      string: true,
+      description: 'override existing add-on attachment with the same name (pass the name as the value).',
     };
     attach_create_option.as = {
-      'demand':false,
-      'string':true,
-      'description':'name for the initial add-on attachment (and prefix for config vars)'
-    }
+      demand: false,
+      string: true,
+      description: 'name for the initial add-on attachment (and prefix for config vars)',
+    };
 
-    let require_addon_create = JSON.parse(JSON.stringify(require_app_wait_option));
+    const require_addon_create = JSON.parse(JSON.stringify(require_app_wait_option));
     require_addon_create.name = {
-      'demand':false,
-      'string':true,
-      'description':'name for the add-on resource'
+      demand: false,
+      string: true,
+      description: 'name for the add-on resource',
     };
     require_addon_create.as = {
-      'demand':false,
-      'string':true,
-      'description':'name for the initial add-on attachment (and prefix for config vars)'
+      demand: false,
+      string: true,
+      description: 'name for the initial add-on attachment (and prefix for config vars)',
     };
 
-    let require_rename = JSON.parse(JSON.stringify(require_app_option));
+    const require_rename = JSON.parse(JSON.stringify(require_app_option));
     require_rename.attachment = {
-      'demand':false,
-      'string':true,
-      'description':'The attachment to rename'
+      demand: false,
+      string: true,
+      description: 'The attachment to rename',
     };
     require_rename.addon = {
-      'demand':false,
-      'string':true,
-      'description':'The addon to rename'
+      demand: false,
+      string: true,
+      description: 'The addon to rename',
     };
 
-    let require_addon_delete = JSON.parse(JSON.stringify(require_app_option));
+    const require_addon_delete = JSON.parse(JSON.stringify(require_app_option));
     require_addon_delete.confirm = {
-      'alias': 'c',
-      'demand': false,
-      'string': true,
-      'description': 'Confirm (in advance) the name of the addon to destroy.'
+      alias: 'c',
+      demand: false,
+      string: true,
+      description: 'Confirm (in advance) the name of the addon to destroy.',
     };
 
     appkit.args
@@ -506,12 +554,12 @@ module.exports = {
       .command('service:plan SERVICE', false, {}, list_addons_plans.bind(null, appkit))
       .command('plans SERVICE', false, {}, list_addons_plans.bind(null, appkit))
       .command('upgrade ADDON PLAN', false, require_app_wait_option, upgrade.bind(null, appkit))
-      .command('downgrade ADDON PLAN', false, require_app_wait_option, downgrade.bind(null, appkit))
+      .command('downgrade ADDON PLAN', false, require_app_wait_option, downgrade.bind(null, appkit));
   },
-  update:function() {
+  update() {
     // do nothing.
   },
-  group:'addons',
-  help:'manage addons (create, list)',
-  primary:true
-}
+  group: 'addons',
+  help: 'manage addons (create, list)',
+  primary: true,
+};

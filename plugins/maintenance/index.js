@@ -1,13 +1,13 @@
-"use strict"
 const assert = require('assert');
 
-function info(appkit, args) {
+function get_info(appkit, args) {
   assert.ok(args.app && args.app !== '', 'An application name was not provided.');
-  appkit.api.get('/apps/' + args.app, function(err, info){
+  appkit.api.get(`/apps/${args.app}`, (err, info) => {
     if (err || !info) {
-      return appkit.terminal.print(err);
+      appkit.terminal.print(err);
+      return;
     }
-    if(info.maintenance === true) {
+    if (info.maintenance === true) {
       console.log('on');
     } else {
       console.log('off');
@@ -17,40 +17,41 @@ function info(appkit, args) {
 
 function maintenance(state, appkit, args) {
   assert.ok(args.app && args.app !== '', 'An application name was not provided.');
-  let task = appkit.terminal.task(`${(state === true ? 'Enabling' : 'Disabling')} maintenance mode for **⬢ ${args.app}**`);
+  const task = appkit.terminal.task(`${(state === true ? 'Enabling' : 'Disabling')} maintenance mode for **⬢ ${args.app}**`);
   task.start();
-  appkit.api.patch(JSON.stringify({"maintenance":state}), '/apps/' + args.app, function(err, info) {
+  appkit.api.patch(JSON.stringify({ maintenance: state }), `/apps/${args.app}`, (err, info) => {
     if (err || !info) {
       task.end('error');
-      return appkit.terminal.print(err);
+      appkit.terminal.print(err);
+      return;
     }
     task.end('ok');
   });
 }
 
-let on = maintenance.bind(null, true);
-let off = maintenance.bind(null, false);
+const on = maintenance.bind(null, true);
+const off = maintenance.bind(null, false);
 
 module.exports = {
-  init:function(appkit) {
-    let require_app_option = {
-      'app':{
-        'alias':'a',
-        'demand':true,
-        'string':true,
-        'description': 'The app to act on'
-      }
+  init(appkit) {
+    const require_app_option = {
+      app: {
+        alias: 'a',
+        demand: true,
+        string: true,
+        description: 'The app to act on',
+      },
     };
-    
+
     appkit.args
-      .command('maintenance', 'Display the maintenance mode status of an app', require_app_option, info.bind(null, appkit))
+      .command('maintenance', 'Display the maintenance mode status of an app', require_app_option, get_info.bind(null, appkit))
       .command('maintenance:on', 'Put an app into maintenance mode', require_app_option, on.bind(null, appkit))
-      .command('maintenance:off', 'Take an app out of maintenance mode', require_app_option, off.bind(null, appkit))
+      .command('maintenance:off', 'Take an app out of maintenance mode', require_app_option, off.bind(null, appkit));
   },
-  update:function() {
+  update() {
     // do nothing.
   },
-  group:'apps',
-  help:'put apps in or out of maintenance mode',
-  primary:true
-}
+  group: 'apps',
+  help: 'put apps in or out of maintenance mode',
+  primary: true,
+};

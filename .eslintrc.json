@@ -1,0 +1,27 @@
+{
+  "env": {
+    "commonjs": true,
+    "es6": true,
+    "node": true
+  },
+  "extends": "airbnb-base",
+  "plugins": [],
+  "rules": {
+    "no-plusplus": "off",
+    "no-underscore-dangle": "off",
+    "no-console": "off",
+    "max-len": [
+      "warn", 
+      { "code": 125, 
+        "ignoreUrls": true,
+        "ignoreStrings": true,
+        "ignoreTemplateLiterals": true
+      }
+    ],
+    "no-param-reassign": "off",
+    "camelcase": "off",
+    "import/no-dynamic-require": "off",
+    "global-require": "off",
+    "no-multi-assign": "off"
+  }
+}
