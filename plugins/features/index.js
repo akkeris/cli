@@ -18,7 +18,6 @@ function disable(appkit, args) {
       if (err) {
         appkit.terminal.error(err);
       } else {
-        await appkit.api.patch(JSON.stringify({ RESTART: Math.random() }), `/apps/${args.app}/config-vars`); // TODO: REMOVE
         console.log(appkit.terminal.markdown(`**⬢ ${args.app}** - ${feature.display_name} - ##disabled##`));
       }
     },
@@ -30,7 +29,6 @@ function enable(appkit, args) {
     if (err) {
       appkit.terminal.error(err);
     } else {
-      await appkit.api.patch(JSON.stringify({ RESTART: Math.random() }), `/apps/${args.app}/config-vars`); // TODO: REMOVE
       console.log(appkit.terminal.markdown(`**⬢ ${args.app}** - ${feature.display_name} - ^^enabled^^`));
     }
   });
