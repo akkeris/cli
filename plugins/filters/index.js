@@ -68,6 +68,10 @@ async function create(appkit, args) {
         max_age: args['cors-max-age'],
         allow_credentials: args['cors-allow-credentials'],
       };
+    } else if (args.type === 'csp') {
+      options = {
+        policy: args['csp-policy'],
+      }
     } else {
       task.end('error');
       appkit.terminal.error(new Error('The specified filter type was invalid, the supported options are: jwt, cors'));
@@ -109,6 +113,10 @@ async function update(appkit, args) {
         max_age: args['cors-max-age'],
         allow_credentials: args['cors-allow-credentials'],
       };
+    } else if (args.type === 'csp') {
+      options = {
+        policy: args['csp-policy'],
+      }
     } else {
       task.end('error');
       appkit.terminal.error(new Error('The specified filter type was invalid, the supported options are: jwt, cors'));
@@ -302,6 +310,10 @@ module.exports = {
         boolean: true,
         description: 'Whether credentials are allowed to be sent in the CORS filter (optional if type=cors)',
       },
+      'csp-policy': {
+        string: true,
+        description: 'The contents of the content-security-policy header to use. (required if type=csp)',
+      },
     };
 
     const filters_update_option = {
@@ -319,7 +331,7 @@ module.exports = {
       },
       type: {
         alias: 't',
-        choices: ['jwt', 'cors'],
+        choices: ['jwt', 'cors', 'csp'],
         demand: false,
         description: 'The type of http filter.',
       },
@@ -358,6 +370,10 @@ module.exports = {
       'cors-allow-credentials': {
         boolean: true,
         description: 'Whether credentials are allowed to be sent in the CORS filter (optional if type=cors)',
+      },
+      'csp-policy': {
+        string: true,
+        description: 'The contents of the content-security-policy header to use. (required if type=csp)',
       },
     };
 
