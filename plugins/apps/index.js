@@ -86,7 +86,13 @@ function favorite(appkit, args) {
 }
 
 function unfavorite(appkit, args) {
-  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  try {
+    assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  } catch (err) {
+    appkit.terminal.error(err);
+    return;
+  }
+
   const task = appkit.terminal.task(`Removing **⬢ ${args.app}** from favorites`);
   task.start();
   appkit.api.delete(`/favorites/${args.app}`, (err) => {
@@ -163,7 +169,13 @@ function blueprint(appkit, args) {
 }
 
 function oneclick(appkit, args) {
-  assert.ok(args.app || args.file, 'Either an app or a file is required.');
+  try {
+    assert.ok(args.app || args.file, 'Either an app or a file is required.');
+  } catch (err) {
+    appkit.terminal.error(err);
+    return;
+  }
+
   if (args.app) {
     appkit.api.get(`/apps/${args.app}/app-setups`, (err, definition) => {
       if (err) {
@@ -178,13 +190,19 @@ function oneclick(appkit, args) {
       bp = encodeURIComponent(JSON.stringify(bp));
       console.log(`https://<akkeris ui host>/app-setups?blueprint=${bp}`);
     } catch (e) {
-      appkit.terminal.error('The specified file didnt exist or wasnt a valid JSON file.');
+      appkit.terminal.error('The specified file didn\'t exist or wasn\'t a valid JSON file.');
     }
   }
 }
 
 async function info(appkit, args) {
-  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  try {
+    assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  } catch (err) {
+    appkit.terminal.error(err);
+    return;
+  }
+
   try {
     const app = await appkit.api.get(`/apps/${args.app}`);
 
@@ -233,7 +251,13 @@ async function info(appkit, args) {
 }
 
 function destroy(appkit, args) {
-  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  try {
+    assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  } catch (err) {
+    appkit.terminal.error(err);
+    return;
+  }
+
   app_or_error(appkit, args.app, (app) => {
     const del = (input) => {
       if (input === app.name) {
@@ -272,7 +296,13 @@ function list(appkit, args) {
 // function lock(appkit, args) { console.log('lock operation is not currently supported.'); }
 
 function open(appkit, args) {
-  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  try {
+    assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  } catch (err) {
+    appkit.terminal.error(err);
+    return;
+  }
+
   appkit.api.get(`/apps/${args.app}`, (err, data) => {
     if (err) {
       appkit.terminal.error(err);
@@ -418,25 +448,32 @@ module.exports = {
       },
     };
 
-    const oneclick_app_option = Object.assign(blueprint_app_option, {
+    const oneclick_app_option = {
+      ...blueprint_app_option,
+      app: {
+        alias: 'a',
+        demand: false,
+        string: true,
+        description: 'An app to use as a base definition',
+      },
       file: {
         alias: 'f',
         demand: false,
         string: true,
         description: 'The file containing the blueprint (app.json) of the app',
       },
-    });
+    };
 
-    const destroy_app_option = Object.assign(require_app_option, {
+    const destroy_app_option = {
+      ...require_app_option,
       confirm: {
         alias: 'c',
         demand: false,
         string: true,
         description: 'Confirm (in advance) the name of the app to destroy',
       },
-    });
+    };
 
-    oneclick_app_option.app.demand = false;
     appkit.args
       .command('apps', 'List available apps', filter_app_option, list.bind(null, appkit))
       .command('apps:info', 'Show detailed information for an app', require_app_option, info.bind(null, appkit))
