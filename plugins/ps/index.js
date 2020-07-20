@@ -66,9 +66,9 @@ function format_dyno(ps) {
     return ` ${dyno_name}:${spacing}~~~${info.state}~~~ ###${ps.updated_at}###\t##${info.warning}##`;
   }
   if (info.state === 'stopping' || info.state === 'stopped' || info.state === 'pending' || info.state === 'starting') {
-    return ` ${dyno_name}:${spacing}~~${info.state}~~ ###${ps.updated_at}###`;
+    return ` ${dyno_name}:${spacing}~~${info.state}~~ ###${ps.updated_at}### ${ps.restarts > 0 ? '- ' + ps.restarts.toLocaleString() + ' restart(s).' : ''}`;
   }
-  return ` ${dyno_name}:${spacing}^^^${info.state}^^^ ###${ps.updated_at}###`;
+  return ` ${dyno_name}:${spacing}^^^${info.state}^^^ ###${ps.updated_at}### ${ps.restarts > 0 ? '- ' + ps.restarts.toLocaleString() + ' restart(s).' : ''}`;
 }
 
 function format_sizes(ps) {
