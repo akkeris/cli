@@ -32,7 +32,7 @@ process.on('uncaughtException', (e) => {
   }
 });
 
-function init_plugins(m, plugins_dir, pluginName) {
+function init_plugins(m, plugins_dir, pluginName, thirdParty) {
   let success;
   fs.readdirSync(plugins_dir).sort((a, b) => (a < b ? -1 : 1)).forEach(((plugin) => {
     if (path.basename(plugin).startsWith('.') || path.basename(plugin).startsWith('tmp')) {
@@ -45,6 +45,7 @@ function init_plugins(m, plugins_dir, pluginName) {
       if (fs.statSync(path.join(plugins_dir, plugin, 'index.js')).isFile()) {
         try {
           m.exports.plugins[plugin] = require(path.join(plugins_dir, plugin, 'index.js'));
+          m.exports.plugins[plugin].thirdPartyPlugin = thirdParty;
         } catch (err) {
           console.log(m.exports.terminal.markdown(`\n !!▸!! error loading plugin "${plugin}": ${err}\n`));
         }
@@ -463,8 +464,8 @@ function clearCachedHelp(appkit) {
   }
 }
 
+// Reset yargs and initialize it with only one desired plugin
 function initPluginGroup(appkit, group) {
-  // Reset yargs so we can initialize it with only the plugin that we want
   appkit.args.reset();
 
   if (group !== 'plugins' && !init_plugins(module, module.exports.config.plugins_dir, group)) {
@@ -493,8 +494,8 @@ function print_group_help(appkit, argv, group) {
   // A specific command was provided along with the group name
   if (argv.group.length > 1) {
     const { getCommands } = appkit.args.getUsageInstance();
-    // Verify that the specific command is valid
 
+    // Verify that the specific command is valid
     const givenCommand = argv.group[1];
     let foundCommand = getCommands().filter((a) => a[0].split(' ').find((b) => b === givenCommand));
 
@@ -527,7 +528,7 @@ function print_group_help(appkit, argv, group) {
 
   // Render helper text
   let helpText = `\n${appkit.terminal.italic('Run')} `;
-  helpText += appkit.terminal.italic(appkit.terminal.markdown(`~~${path.basename(__filename)} help <group> <command>~~`));
+  helpText += appkit.terminal.italic(appkit.terminal.markdown(`~~${path.basename(__filename)} <command> --help~~`));
   helpText += ` ${appkit.terminal.italic('to view help documentation for a specific command')}`;
   ui.div(helpText);
 
@@ -622,6 +623,7 @@ function help(appkit, argv) {
     // Add "plugins" command group (not technically a plugin)
     appkit.plugins.plugins = { help: 'Manage Akkeris CLI plugins' };
 
+    // Display group help if the provided group is valid
     const validGroup = Object.keys(appkit.plugins)
       .filter((group) => !appkit.plugins[group].hidden).find((group) => group === argv.group[0]);
     if (validGroup) {
@@ -629,20 +631,23 @@ function help(appkit, argv) {
       return;
     }
 
-    if (argv.group[0].includes(':') && argv.group[0].split(':')[1] !== '') {
-      try {
-        initPluginGroup(appkit, argv.group[0].split(':')[0]);
-      } catch (err) {
-        console.log(module.exports.terminal.markdown('\n !!▸!! Bad bad error. You should never see this\n'));
-        return;
-      }
-      const foundCommand = getCommands()
-        .filter((a) => a[0].split(' ').find((b) => b === argv.group[0]));
-      if (foundCommand.length > 0) {
-        appkit.args.help(true).parse(`${foundCommand[0][0]} --help`);
-        return;
-      }
+    // Provided group was not valid.
+    // Did they supply a command instead? Try to find the command they are looking for
+
+    // Initialize all plugins
+    init_plugins(module, module.exports.config.plugins_dir);
+    init_plugins(module, module.exports.config.third_party_plugins_dir, undefined, true);
+
+    // Get a list of all valid commands
+    const foundCommand = getCommands()
+      .filter((a) => a[0].split(' ').find((b) => b === argv.group[0]));
+
+    // Found the command they were looking for. Call it with the '--help' flag
+    if (foundCommand.length > 0) {
+      appkit.args.help(true).parse(`${foundCommand[0][0]} --help`);
+      return;
     }
+
     // Display all command groups + "unrecognized command or group" error
     errorMessage = `${appkit.terminal.italic(appkit.terminal.markdown('!!Invalid command or group:!!'))} ${argv.group[0]}`;
   }
@@ -726,7 +731,7 @@ module.exports.init = function init() {
 
   // Scan and initialize the plugins as needed.
   init_plugins(module, module.exports.config.plugins_dir);
-  init_plugins(module, module.exports.config.third_party_plugins_dir);
+  init_plugins(module, module.exports.config.third_party_plugins_dir, undefined, true);
 
   // Grab netrc info
   const netrc = require('netrc')();
@@ -748,6 +753,7 @@ module.exports.version = function version(appkit) {
   console.log(`akkeris/${appkit.config.package.version} ${process.arch}-${process.platform} node-${process.version}`);
   console.log(appkit.terminal.markdown('###===### Installed Plugins'));
   Object.keys(module.exports.plugins).forEach((plugin) => {
+    if (!module.exports.plugins[plugin].thirdPartyPlugin) return;
     console.log(`${module.exports.plugins[plugin].group} ${module.exports.plugins[plugin].version ? `@${module.exports.plugins[plugin].group}` : ''}`);
   });
 };
