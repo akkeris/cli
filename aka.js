@@ -517,10 +517,10 @@ function print_group_help(appkit, argv, group) {
 
   // Render all of the group commands
   const commands = appkit.args.getUsageInstance().getCommands().sort((a, b) => (a[0] < b[0] ? -1 : 1));
-  const width = commands.reduce((acc, curr) => Math.max(stringWidth(`${path.basename(__filename)} ${curr[0]}`), acc), 0) + 6;
+  const width = commands.reduce((acc, curr) => Math.max(stringWidth(`${path.basename(process.argv[1])} ${curr[0]}`), acc), 0) + 6;
   commands.forEach((command) => {
     ui.span(
-      { text: `• ${path.basename(__filename)} ${command[0]}`, padding: [0, 2, 0, 2], width },
+      { text: `• ${path.basename(process.argv[1])} ${command[0]}`, padding: [0, 2, 0, 2], width },
       { text: command[1] },
     );
   });
@@ -528,7 +528,7 @@ function print_group_help(appkit, argv, group) {
 
   // Render helper text
   let helpText = `\n${appkit.terminal.italic('Run')} `;
-  helpText += appkit.terminal.italic(appkit.terminal.markdown(`~~${path.basename(__filename)} <command> --help~~`));
+  helpText += appkit.terminal.italic(appkit.terminal.markdown(`~~${path.basename(process.argv[1])} <command> --help~~`));
   helpText += ` ${appkit.terminal.italic('to view help documentation for a specific command')}`;
   ui.div(helpText);
 
@@ -552,10 +552,10 @@ function print_all_help(appkit, argv, errorMessage) {
   // Print 'meta' commands (version, update, etc)
   const metaCommands = appkit.args.getUsageInstance().getCommands().sort((a, b) => (a[0] < b[0] ? -1 : 1));
   const width = metaCommands
-    .reduce((acc, curr) => Math.max(stringWidth(`${path.basename(__filename)} ${curr[0]}`), acc), 0) + 6;
+    .reduce((acc, curr) => Math.max(stringWidth(`${path.basename(process.argv[1])} ${curr[0]}`), acc), 0) + 6;
   metaCommands.forEach((command) => {
     ui.div(
-      { text: `• ${path.basename(__filename)} ${command[0]}`, width },
+      { text: `• ${path.basename(process.argv[1])} ${command[0]}`, width },
       { text: command[1] },
     );
   });
@@ -568,7 +568,7 @@ function print_all_help(appkit, argv, errorMessage) {
 
   // Render helper text
   let helpText = `\n${appkit.terminal.italic('Run')} `;
-  helpText += appkit.terminal.italic(appkit.terminal.markdown(`~~${path.basename(__filename)} help <group>~~`));
+  helpText += appkit.terminal.italic(appkit.terminal.markdown(`~~${path.basename(process.argv[1])} help <group>~~`));
   helpText += ` ${appkit.terminal.italic('to view help documentation for a specific command group')}`;
   ui.div(helpText);
 
