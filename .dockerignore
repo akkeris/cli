@@ -1,0 +1,7 @@
+*node_modules*
+*.git
+.dockerignore
+Dockerfile
+.gitignore
+.github
+.eslintrc.json
