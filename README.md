@@ -1,3 +1,5 @@
+# Akkeris Command Line Interface
+
 ## Installing
 
 ```bash
@@ -13,7 +15,7 @@ More information can be found in the [documentation](https://docs.akkeris.io/get
 export AKKERIS_HELP_OLD=true   # Always show the old Akkeris help
 ```
 
-## Other env 
+## Other env
 
 These environment variables are only useful if for development.
 
@@ -69,3 +71,33 @@ alias aka="docker run --rm -it -v ~/.akkeris/plugins/:/root/.akkeris/plugins/ -v
 ```
 
 Then, you can run Akkeris commands inside a Docker container like you had the Akkeris CLI installed locally: `aka version`
+
+## Development
+
+### Getting Started
+
+```bash
+# Clone the repo via HTTPS
+git clone https://github.com/akkeris/cli.git
+# Or via SSH
+git clone git@github.com:akkeris/cli.git
+
+# Change directories into the repo
+cd cli
+
+# Install dependencies
+npm install
+
+# Create a `.env` file from the `.env.example` file
+cp -v .env.example .env
+# Modify any environment variable values in `.env` as necessary
+
+# Run the local version of the Akkeris CLI by replacing `aka` with `npm run dev`
+npm run dev
+
+# Append any `aka` sub-commands onto the end, such as
+npm run dev auth:login
+npm run dev apps
+npm run dev squirrel
+# And you're off to the races!
+```
