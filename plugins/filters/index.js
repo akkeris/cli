@@ -43,6 +43,16 @@ function list(appkit, args) {
     appkit.terminal.markdown('###===### No filters were found.')));
 }
 
+function info(appkit, args) {
+  appkit.api.get(`/filters/${args.FILTER_NAME}`, (err, data) => {
+    if (err) {
+      appkit.terminal.print(err);
+      return;
+    }
+    console.log(appkit.terminal.markdown(format_filter(data)));
+  });
+}
+
 async function create(appkit, args) {
   const task = appkit.terminal.task(`Creating http filter **⬢ ${args.FILTER_NAME}**`);
   task.start();
@@ -422,6 +432,7 @@ module.exports = {
 
     appkit.args
       .command('filters', 'List available http filters that can be attached.', optional_app, list.bind(null, appkit))
+      .command('filters:info FILTER_NAME', 'Show detailed information for a filter', {}, info.bind(null, appkit))
       .command('filters:create FILTER_NAME', 'Create a new http filter', filters_create_option, create.bind(null, appkit))
       .command('filters:update FILTER_NAME', 'Update an existing http filter', filters_update_option, update.bind(null, appkit))
       .command('filters:destroy FILTER_NAME', 'Destroy an http filter', confirm_option, destroy.bind(null, appkit))
