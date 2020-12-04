@@ -5,7 +5,9 @@
   "main": "aka.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node -r dotenv/config aka.js"
+    "aka": "node -r dotenv/config aka.js",
+    "ak": "npm run aka",
+    "akkeris": "npm run aka"
   },
   "bin": {
     "akkeris": "./aka.js",
