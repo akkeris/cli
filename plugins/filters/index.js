@@ -129,7 +129,7 @@ async function update(appkit, args) {
       }
     } else {
       task.end('error');
-      appkit.terminal.error(new Error('The specified filter type was invalid, the supported options are: jwt, cors'));
+      appkit.terminal.error(new Error('The specified filter type was invalid, the supported options are: jwt, cors, or csp'));
       return;
     }
     await appkit.api.put(JSON.stringify({
@@ -436,7 +436,6 @@ module.exports = {
       .command('filters:create FILTER_NAME', 'Create a new http filter', filters_create_option, create.bind(null, appkit))
       .command('filters:update FILTER_NAME', 'Update an existing http filter', filters_update_option, update.bind(null, appkit))
       .command('filters:destroy FILTER_NAME', 'Destroy an http filter', confirm_option, destroy.bind(null, appkit))
-      // .command('filters:update FILTER_NAME [options..]', 'Update an http filter', {}, update.bind(null, appkit))
       .command('apps:filters:attach FILTER_NAME', 'Attach an http filter to an app', filters_attach, attach.bind(null, appkit))
       .command('apps:filters:detach FILTER_ATTACHMENT_ID', 'Detach an http filter to an app', { ...require_app_option, ...confirm_option }, detach.bind(null, appkit))
       .command('apps:filters:update FILTER_ATTACHMENT_ID', 'Update an http filter attachment on an app', filters_attach, attach_update.bind(null, appkit))
