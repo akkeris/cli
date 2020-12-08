@@ -1,15 +1,20 @@
 function format_filter(filter) {
-  return `**Ⴤ ${filter.name}**
+  const formatted_data = [`**Ⴤ ${filter.name}**
   ***Id: ${filter.id}***
-  ***Type:*** ${filter.type}
-${Object.keys(filter.options).map((opt) => {
-    const label = opt.replace('_', ' ').split(' ').map((x) => x[0].toUpperCase() + x.substring(1)).join(' ');
-    if (Array.isArray(filter.options[opt])) {
-      return `  ***${label}:*** ${filter.options[opt].join(', ')}`;
+  ***Type:*** ${filter.type}`];
+  Object.entries(filter.options).forEach(([key, value]) => {
+    const label = key.replace('_', ' ').split(' ').map((x) => x[0].toUpperCase() + x.substring(1)).join(' ');
+    if (Array.isArray(value)) {
+      formatted_data.push(`  ***${label}:*** ${value.join(', ')}`);
+    } else {
+      formatted_data.push(`  ***${label}:*** ${value}`);
     }
-    return `  ***${label}:*** ${filter.options[opt]}`;
-  }).join('\n')}
-  `;
+  });
+  if (Array.isArray(filter.attached_apps)) {
+    const attached_apps = filter.attached_apps.map((attached_app) => `${attached_app.name}-${attached_app.space.name}`).join(', ');
+    formatted_data.push(`  ***Attached Apps:*** ${attached_apps}`);
+  }
+  return formatted_data.join('\n');
 }
 
 function format_filter_attachment(fa) {
@@ -41,6 +46,16 @@ function list(appkit, args) {
   }
   appkit.api.get('/filters', appkit.terminal.format_objects.bind(null, format_filter,
     appkit.terminal.markdown('###===### No filters were found.')));
+}
+
+function info(appkit, args) {
+  appkit.api.get(`/filters/${args.FILTER_NAME}`, (err, data) => {
+    if (err) {
+      appkit.terminal.print(err);
+      return;
+    }
+    console.log(appkit.terminal.markdown(format_filter(data)));
+  });
 }
 
 async function create(appkit, args) {
@@ -119,7 +134,7 @@ async function update(appkit, args) {
       }
     } else {
       task.end('error');
-      appkit.terminal.error(new Error('The specified filter type was invalid, the supported options are: jwt, cors'));
+      appkit.terminal.error(new Error('The specified filter type was invalid, the supported options are: jwt, cors, or csp'));
       return;
     }
     await appkit.api.put(JSON.stringify({
@@ -422,10 +437,10 @@ module.exports = {
 
     appkit.args
       .command('filters', 'List available http filters that can be attached.', optional_app, list.bind(null, appkit))
+      .command('filters:info FILTER_NAME', 'Show detailed information for a filter', {}, info.bind(null, appkit))
       .command('filters:create FILTER_NAME', 'Create a new http filter', filters_create_option, create.bind(null, appkit))
       .command('filters:update FILTER_NAME', 'Update an existing http filter', filters_update_option, update.bind(null, appkit))
       .command('filters:destroy FILTER_NAME', 'Destroy an http filter', confirm_option, destroy.bind(null, appkit))
-      // .command('filters:update FILTER_NAME [options..]', 'Update an http filter', {}, update.bind(null, appkit))
       .command('apps:filters:attach FILTER_NAME', 'Attach an http filter to an app', filters_attach, attach.bind(null, appkit))
       .command('apps:filters:detach FILTER_ATTACHMENT_ID', 'Detach an http filter to an app', { ...require_app_option, ...confirm_option }, detach.bind(null, appkit))
       .command('apps:filters:update FILTER_ATTACHMENT_ID', 'Update an http filter attachment on an app', filters_attach, attach_update.bind(null, appkit))
