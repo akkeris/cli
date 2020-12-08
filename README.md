@@ -92,12 +92,12 @@ npm install
 cp -v .env.example .env
 # Modify any environment variable values in `.env` as necessary
 
-# Run the local version of the Akkeris CLI by replacing `aka` with `npm run dev`
-npm run dev
+# Run the local version of the Akkeris CLI by replacing `aka` with `npm run aka`
+npm run aka
 
 # Append any `aka` sub-commands onto the end, such as
-npm run dev auth:login
-npm run dev apps
-npm run dev squirrel
+npm run aka auth:login
+npm run aka apps
+npm run aka squirrel
 # And you're off to the races!
 ```
