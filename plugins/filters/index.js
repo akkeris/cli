@@ -1,15 +1,16 @@
 function format_filter(filter) {
-  return `**Ⴤ ${filter.name}**
+  const formatted_data = [`**Ⴤ ${filter.name}**
   ***Id: ${filter.id}***
-  ***Type:*** ${filter.type}
-${Object.keys(filter.options).map((opt) => {
-    const label = opt.replace('_', ' ').split(' ').map((x) => x[0].toUpperCase() + x.substring(1)).join(' ');
-    if (Array.isArray(filter.options[opt])) {
-      return `  ***${label}:*** ${filter.options[opt].join(', ')}`;
+  ***Type:*** ${filter.type}`];
+  Object.entries(filter.options).forEach(([key, value]) => {
+    const label = key.replace('_', ' ').split(' ').map((x) => x[0].toUpperCase() + x.substring(1)).join(' ');
+    if (Array.isArray(value)) {
+      formatted_data.push(`  ***${label}:*** ${value.join(', ')}`);
+    } else {
+      formatted_data.push(`  ***${label}:*** ${value}`);
     }
-    return `  ***${label}:*** ${filter.options[opt]}`;
-  }).join('\n')}
-  `;
+  });
+  return formatted_data.join('\n');
 }
 
 function format_filter_attachment(fa) {
