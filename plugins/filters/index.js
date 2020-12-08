@@ -10,6 +10,10 @@ function format_filter(filter) {
       formatted_data.push(`  ***${label}:*** ${value}`);
     }
   });
+  if (Array.isArray(filter.attached_apps)) {
+    const attached_apps = filter.attached_apps.map((attached_app) => `${attached_app.name}-${attached_app.space.name}`).join(', ');
+    formatted_data.push(`  ***Attached Apps:*** ${attached_apps}`);
+  }
   return formatted_data.join('\n');
 }
 
