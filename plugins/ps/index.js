@@ -8,7 +8,7 @@ function format_formation(ps) {
 }
 
 function format_warning(ps, form_dynos) {
-  return `\n~~~⚠~~~  ${ps.type} dyno type has ${form_dynos.length} dynos, but ${ps.quantity} ${ps.quantity === 1 ? 'has' : 'have'} been requested. 
+  return `\n~~~⚠~~~  ${ps.type} dyno type has ${form_dynos.length} dynos, but ${ps.quantity} ${ps.quantity === 1 ? 'has' : 'have'} been requested.
 ~~~⚠~~~  It may be scaling, crashing, restarting or deploying.`;
 }
 
@@ -203,7 +203,7 @@ function update(appkit, args) {
   }
   assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   assert.ok(args.TYPE, 'No type was specified, this should be "web" if you need a web service, or "worker".');
-  if (!args.size && !args.quantity && args.quantity !== 0 && !args.healthcheck && !args.removeHealthcheck && typeof (args.command) === 'undefined' && !args.port) {
+  if (!args.size && !args.quantity && args.quantity !== 0 && !args.healthcheck && !args.removeHealthcheck && !args.removeCommand && typeof (args.command) === 'undefined' && !args.port) {
     appkit.terminal.error(new Error('No new changes found for updating dyno formation.'));
     return;
   }
@@ -225,6 +225,9 @@ function update(appkit, args) {
   }
   if (args.removeHealthcheck) {
     payload.removeHealthcheck = true;
+  }
+  if (args.removeCommand) {
+    payload['remove-command'] = true;
   }
 
   const task = appkit.terminal.task(`Updating dyno for app ^^^${args.app}^^^, type **${args.TYPE}**`);
@@ -497,10 +500,20 @@ module.exports = {
         string: true,
         description: 'Healtheck endpoint for checking app readiness (web dyno only, must be valid URI /path)',
       },
+    };
+
+    const require_formation_update_option = {
+      ...require_formation_create_option,
       removeHealthcheck: {
         alias: 'r',
         demand: false,
         description: 'Remove active healthcheck',
+      },
+      removeCommand: {
+        alias: 'x',
+        demand: false,
+        boolean: true,
+        description: 'Remove the set command and default to what is specified in the docker file',
       },
     };
 
@@ -569,7 +582,7 @@ module.exports = {
     appkit.args
       .command('ps', 'List dynos for an app', require_app_option, list.bind(null, appkit))
       .command('ps:create TYPE', 'Create a new dyno', require_formation_create_option, create.bind(null, appkit))
-      .command('ps:update TYPE', 'Update dyno settings', require_formation_create_option, update.bind(null, appkit))
+      .command('ps:update TYPE', 'Update dyno settings', require_formation_update_option, update.bind(null, appkit))
       .command('ps:forward PORT', 'Forward web traffic to specific port', require_app_option, forward.bind(null, appkit))
       .command('ps:destroy TYPE', 'Permanently delete a dyno', require_confirm_app_option, destroy.bind(null, appkit))
       .command('ps:kill DYNO', 'Send a posix signal to a dyno', require_kill_option, kill.bind(null, appkit))
