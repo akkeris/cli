@@ -61,14 +61,14 @@ function format_dyno(ps) {
   const spacing = (dyno_name.length > 30) ? '  ' : (' '.repeat(32 - (dyno_name.length + 2)));
   if (info.warning) {
     if (info.state === 'crashed') {
-      return ` ${dyno_name}:${spacing}!!${info.state}!! ###${ps.updated_at}###\t##${info.warning}## ${ps.restarts > 0 ? ps.restarts.toLocaleString() + ' restarts.' : ''}`;
+      return ` ${dyno_name}:${spacing}!!${info.state}!! ###${ps.updated_at}###\t##${info.warning}## ${ps.restarts > 0 ? `${ps.restarts.toLocaleString()} restarts.` : ''}`;
     }
     return ` ${dyno_name}:${spacing}~~~${info.state}~~~ ###${ps.updated_at}###\t##${info.warning}##`;
   }
   if (info.state === 'stopping' || info.state === 'stopped' || info.state === 'pending' || info.state === 'starting') {
-    return ` ${dyno_name}:${spacing}~~${info.state}~~ ###${ps.updated_at}### ${ps.restarts > 0 ? '- ' + ps.restarts.toLocaleString() + ' restart(s).' : ''}`;
+    return ` ${dyno_name}:${spacing}~~${info.state}~~ ###${ps.updated_at}### ${ps.restarts > 0 ? `- ${ps.restarts.toLocaleString()} restart(s).` : ''}`;
   }
-  return ` ${dyno_name}:${spacing}^^^${info.state}^^^ ###${ps.updated_at}### ${ps.restarts > 0 ? '- ' + ps.restarts.toLocaleString() + ' restart(s).' : ''}`;
+  return ` ${dyno_name}:${spacing}^^^${info.state}^^^ ###${ps.updated_at}### ${ps.restarts > 0 ? `- ${ps.restarts.toLocaleString()} restart(s).` : ''}`;
 }
 
 function format_sizes(ps) {
@@ -334,15 +334,21 @@ function scale_dynos(appkit, args) {
           scale[current_dyno[0].type].amount = 0;
         }
       }
+      if (current_dyno.type !== 'web') {
+        scale[current_dyno[0].type].command = current_dyno[0].command;
+      }
     }
 
     const payload = [];
     for (let i = 0; i < dyno_types.length; i++) {
-      if (scale[dyno_types[i]].size) {
-        payload.push({ type: dyno_types[i], quantity: scale[dyno_types[i]].amount, size: scale[dyno_types[i]].size });
-      } else {
-        payload.push({ type: dyno_types[i], quantity: scale[dyno_types[i]].amount });
+      const patch = { type: dyno_types[i], quantity: scale[dyno_types[i]].amount };
+      if (dyno_types[i] !== 'web') {
+        patch.command = scale[dyno_types[i]].command;
       }
+      if (scale[dyno_types[i]].size) {
+        patch.size = scale[dyno_types[i]].size;
+      }
+      payload.push(patch);
       if (!(
         !Number.isNaN(scale[dyno_types[i]].amount)
         && Number.isInteger(scale[dyno_types[i]].amount)
