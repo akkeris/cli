@@ -44,9 +44,41 @@ const off = maintenance.bind(null, false);
 // Apply maintenance mode to one or more apps at a time
 async function batchMaintenance(state, appkit, args) {
   try {
-    assert.ok(args.app && args.app !== '', 'At least one application must be provided.');
+    // was filename provided?
+    const bFile = (args.filename && args.filename !== '');
+    // was app provided?
+    const bApp = (args.app && args.app !== '');
+    // simulate XOR to make sure we have either filename OR app
+    assert.ok((bFile && !bApp) || (!bFile && bApp), 'Either an application or filename must be provided (but not both)');
 
-    const apps = Array.isArray(args.app) ? args.app : [args.app];
+    let apps = [];
+
+    // Filename argument was provided
+    if (bFile) {
+      let cd;
+
+      // Is file in current directory?
+      if (fs.existsSync(`${process.cwd()}/${args.filename}`)) {
+        cd = true;
+      } else if (fs.existsSync(args.filename)) {
+        cd = false;
+      } else {
+        throw new Error('Unable to find specified file');
+      }
+
+      // Read file into array, each line is an array entry
+      apps = fs.readFileSync(cd ? `${process.cwd()}/${args.filename}` : args.filename).toString().split('\n').filter((a) => a);
+
+      const inavlidApps = apps.filter((a) => !(/^[a-zA-Z0-9]+-[a-zA-Z0-9\-]+$/.test(a))); // eslint-disable-line
+      if (inavlidApps.length > 0) {
+        appkit.terminal.error(`The following lines did not contain valid apps:\n${inavlidApps.join('\n')}`);
+        process.exit(1);
+      }
+    // App argument was provided
+    } else if (bApp) {
+      apps = Array.isArray(args.app) ? args.app : [args.app];
+    }
+
     const badApps = [];
 
     // Verify that each app is valid
@@ -60,7 +92,7 @@ async function batchMaintenance(state, appkit, args) {
 
     if (badApps.length > 0) {
       appkit.terminal.error(`There was a problem retrieving information about the following apps: ${badApps.join(', ')}`);
-      return;
+      process.exit(1);
     }
 
     // Callback function to send a PATCH for all provided apps
@@ -110,6 +142,7 @@ async function batchMaintenance(state, appkit, args) {
     }
   } catch (err) {
     appkit.terminal.error(err);
+    process.exit(1);
   }
 }
 
@@ -302,9 +335,15 @@ module.exports = {
       },
       app: {
         alias: 'a',
-        demand: true,
+        demand: false,
         string: true,
         description: 'The app(s) to manage - add as many as you want',
+      },
+      filename: {
+        alias: 'f',
+        demand: false,
+        string: true,
+        description: 'Filename of a file with the apps(s) to manage, one per line',
       },
     };
 
