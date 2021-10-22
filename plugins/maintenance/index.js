@@ -285,6 +285,7 @@ async function scaleDown(appkit, args) {
   // Set all formations to 0
   formations = formations.map((formation) => ({
     ...formation,
+    size: formation.size.replace('-prod', ''),
     quantity: 0,
   }));
 
