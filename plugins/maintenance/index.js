@@ -161,7 +161,7 @@ async function saveFormations(api, app, filename) {
     healthcheck: f.healthcheck,
     quantity: f.quantity,
     port: f.port,
-    size: f.size,
+    size: f.size.replace('-prod', ''),
   }));
   fs.writeFileSync(`${process.cwd()}/${filename}`, JSON.stringify(formations, null, 2));
   return formations;
@@ -285,7 +285,6 @@ async function scaleDown(appkit, args) {
   // Set all formations to 0
   formations = formations.map((formation) => ({
     ...formation,
-    size: formation.size.replace('-prod', ''),
     quantity: 0,
   }));
 
