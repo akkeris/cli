@@ -80,26 +80,77 @@ async function createActions(appkit, args) {
   // Check to make sure we have passed in required arguments
   try {
     assert.ok(args.app && args.app !== '', 'An application name was not provided.');
-    assert.ok(args.size && args.size !== '', 'An action size was not provided.');
     assert.ok(args.name && args.name !== '', 'A name was not provided.');
   } catch (err) {
     appkit.terminal.error(err);
     process.exit(1);
   }
-
   // All possible arguments (some of these are optional)
-  const {
-    app, description, size, command, image, env, name,
-  } = args;
+  const requestPayload = {
+    size: args.size,
+    options: {
+    },
+    name: args.name,
+  };
+  if (args.description && args.description !== '') {
+    requestPayload.description = args.description;
+  }
+  if (args.image && args.image !== '') {
+    requestPayload.options.image = args.image;
+  }
+  if (args.command && args.command !== '') {
+    requestPayload.command = args.command;
+  }
+  if (args.env && typeof args.env === 'string' && args.env !== '') {
+    args.env = [args.env];
+  }
 
-  /*
-    Code goes here
-    Helpful functions:
-      appkit.api.post(body, url); -- POST the given body to the given URL
-      console.log(str); -- Output a message to the console
+  if (args.env && Array.isArray(args.env) && args.env.length > 0) {
+    const values_paired = args.env;
+    const values = {};
+    /* eslint-disable no-restricted-syntax */
+    for (const value of values_paired) {
+      if (value.indexOf('=') !== -1) {
+        const key = value.substring(0, value.indexOf('='));
+        const val = value.substring(value.indexOf('=') + 1);
+        if (key && val) {
+          values[key] = val;
+        }
+      }
+    }
+    requestPayload.options.env = values;
+  }
+  appkit.api.post(JSON.stringify(requestPayload), `/apps/${args.app}/actions`)
+    .then(() => {
+      console.log(`Action ${args.name} is successfully created`);
+    })
+    .catch((err) => {
+      appkit.terminal.error(err);
+    });
+}
 
-    Code should create a JSON object with the payload and POST it to the actions endpoint
-  */
+/**
+ * deleteAction - Delete an existing action on an app
+ */
+async function deleteAction(appkit, args) {
+  // Check to make sure we have passed in required arguments
+  try {
+    assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+    assert.ok(args.action && args.action !== '', 'A action was not provided.');
+  } catch (err) {
+    appkit.terminal.error(err);
+    process.exit(1);
+  }
+  const loader = appkit.terminal.loading(`Deleting action ${args.action} from ${args.app}`);
+  loader.start();
+  appkit.api.delete(`/apps/${args.app}/actions/${args.action}`, (err) => {
+    loader.end();
+    if (err) {
+      appkit.terminal.error(err);
+      return;
+    }
+    console.log(appkit.terminal.markdown(`###===### **${args.action}** has been succesfully deleted from ##${args.app}##`));
+  });
 }
 
 module.exports = {
@@ -128,7 +179,7 @@ module.exports = {
       },
       size: {
         alias: 's',
-        demand: true,
+        demand: false,
         string: true,
         description: 'The dyno size to use for the action\'s formation',
       },
@@ -150,11 +201,33 @@ module.exports = {
         string: true,
         description: 'One or more key-value pairs (KEY=VALUE) to use as additional environment variables',
       },
+      name: {
+        alias: 'n',
+        demand: true,
+        string: true,
+        description: 'The name of the action',
+      },
+    };
+
+    const delete_action_option = {
+      app: {
+        alias: 'a',
+        demand: true,
+        string: true,
+        description: 'The name of the app to act on',
+      },
+      action: {
+        alias: 'n',
+        demand: true,
+        string: true,
+        description: 'An name of the action',
+      },
     };
 
     appkit.args
       .command('actions', 'List available actions on an app', require_app_option, listActions.bind(null, appkit))
-      .command('actions:create NAME', 'Create action on an app', create_action_option, createActions.bind(null, appkit));
+      .command('actions:create', 'Create action on an app', create_action_option, createActions.bind(null, appkit))
+      .command('actions:delete', 'Delete action on an app', delete_action_option, deleteAction.bind(null, appkit));
   },
   update() {
     // do nothing.
