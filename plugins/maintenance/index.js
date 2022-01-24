@@ -150,19 +150,24 @@ const batchMaintenanceOn = batchMaintenance.bind(null, true);
 const batchMaintenanceOff = batchMaintenance.bind(null, false);
 
 // Save formation state to a file for the given app
-async function saveFormations(api, app, filename) {
+async function saveFormations(api, app, filename, regex) {
   let formations;
   formations = await api.get(`/apps/${app}/formation`);
   // Only save properties that we need
-  formations = formations.map((f) => ({
-    id: f.id,
-    type: f.type,
-    command: f.command,
-    healthcheck: f.healthcheck,
-    quantity: f.quantity,
-    port: f.port,
-    size: f.size,
-  }));
+  formations = formations.reduce((acc, cur) => {
+    if (!regex || regex.test(cur.type)) {
+      acc.push({
+        id: cur.id,
+        type: cur.type,
+        command: cur.command,
+        healthcheck: cur.healthcheck,
+        quantity: cur.quantity,
+        port: cur.port,
+        size: cur.size.replace('-prod', ''),
+      });
+    }
+    return acc;
+  }, []);
   fs.writeFileSync(`${process.cwd()}/${filename}`, JSON.stringify(formations, null, 2));
   return formations;
 }
@@ -170,6 +175,7 @@ async function saveFormations(api, app, filename) {
 async function saveState(appkit, args) {
   try {
     assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+    assert.ok(!args.filter || !(args.suffix || args.prefix), 'Either suffix/prefix can be provided OR a filter, but not both');
   } catch (err) {
     appkit.terminal.error(err);
     return;
@@ -178,8 +184,15 @@ async function saveState(appkit, args) {
   const task = appkit.terminal.task(`Saving formation state for ${args.app} to ${args.filename}`);
   task.start();
 
+  let regex;
+  if (args.filter) {
+    regex = new RegExp(`^.*${args.filter}.*$`);
+  } else if (args.suffix || args.prefix) {
+    regex = new RegExp(`^${args.prefix || ''}.*${args.suffix || ''}$`);
+  }
+
   try {
-    await saveFormations(appkit.api, args.app, args.filename);
+    await saveFormations(appkit.api, args.app, args.filename, regex);
     task.end('ok');
   } catch (err) {
     task.end('error');
@@ -190,6 +203,7 @@ async function saveState(appkit, args) {
 async function restoreState(appkit, args) {
   try {
     assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+    assert.ok(!args.filter || !(args.suffix || args.prefix), 'Either suffix/prefix can be provided OR a filter, but not both');
     await appkit.api.get(`/apps/${args.app}`);
   } catch (err) {
     appkit.terminal.error(err);
@@ -215,6 +229,7 @@ async function restoreState(appkit, args) {
 
     // Verify state structure
     assert.ok(Array.isArray(state), 'State file should be an array of formations');
+    assert.ok(state.length > 0, 'State file should contain at least one formation');
 
     // Verify that the following properties are present in each formation object:
     // command, quantity, size, type, port, healthcheck
@@ -231,6 +246,24 @@ async function restoreState(appkit, args) {
     );
   } catch (err) {
     appkit.terminal.print(err);
+    process.exit(1);
+  }
+
+  let regex;
+  if (args.filter) {
+    regex = new RegExp(`^.*${args.filter}.*$`);
+    state = state.filter((f) => regex.test(f.type));
+    if (state.length < 1) {
+      appkit.terminal.print('Did not find any formations matching the provided filter.');
+      process.exit(1);
+    }
+  } else if (args.suffix || args.prefix) {
+    regex = new RegExp(`^${args.prefix || ''}.*${args.suffix || ''}$`);
+    state = state.filter((f) => regex.test(f.type));
+    if (state.length < 1) {
+      appkit.terminal.print('Did not find any formations matching the provided suffix/prefix.');
+      process.exit(1);
+    }
   }
 
   const applyBatchMaintenancePatch = (input) => {
@@ -263,6 +296,7 @@ async function restoreState(appkit, args) {
 async function scaleDown(appkit, args) {
   try {
     assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+    assert.ok(!args.filter || !(args.suffix || args.prefix), 'Either suffix/prefix can be provided OR a filter, but not both');
   } catch (err) {
     appkit.terminal.error(err);
     return;
@@ -270,11 +304,18 @@ async function scaleDown(appkit, args) {
 
   let formations;
 
+  let regex;
+  if (args.filter) {
+    regex = new RegExp(`^.*${args.filter}.*$`);
+  } else if (args.suffix || args.prefix) {
+    regex = new RegExp(`^${args.prefix || ''}.*${args.suffix || ''}$`);
+  }
+
   const task = appkit.terminal.task(`Saving formation state for ${args.app} to ${args.filename}`);
   task.start();
 
   try {
-    formations = await saveFormations(appkit.api, args.app, args.filename);
+    formations = await saveFormations(appkit.api, args.app, args.filename, regex);
     task.end('ok');
   } catch (err) {
     task.end('error');
@@ -290,7 +331,7 @@ async function scaleDown(appkit, args) {
 
   const scaleFormationsToZero = (input) => {
     if (input === 'confirm') {
-      const task2 = appkit.terminal.task(`Scaling down all formations on ${args.app}`);
+      const task2 = appkit.terminal.task(`Scaling down formations on ${args.app}`);
       task2.start();
 
       appkit.api.patch(JSON.stringify(formations), `/apps/${args.app}/formation`).then(() => {
@@ -326,6 +367,27 @@ module.exports = {
       },
     };
 
+    const filterFormationOptions = {
+      filter: {
+        alias: 'k',
+        demand: false,
+        string: true,
+        description: 'Only act on formations that include a provided substring (cannot use with prefix or suffix)',
+      },
+      prefix: {
+        alias: 'p',
+        demand: false,
+        string: true,
+        description: 'Only act on formations matching a provided prefix (cannot use with filter)',
+      },
+      suffix: {
+        alias: 's',
+        demand: false,
+        string: true,
+        description: 'Only act on formations matching a provided suffix (cannot use with filter)',
+      },
+    };
+
     const batchOptions = {
       confirm: {
         alias: 'c',
@@ -355,6 +417,7 @@ module.exports = {
         description: 'Name of the file to save formation state to',
       },
       ...require_app_option,
+      ...filterFormationOptions,
     };
 
     const restoreStateOptions = {
@@ -371,6 +434,7 @@ module.exports = {
         description: 'Confirm (in advance) that you wish to restore formation state',
       },
       ...require_app_option,
+      ...filterFormationOptions,
     };
 
     const scaleDownOptions = {
@@ -387,6 +451,7 @@ module.exports = {
         description: 'Confirm (in advance) that you wish to scale app formations to 0',
       },
       ...require_app_option,
+      ...filterFormationOptions,
     };
 
     appkit.args
