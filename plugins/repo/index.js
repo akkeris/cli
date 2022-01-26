@@ -153,6 +153,10 @@ module.exports = {
       .command('repo:set REPO [BRANCH]', 'Watch a Git repository and automatically deploy changes to an app', require_auto_build_option, set.bind(null, appkit))
       .command('repo:unset', 'Stop watching a Git repository and do not automatically deploy changes to an app', require_app_option, unset.bind(null, appkit))
       .command('repo:build', 'Trigger a fresh build from the configured Git repository on an app', confirm_app_option, trigger.bind(null, appkit))
+      // aliases
+      .command('repo:trigger-build', false, confirm_app_option, trigger.bind(null, appkit))
+      .command('repo:build:trigger', false, confirm_app_option, trigger.bind(null, appkit))
+      .command('repo:trigger', false, confirm_app_option, trigger.bind(null, appkit))
       .help();
   },
   update() {
