@@ -78,6 +78,31 @@ function info(appkit, args) {
   });
 }
 
+async function trigger(appkit, args) {
+  const engage = async (input) => {
+    if (input === 'yes' || (typeof input === 'boolean' && input)) {
+      const task = appkit.terminal.task(`Triggering new GitHub build for **• ${args.app}**`);
+      task.start();
+      try {
+        await appkit.api.post(null, `/apps/${args.app}/builds/auto/github/trigger`);
+      } catch (err) {
+        task.end('error');
+        appkit.terminal.error(err);
+        return;
+      }
+      task.end('ok');
+    } else {
+      appkit.terminal.soft_error('Confirmation did not match. Aborted.');
+    }
+  };
+  assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+  if (args.confirm) {
+    await engage(args.confirm);
+  } else {
+    appkit.terminal.confirm(`~~▸~~    Are you sure you want to trigger a new GitHub build on **⬢ ${args.app}**?\n ~~▸~~    To proceed, type !!yes!! or re-run this command with !!--confirm!!\n`, engage);
+  }
+}
+
 
 module.exports = {
   init(appkit) {
@@ -87,6 +112,20 @@ module.exports = {
         demand: true,
         string: true,
         description: 'The app to act on',
+      },
+    };
+    const confirm_app_option = {
+      app: {
+        alias: 'a',
+        demand: true,
+        string: true,
+        description: 'The app to act on',
+      },
+      confirm: {
+        alias: 'c',
+        demand: false,
+        boolean: true,
+        description: 'Confirm that you want to trigger a fresh build.',
       },
     };
     const require_auto_build_option = {
@@ -113,6 +152,7 @@ module.exports = {
       .command('repo', 'Display which Git repository is being watched for auto deployment of an app', require_app_option, info.bind(null, appkit))
       .command('repo:set REPO [BRANCH]', 'Watch a Git repository and automatically deploy changes to an app', require_auto_build_option, set.bind(null, appkit))
       .command('repo:unset', 'Stop watching a Git repository and do not automatically deploy changes to an app', require_app_option, unset.bind(null, appkit))
+      .command('repo:build', 'Trigger a fresh build from the configured Git repository on an app', confirm_app_option, trigger.bind(null, appkit))
       .help();
   },
   update() {
