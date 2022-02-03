@@ -153,6 +153,60 @@ async function deleteAction(appkit, args) {
   });
 }
 
+/**
+ * updateAction - update an existing action on an app
+ */
+async function updateAction(appkit, args) {
+  try {
+    assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+    assert.ok(args.name && args.name !== '', 'A action was not provided.');
+  } catch (err) {
+    appkit.terminal.error(err);
+    process.exit(1);
+  }
+  const updateRequestPayload = {
+    size: args.size,
+    options: {
+    },
+    name: args.name,
+  };
+  if (args.description && args.description !== '') {
+    updateRequestPayload.description = args.description;
+  }
+  if (args.image) {
+    updateRequestPayload.options.image = args.image;
+  }
+  if (args.command && args.command !== '') {
+    updateRequestPayload.command = args.command;
+  }
+  if (args.env && typeof args.env === 'string' && args.env !== '') {
+    args.env = [args.env];
+  }
+
+  if (args.env && Array.isArray(args.env) && args.env.length > 0) {
+    const values_paired = args.env;
+    const values = {};
+    /* eslint-disable no-restricted-syntax */
+    for (const value of values_paired) {
+      if (value.indexOf('=') !== -1) {
+        const key = value.substring(0, value.indexOf('='));
+        const val = value.substring(value.indexOf('=') + 1);
+        if (key && val) {
+          values[key] = val;
+        }
+      }
+    }
+    updateRequestPayload.options.env = values;
+  }
+  appkit.api.patch(JSON.stringify(updateRequestPayload), `/apps/${args.app}/actions/${args.name}`)
+    .then(() => {
+      console.log(`Action ${args.name} is successfully updated`);
+    })
+    .catch((err) => {
+      appkit.terminal.error(err);
+    });
+}
+
 module.exports = {
   init(appkit) {
     const require_app_option = {
@@ -224,10 +278,56 @@ module.exports = {
       },
     };
 
+    const update_action_option = {
+      app: {
+        alias: 'a',
+        demand: true,
+        string: true,
+        description: 'The app to act on',
+      },
+      description: {
+        alias: 'd',
+        demand: false,
+        string: true,
+        description: 'An optional description of the action',
+      },
+      size: {
+        alias: 's',
+        demand: false,
+        string: true,
+        description: 'The dyno size to use for the action\'s formation',
+      },
+      command: {
+        alias: 'c',
+        demand: false,
+        string: true,
+        description: 'An optional command to use for the action\'s image',
+      },
+      image: {
+        alias: 'i',
+        demand: false,
+        string: true,
+        description: 'An optional image to use for the action instead of the app\'s image',
+      },
+      env: {
+        alias: 'e',
+        demand: false,
+        string: true,
+        description: 'One or more key-value pairs (KEY=VALUE) to use as additional environment variables',
+      },
+      name: {
+        alias: 'n',
+        demand: true,
+        string: true,
+        description: 'The name of the action',
+      },
+    };
+
     appkit.args
       .command('actions', 'List available actions on an app', require_app_option, listActions.bind(null, appkit))
       .command('actions:create', 'Create action on an app', create_action_option, createActions.bind(null, appkit))
-      .command('actions:delete', 'Delete action on an app', delete_action_option, deleteAction.bind(null, appkit));
+      .command('actions:delete', 'Delete action on an app', delete_action_option, deleteAction.bind(null, appkit))
+      .command('actions:update', 'update existing action on an app', update_action_option, updateAction.bind(null, appkit));
   },
   update() {
     // do nothing.
