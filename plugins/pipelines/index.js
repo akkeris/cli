@@ -78,8 +78,11 @@ async function find_release(appkit, app, release_key) {
 async function promote(appkit, args) {
   assert.ok(args.app && args.app !== '', 'An application name was not provided.');
   let apps = args.to ? args.to : [];
-  apps = apps.map((x) => x.split(','));
-  apps = [...apps].filter((x) => { if (x.trim() === '') return false; return true; });
+
+  apps = apps
+    .map((x) => x.split(','))
+    .flat()
+    .filter((x) => { if (x.trim() === '') return false; return true; });
 
   const task = appkit.terminal.task(`Promoting app **⬢ ${args.app}**`);
   task.start();
