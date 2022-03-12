@@ -754,7 +754,7 @@ module.exports.version = function version(appkit) {
   console.log(appkit.terminal.markdown('###===### Installed Plugins'));
   Object.keys(module.exports.plugins).forEach((plugin) => {
     if (!module.exports.plugins[plugin].thirdPartyPlugin) return;
-    console.log(`${module.exports.plugins[plugin].group} ${module.exports.plugins[plugin].version ? `@${module.exports.plugins[plugin].group}` : ''}`);
+    console.log(`${module.exports.plugins[plugin].group} ${module.exports.plugins[plugin].version ? `v${module.exports.plugins[plugin].version}` : ''}`);
   });
 };
 
