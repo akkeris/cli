@@ -151,10 +151,10 @@ async function listActionRuns(appkit, args) {
       ui.div(md(`###${'-'.repeat(run.run_number.toString().length + run.action_run.length + 5 + 3)}###`));
 
       ui.div(label('Status'), run.status);
-      ui.div(label('Started At'), (new Date(run.started_at)).toLocaleString());
+      ui.div(label('Started At'), run.started_at ? (new Date(run.started_at)).toLocaleString() : md('###n/a###'));
       ui.div(label('Finished At'), run.finished_at ? (new Date(run.finished_at)).toLocaleString() : md('###n/a###'));
       ui.div(label('Source'), run.source);
-      ui.div(label('Exit Code'), run.exit_code || md('###n/a###'));
+      ui.div(label('Exit Code'), `${run.exit_code}` || md('###n/a###'));
       ui.div();
     });
 
@@ -205,6 +205,39 @@ async function describeActionRun(appkit, args) {
     ui.div();
 
     console.log(ui.toString());
+  } catch (err) {
+    appkit.terminal.print(err);
+  }
+}
+
+/**
+ * getActionRunLogs - Get logs for a specific run
+ */
+async function getActionRunLogs(appkit, args) {
+  args.action = args.ACTION;
+  args.run = args.RUN;
+  try {
+    assert.ok(args.app && args.app !== '', 'An application name was not provided.');
+    assert.ok(args.action && args.action !== '', 'An action was not provided.');
+    assert.ok(args.run && args.run !== '', 'An action run was not provided.');
+  } catch (err) {
+    appkit.terminal.error(err);
+    return;
+  }
+
+  try {
+    const run = await appkit.api.get(`/apps/${args.app}/actions/${args.action}/runs/${args.run}`);
+
+    if (!run) {
+      console.log(appkit.terminal.markdown(`\nNo action run matching ${args.run} for **${args.action}** was found.`));
+      return;
+    }
+
+    if (run.logs && run.logs.length > 0) {
+      console.log(run.logs);
+    } else {
+      console.log(appkit.terminal.markdown(`\nNo logs for run ${args.run} on **${args.action}** were found.`));
+    }
   } catch (err) {
     appkit.terminal.print(err);
   }
@@ -533,7 +566,8 @@ module.exports = {
       .command('actions:update ACTION', 'Update an action on an app', update_action_option, updateAction.bind(null, appkit))
       .command('actions:delete ACTION', 'Delete an action on an app', delete_action_option, deleteAction.bind(null, appkit))
       .command('actions:runs ACTION', 'List action runs on an app', require_app_option, listActionRuns.bind(null, appkit))
-      .command('actions:runs:info ACTION RUN', 'Get info on a specific action run on an app', require_app_option, describeActionRun.bind(null, appkit));
+      .command('actions:runs:info ACTION RUN', 'Get info on a specific action run on an app', require_app_option, describeActionRun.bind(null, appkit))
+      .command('actions:runs:logs ACTION RUN', 'Get logs on a specific action run on an app', require_app_option, getActionRunLogs.bind(null, appkit));
   },
   update() {
     // do nothing.
