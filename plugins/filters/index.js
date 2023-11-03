@@ -285,7 +285,7 @@ module.exports = {
       },
       type: {
         alias: 't',
-        choices: ['jwt', 'cors'],
+        choices: ['jwt', 'cors', 'csp'],
         demand: true,
         description: 'The type of http filter.',
       },
