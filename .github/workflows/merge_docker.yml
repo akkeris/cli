@@ -12,7 +12,7 @@ jobs:
       id: package-version
       uses: martinbeentjes/npm-get-version-action@master
     - name: Publish to Docker Registry
-      uses: elgohr/Publish-Docker-Github-Action@master
+      uses: elgohr/Publish-Docker-Github-Action@v5
       with:
         name: akkeris/cli
         username: ${{ secrets.DOCKER_USERNAME }}
