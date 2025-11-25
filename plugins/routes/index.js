@@ -163,8 +163,8 @@ module.exports = {
     };
 
     appkit.args.command('routes', 'Show route information for an app.', query_opts, list_routes.bind(null, appkit));
-    appkit.args.command('routes:create SOURCE_PATH TARGET_PATH', 'Route HTTPS traffic from a site to an app', create_opts, create_route.bind(null, appkit));
-    appkit.args.command('routes:remove ID', 'Delete a route', {}, delete_route.bind(null, appkit));
+    // appkit.args.command('routes:create SOURCE_PATH TARGET_PATH', 'Route HTTPS traffic from a site to an app', create_opts, create_route.bind(null, appkit));
+    // appkit.args.command('routes:remove ID', 'Delete a route', {}, delete_route.bind(null, appkit));
   },
   update() {
     // do nothing.

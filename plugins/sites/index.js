@@ -123,8 +123,8 @@ module.exports = {
       },
     };
     appkit.args.command('sites', 'Show site information', {}, list_sites.bind(null, appkit));
-    appkit.args.command('sites:create DOMAIN', 'Create a site (domain) in the Akkeris router', create_sites_options, create_site.bind(null, appkit));
-    appkit.args.command('sites:destroy', 'delete a site', destroy_site_option, delete_site.bind(null, appkit));
+    // appkit.args.command('sites:create DOMAIN', 'Create a site (domain) in the Akkeris router', create_sites_options, create_site.bind(null, appkit));
+    // appkit.args.command('sites:destroy', 'delete a site', destroy_site_option, delete_site.bind(null, appkit));
   },
   update() {
     // do nothing.
